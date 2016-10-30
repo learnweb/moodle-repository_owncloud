@@ -25,7 +25,9 @@
 $string['pluginname'] = 'Sciebo';
 $string['cachedef_foldername'] = 'Folder name cache';
 $string['clientid'] = 'Client ID';
-$string['configplugin'] = 'Configure Sciebo';
+$string['configplugin'] = 'Sciebo Configuration';
 $string['oauthinfo'] = 'some important installing sentence';
 $string['secret'] = 'Secret';
 $string['sciebo:view'] = 'View Sciebo';
+$string['required'] = 'Required';
+$string['pluginname_help'] = 'A Sciebo public repository';
