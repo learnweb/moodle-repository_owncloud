@@ -1,0 +1,150 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Sciebo Repository Plugin
+ *
+ * @package    repository_Sciebo
+ * @copyright  2016 Westphälische Universität Münster (WWU Münster)
+ * @author     Projektseminar Uni Münster
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir.'/oauthlib.php');
+
+/**
+ * sciebo repository plugin.
+ *
+ * @package    repository_Sciebo
+ * @copyright  2016 Westphälische Universität Münster (WWU Münster)
+ * @author     Projektseminar Uni Münster
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class repository_sciebo extends repository {
+    /** @var later object for auth2.0 */
+    private $sciebo = null;
+
+    /**
+     * Methode to define which filetypes are supported (hardcoded can not be changed in Admin Menü)
+     * TODO: find out which FileTypes are necessarry
+     *
+     * For a full list of possible types and groups, look in lib/filelib.php, function get_mimetypes_array()
+     *
+     * @return string '*' means this repository support any files
+     */
+    public function supported_filetypes() {
+        return '*';
+    }
+
+    /**
+     * Method to define which Files are supported (hardcoded can not be changed in Admin Menü)
+     * TODO: Define necessary
+     *
+     * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
+     * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
+     * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
+     * FILE_REFERENCE - the file may be cached locally, but is automatically synchronised, as required, with any changes to the external original
+     * @return int return type bitmask supported
+     */
+    public function supported_returntypes() {
+        return FILE_INTERNAL|FILE_INTERNAL|FILE_EXTERNAL;
+    }
+
+    /**
+     * Tells to expect e-mail adress
+     */
+    public static function get_instance_option_names()
+    {
+        return array('email_address');
+    }
+    /**
+     * Optional Method to change settings.php of plugin (hardcoded can not be changed in Admin Menü)
+     * e.g. add setting element quiet similar to type_config_form
+     * E-Mail address required
+     */
+    public static function instance_config_form($mform) {
+        $mform->addElement('text', 'email_address', get_string('emailaddress', 'repository_sciebo_public'));
+        $mform->addRule('email_address', get_string('required'), 'required', null, 'client');
+    }
+    public static function get_type_option_names() {
+        return array('api_key');
+    }
+
+    /**
+     * Optional Method to change settings.php of plugin (hardcoded can not be changed in Admin Menü)
+     * e.g. add setting element API Key
+     *
+     * This is for modifying the Moodle form displaying the plugin settings. lib/formslib.php
+     * Form Definition has details of all the types of elements you can add to the settings form.
+     */
+    public static function type_config_form($mform, $classname = 'repository') {
+        //the following line is needed in order to retrieve the API key value from the database when Moodle displays the edit form
+        $a = 'https:/thisisonlyaexampleurl.latertherealone';
+        $mform->addElement('static', null, '', get_string('oauthinfo', 'repository_sciebo', $a));
+        $api_key = get_config('sciebo_public', 'client_id');
+        $secret = get_config('sciebo_public', 'secret');
+        $mform->addElement('text', 'client_id', get_string('clientid', 'repository_sciebo'),
+            array('value'=>$api_key,'size' => '40'));
+        $mform->addElement('text', 'secret', get_string('secret', 'repository_sciebo'),
+            array('value'=>$secret,'size' => '40'));
+        $mform->addRule('api_key', get_string('required'), 'required', null, 'client');
+        $mform->addRule('secret', get_string('required'), 'required', null, 'client');
+    }
+//    TODO Functions that follow MUST be overriden!
+    public function __construct($repositoryid, $context, array $options, $readonly)
+    {
+        parent::__construct($repositoryid, $context, $options, $readonly);
+    }
+    public function get_listing($path = '', $page = '')
+    {
+        parent::get_listing($path, $page); // TODO: Change the autogenerated stub
+    }
+//    TODO override optional- evaluate of neccessary
+
+    public function print_login()
+    {
+        return parent::print_login(); // TODO: Change the autogenerated stub
+    }
+    public function check_login()
+    {
+        return parent::check_login(); // TODO: Change the autogenerated stub
+    }
+    public function logout()
+    {
+        return parent::logout(); // TODO: Change the autogenerated stub
+    }
+    public function get_file_reference($source)
+    {
+        return parent::get_file_reference($source); // TODO: Change the autogenerated stub
+    }
+    public function get_file($url, $filename = '')
+    {
+        return parent::get_file($url, $filename); // TODO: Change the autogenerated stub
+    }
+    public function get_link($url)
+    {
+        return parent::get_link($url); // TODO: Change the autogenerated stub
+    }
+    public function get_file_source_info($source)
+    {
+        return parent::get_file_size($source); // TODO: Change the autogenerated stub
+    }
+
+
+
+}
