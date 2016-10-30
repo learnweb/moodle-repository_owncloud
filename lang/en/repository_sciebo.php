@@ -31,3 +31,10 @@ $string['secret'] = 'Secret';
 $string['sciebo:view'] = 'View Sciebo';
 $string['required'] = 'Required';
 $string['pluginname_help'] = 'A Sciebo public repository';
+$string['clientid'] = 'Client ID';
+$string['secret'] = 'Secret';
+$string['oauthinfo'] = 'To use this plugin, you must register your site with OwnCloud.
+As part of the registration process, you will need to enter the following URL as \'Redirect domain\': {$a}
+Once registered, you will be provided with a client ID and secret which can be entered here.';
+
+
