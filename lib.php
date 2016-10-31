@@ -18,7 +18,7 @@
  * Sciebo Repository Plugin
  *
  * @package    repository_Sciebo
- * @copyright  2016 Westphälische Universität Münster (WWU Münster)
+ * @copyright  2016 Westfälische Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -62,7 +62,7 @@ class repository_sciebo extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL|FILE_INTERNAL|FILE_EXTERNAL;
+        return FILE_INTERNAL|FILE_REFERENCE|FILE_EXTERNAL;
     }
 
     /**
@@ -102,7 +102,7 @@ class repository_sciebo extends repository {
             array('value'=>$api_key,'size' => '40'));
         $mform->addElement('text', 'secret', get_string('secret', 'repository_sciebo'),
             array('value'=>$secret,'size' => '40'));
-        $mform->addRule('api_key', get_string('required'), 'required', null, 'client');
+        $mform->addRule('client_id', get_string('required'), 'required', null, 'client');
         $mform->addRule('secret', get_string('required'), 'required', null, 'client');
     }
 //    TODO Functions that follow MUST be overriden!
