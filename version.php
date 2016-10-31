@@ -18,7 +18,7 @@
  * Version.php for Sciebo repository
  *
  * @package    repository_Sciebo
- * @copyright  2016 Westphälische Universität Münster (WWU Münster)
+ * @copyright  2016 Westfälische Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
