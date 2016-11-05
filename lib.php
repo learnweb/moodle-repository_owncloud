@@ -25,8 +25,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/repository/lib.php');
+require_once($CFG->libdir.'/webdavlib.php');
 require_once($CFG->libdir.'/oauthlib.php');
-
+require_once($CFG->dirroot . '/repository/webdav/lib.php');
 /**
  * sciebo repository plugin.
  *
@@ -247,8 +249,8 @@ class repository_sciebo extends repository {
             array('value'=>$api_key,'size' => '40'));
         $mform->addElement('text', 'secret', get_string('secret', 'repository_sciebo'),
             array('value'=>$secret,'size' => '40'));
-        $mform->addRule('client_id', get_string('required'), 'required', null, 'client');
-        $mform->addRule('secret', get_string('required'), 'required', null, 'client');
+        $mform->addRule('client_id', get_string('required'), '', null, 'client');
+        $mform->addRule('secret', get_string('required'), '', null, 'client');
     }
 
 
