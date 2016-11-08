@@ -74,7 +74,6 @@ class sciebo_webdav_client {
     private $_header='';
     private $_body='';
     private $_connection_closed = false;
-    //private $_maxheaderlenth = 1000;
     private $_maxheaderlenth = 65536;
     private $_digestchallenge = null;
     private $_cnonce = '';
@@ -1478,7 +1477,7 @@ EOD;
         do {
             $header.=fread($this->sock, 1);
             $i++;
-        } while (!preg_match('/\\r\\n\\r\\n$/',$header, $matches) && $i < $this->_maxheaderlenth);
+        } while (!preg_match('/\\r\\n\\r\\n$/',$header, $matches));
 
         $this->_error_log($header);
 

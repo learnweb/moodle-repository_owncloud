@@ -26,10 +26,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-require_once($CFG->libdir.'/webdavlib.php');
 require_once($CFG->libdir.'/oauthlib.php');
 require_once($CFG->dirroot . '/repository/sciebo/mywebdavlib.php');
-require_once($CFG->dirroot . '/repository/webdav/lib.php');
+
 /**
  * sciebo repository plugin.
  *
@@ -45,7 +44,7 @@ class repository_sciebo extends repository {
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()){
         parent::__construct($repositoryid, $context, $options);
-        // set up webdav client
+        // set up webdav client (webdav core)
         if (empty($this->options['webdav_server'])) {
             return;
         }
@@ -199,6 +198,31 @@ class repository_sciebo extends repository {
         $mform->addElement('password', 'webdav_password', get_string('webdav_password', 'repository_webdav'),
             array('size' => '40'));
     }
+
+// TODO OAuth2 instance settings will be offered here
+    /**
+     * Optional Method to change settings.php of plugin (hardcoded can not be changed in Admin Menü)
+     * e.g. add setting element API Key
+     *
+     * This is for modifying the Moodle form displaying the plugin settings. lib/formslib.php
+     * Form Definition has details of all the types of elements you can add to the settings form.
+     */
+    /*
+       public static function type_config_form($mform, $classname = 'repository') {
+        //the following line is needed in order to retrieve the API key value from the database when Moodle displays the edit form
+        $a = 'https:/thisisonlyaexampleurl.latertherealone';
+        $mform->addElement('static', null, '', get_string('oauthinfo', 'repository_sciebo', $a));
+        $api_key = get_config('sciebo_public', 'client_id');
+        $secret = get_config('sciebo_public', 'secret');
+        $mform->addElement('text', 'client_id', get_string('clientid', 'repository_sciebo'),
+            array('value'=>$api_key,'size' => '40'));
+        $mform->addElement('text', 'secret', get_string('secret', 'repository_sciebo'),
+            array('value'=>$secret,'size' => '40'));
+        $mform->addRule('client_id', get_string('required'), '', null, 'client');
+        $mform->addRule('secret', get_string('required'), '', null, 'client');
+    }
+    */
+
     /**
      * Is this repository accessing private data?
      *
@@ -210,7 +234,6 @@ class repository_sciebo extends repository {
 
     /**
      * Methode to define which filetypes are supported (hardcoded can not be changed in Admin Menü)
-     * TODO: find out which FileTypes are necessarry
      *
      * For a full list of possible types and groups, look in lib/filelib.php, function get_mimetypes_array()
      *
@@ -234,37 +257,37 @@ class repository_sciebo extends repository {
         return FILE_INTERNAL|FILE_REFERENCE|FILE_EXTERNAL;
     }
 
-
-    public static function get_type_option_names() {
-        return array('api_key');
+    /**
+     * Method to generate a downloadlink for a chosen file (in the file picker).
+     * The link is not generated properly yet and the file has to be shared by its owner beforehand.
+     * TODO implement another method to fetch the downloadlink
+     * @param string $url relative path to the chosen file
+     * @return string returns the generated downloadlink
+     * @throws repository_exception if $url is empty an exception is thrown
+     */
+    public function get_link($url) {
+        if (empty($url)) {
+            throw new repository_exception('cannotdownload', 'repository');
+        }
+        return 'http://'.$this->options['owncloud_server'].'/public.php?service=files&t='.$url.'&download';;
     }
 
     /**
-     * Optional Method to change settings.php of plugin (hardcoded can not be changed in Admin Menü)
-     * e.g. add setting element API Key
-     *
-     * This is for modifying the Moodle form displaying the plugin settings. lib/formslib.php
-     * Form Definition has details of all the types of elements you can add to the settings form.
+     * Method that generates a reference link to the chosen file. The Link does not work yet, another solution is neede.
+     * TODO implement another method to fetch the downloadlink
+     * @param stored_file $storedfile
+     * @param int $lifetime
+     * @param int $filter
+     * @param bool $forcedownload
+     * @param array|null $options
      */
-    public static function type_config_form($mform, $classname = 'repository') {
-        //the following line is needed in order to retrieve the API key value from the database when Moodle displays the edit form
-        $a = 'https:/thisisonlyaexampleurl.latertherealone';
-        $mform->addElement('static', null, '', get_string('oauthinfo', 'repository_sciebo', $a));
-        $api_key = get_config('sciebo_public', 'client_id');
-        $secret = get_config('sciebo_public', 'secret');
-        $mform->addElement('text', 'client_id', get_string('clientid', 'repository_sciebo'),
-            array('value'=>$api_key,'size' => '40'));
-        $mform->addElement('text', 'secret', get_string('secret', 'repository_sciebo'),
-            array('value'=>$secret,'size' => '40'));
-        $mform->addRule('client_id', get_string('required'), '', null, 'client');
-        $mform->addRule('secret', get_string('required'), '', null, 'client');
-    }
-    public function get_link($url)
-    {
-        return 'http://localhost/owncloud/index.php/apps/files/?dir=/&fileid=20#editor';
+    public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
+        $ref = $storedfile->get_reference();
+        $ref = 'http://'.$this->options['owncloud_server'].'/public.php?service=files&t='.$ref.'&download';
+        header('Location: ' . $ref);
     }
 
-//    TODO override optional- evaluate of neccessary
+// TODO override optional- evaluate of neccessary
 /*
     public function print_login()
     {
@@ -283,8 +306,4 @@ class repository_sciebo extends repository {
     {
         return parent::get_file_size($source); // TODO: Change the autogenerated stub
     }*/
-
-
-
-
 }
