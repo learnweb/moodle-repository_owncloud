@@ -26,9 +26,8 @@
  * Please notice that all Filenames coming from or going to the webdav server should be UTF-8 encoded (see RFC 2518).
  * This class tries to convert all you filenames into utf-8 when it's needed.
  *
- * @package moodlecore
- * @author Christian Juerges <christian.juerges@xwave.ch>, Xwave GmbH, Josefstr. 92, 8005 Zuerich - Switzerland
- * @copyright (C) 2003/2004, Christian Juerges
+ * @package repository_sciebo
+ * @author Projectseminar Scieboa
  * @license http://opensource.org/licenses/lgpl-license.php GNU Lesser General Public License
  * @version 0.1.5
  */
