@@ -265,11 +265,31 @@ class repository_sciebo extends repository {
      * @return string returns the generated downloadlink
      * @throws repository_exception if $url is empty an exception is thrown
      */
-    public function get_link($url) {
-        if (empty($url)) {
-            throw new repository_exception('cannotdownload', 'repository');
-        }
-        return 'http://'.$this->options['owncloud_server'].'/public.php?service=files&t='.$url.'&download';;
+    public function get_link($url)
+    {
+        $ch = curl_init();
+        $username = 'test';
+        $password = 'test';
+
+        curl_setopt($ch, CURLOPT_URL, "localhost/owncloud/ocs/v1.php/apps/files_sharing/api/v1/shares");
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS,
+            http_build_query(array('path' => 'Photos/Squirrel.jpg',
+                'shareType' => 3,
+                'publicUpload' => false,
+                'permissions' => 31,
+            )));
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+
+        $output = curl_exec($ch);
+
+        $xml = simplexml_load_string($output);
+
+        curl_close($ch);
+
+        return $xml->data[0]->url[0];
     }
 
     /**
