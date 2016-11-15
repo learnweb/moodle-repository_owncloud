@@ -260,7 +260,7 @@ class repository_sciebo extends repository {
     /**
      * Method to generate a downloadlink for a chosen file (in the file picker).
      * The link is not generated properly yet and the file has to be shared by its owner beforehand.
-     * TODO implement another method to fetch the downloadlink
+     * TODO Authorization process has to be implemented differently.
      * @param string $url relative path to the chosen file
      * @return string returns the generated downloadlink
      * @throws repository_exception if $url is empty an exception is thrown
@@ -268,13 +268,22 @@ class repository_sciebo extends repository {
     public function get_link($url)
     {
         // Hardcoded user data here. Has to be replaced as soon as OAuth is ready.
-        $username = 'test';
-        $password = 'test';
+        // TODO How can requests be send without user data in clear text?
+        $username = 'w_iwan01@uni-muenster.de';
+        $password = 'wnmesklaR1sub';
+
+        if (($this->options['webdav_type']) === 0) {
+            $pref = 'http://';
+        } else {
+            $pref = 'https://';
+        }
+
         $ch = curl_init();
 
         // A POST request creating a share for the chosen file is generated here.
-        curl_setopt($ch, CURLOPT_URL, $this->options['webdav_server']."/owncloud/ocs/v1.php/apps/files_sharing/api/v1/shares");
+        curl_setopt($ch, CURLOPT_URL, $pref.$this->options['webdav_server'].'/ocs/v1.php/apps/files_sharing/api/v1/shares');
         curl_setopt($ch, CURLOPT_POST, 1);
+
         // http_build_query additionally needs a new arg_separator ("&" instead of "&amp;")
         // to be able to create the message body.
         // Additional POST arguments can be edited.
@@ -287,7 +296,6 @@ class repository_sciebo extends repository {
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-
         $output = curl_exec($ch);
 
         // The output has to be transformed into an xml file to be able to extract specific arguments
@@ -299,19 +307,20 @@ class repository_sciebo extends repository {
         // The unique fileID is extracted from the given shared link.
         $fields = explode("/s/", $xml->data[0]->url[0]);
         $fileid = $fields[1];
+
         // And then its inserted into a dynamic link that will be provided to the user.
-        // WARNING: if you wish to generate a link for a local instance of owncloud, the path has to be eddited
+        // WARNING: if you wish to generate a link for a local instance of owncloud, the path has to be edited
         // in the namespace of the concerning window (e.g. http://localhost/owncloud/...).
-        return 'http://'.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
+        return $pref.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
     }
 
     /**
-     * Method that generates a reference link to the chosen file. The Link does not work yet, another solution is neede.
-     * TODO implement another method to fetch the downloadlink
+     * Method that generates a reference link to the chosen file. The Link does not work yet, another solution is needed.
+     * At the moment the get_link method is used to fetch the downloadlink to the file.
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         $ref = $storedfile->get_reference();
-        $ref = 'http://'.$this->options['owncloud_server'].'/public.php?service=files&t='.$ref.'&download';
+        $ref = $this->get_link($ref);
         header('Location: ' . $ref);
     }
 
