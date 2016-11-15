@@ -269,8 +269,8 @@ class repository_sciebo extends repository {
     {
         // Hardcoded user data here. Has to be replaced as soon as OAuth is ready.
         // TODO How can requests be send without user data in clear text?
-        $username = 'w_iwan01@uni-muenster.de';
-        $password = 'wnmesklaR1sub';
+        $username = $this->options['webdav_user'];
+        $password = $this->options['webdav_password'];
 
         if (($this->options['webdav_type']) === 0) {
             $pref = 'http://';
