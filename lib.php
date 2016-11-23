@@ -95,10 +95,7 @@ class repository_sciebo extends repository {
         }
         $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // without slash in the end
         $this->dav->get_file($webdavpath . $url, $path);
-
-        // Here the User-Preferences are set to null again. A change is needed.
-        set_user_preference('webdav_user', null);
-        set_user_preference('webdav_pass', null);
+        $this->logout();
 
         return array('path'=>$path);
     }
