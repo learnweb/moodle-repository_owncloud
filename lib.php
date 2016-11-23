@@ -206,38 +206,8 @@ class repository_sciebo extends repository {
 
         $mform->addElement('text', 'webdav_port', get_string('webdav_port', 'repository_webdav'), array('size' => '40'));
         $mform->setType('webdav_port', PARAM_INT);
-
-        /* Is not needed for individual user login.
-        $mform->addElement('text', 'webdav_user', get_string('webdav_user', 'repository_webdav'), array('size' => '40'));
-        $mform->setType('webdav_user', PARAM_RAW_TRIMMED); // Not for us to clean.
-        $mform->addElement('password', 'webdav_password', get_string('webdav_password', 'repository_webdav'),
-            array('size' => '40'));
-        */
     }
 
-// TODO OAuth2 instance settings will be offered here
-    /**
-     * Optional Method to change settings.php of plugin (hardcoded can not be changed in Admin Menü)
-     * e.g. add setting element API Key
-     *
-     * This is for modifying the Moodle form displaying the plugin settings. lib/formslib.php
-     * Form Definition has details of all the types of elements you can add to the settings form.
-     */
-    /*
-       public static function type_config_form($mform, $classname = 'repository') {
-        //the following line is needed in order to retrieve the API key value from the database when Moodle displays the edit form
-        $a = 'https:/thisisonlyaexampleurl.latertherealone';
-        $mform->addElement('static', null, '', get_string('oauthinfo', 'repository_sciebo', $a));
-        $api_key = get_config('sciebo_public', 'client_id');
-        $secret = get_config('sciebo_public', 'secret');
-        $mform->addElement('text', 'client_id', get_string('clientid', 'repository_sciebo'),
-            array('value'=>$api_key,'size' => '40'));
-        $mform->addElement('text', 'secret', get_string('secret', 'repository_sciebo'),
-            array('value'=>$secret,'size' => '40'));
-        $mform->addRule('client_id', get_string('required'), '', null, 'client');
-        $mform->addRule('secret', get_string('required'), '', null, 'client');
-    }
-    */
 
     /**
      * Is this repository accessing private data?
