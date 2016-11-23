@@ -113,7 +113,7 @@ class repository_sciebo extends repository {
         $ret  = array();
         $ret['dynload'] = true;
         $ret['nosearch'] = true;
-        $ret['nologin'] = true;
+        $ret['nologin'] = false;
         $ret['path'] = array(array('name'=>get_string('webdav', 'repository_webdav'), 'path'=>''));
         $ret['list'] = array();
 
