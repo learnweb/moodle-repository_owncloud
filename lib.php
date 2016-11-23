@@ -40,8 +40,6 @@ require_once($CFG->dirroot . '/repository/sciebo/mywebdavlib.php');
 class repository_sciebo extends repository {
     /** @var later object for auth2.0 */
     private $sciebo = null;
-    private $username;
-    private $password;
 
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()){
@@ -71,12 +69,20 @@ class repository_sciebo extends repository {
             $port = ':' . $this->webdav_port;
         }
 
-        $this->username = optional_param('webdav_user', '', PARAM_RAW);
-        $this->password = optional_param('webdav_pass', '', PARAM_RAW);
+        // The previously set username and password are copied to user preferences.
+        // Therefore, the concerning data is available while the user browses through
+        // the file picker.
+        if((get_user_preferences('webdav_user') == '') || (get_user_preferences('webdav_pass') == '')){
+            set_user_preference('webdav_user', optional_param('webdav_user', '', PARAM_RAW));
+            set_user_preference('webdav_pass', optional_param('webdav_pass', '', PARAM_RAW));
+        }
+
+        $this->options['webdav_user'] = get_user_preferences('webdav_user');
+        $this->options['webdav_password'] = get_user_preferences('webdav_pass');
 
         $this->webdav_host = $this->webdav_type.$this->options['webdav_server'].$port;
-        $this->dav = new sciebo_webdav_client($this->options['webdav_server'], $this->username,
-            $this->password, $this->options['webdav_auth'], $this->webdav_type);
+        $this->dav = new sciebo_webdav_client($this->options['webdav_server'], $this->options['webdav_user'],
+            $this->options['webdav_password'], $this->options['webdav_auth'], $this->webdav_type);
         $this->dav->port = $this->webdav_port;
         $this->dav->debug = false;
     }
@@ -89,6 +95,10 @@ class repository_sciebo extends repository {
         }
         $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // without slash in the end
         $this->dav->get_file($webdavpath . $url, $path);
+
+        // Here the User-Preferences are set to null again. A change is needed.
+        set_user_preference('webdav_user', null);
+        set_user_preference('webdav_pass', null);
 
         return array('path'=>$path);
     }
@@ -196,7 +206,8 @@ class repository_sciebo extends repository {
 
         $mform->addElement('text', 'webdav_port', get_string('webdav_port', 'repository_webdav'), array('size' => '40'));
         $mform->setType('webdav_port', PARAM_INT);
-        /*
+
+        /* Is not needed for individual user login.
         $mform->addElement('text', 'webdav_user', get_string('webdav_user', 'repository_webdav'), array('size' => '40'));
         $mform->setType('webdav_user', PARAM_RAW_TRIMMED); // Not for us to clean.
         $mform->addElement('password', 'webdav_password', get_string('webdav_password', 'repository_webdav'),
@@ -310,14 +321,13 @@ class repository_sciebo extends repository {
         curl_close($ch);
 
         // The unique fileID is extracted from the given shared link.
-        //$fields = explode("/s/", $xml->data[0]->url[0]);
-        //$fileid = $fields[1];
+        $fields = explode("/s/", $xml->data[0]->url[0]);
+        $fileid = $fields[1];
 
         // And then its inserted into a dynamic link that will be provided to the user.
         // WARNING: if you wish to generate a link for a local instance of owncloud, the path has to be edited
         // in the namespace of the concerning window (e.g. http://localhost/owncloud/...).
-        //return $pref.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
-        return $xml->data[0]->url[0].'&download';
+        return $pref.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
     }
 
     /**
@@ -331,7 +341,7 @@ class repository_sciebo extends repository {
     }
 
     public function check_login() {
-        if(($this->username == '') || ($this->password == '')){
+        if(($this->options['webdav_user'] == '') || ($this->options['webdav_password'] == '')){
             return false;
         } else return true;
     }
