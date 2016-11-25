@@ -247,8 +247,7 @@ class repository_sciebo extends repository {
      * @return string returns the generated downloadlink
      * @throws repository_exception if $url is empty an exception is thrown
      */
-    public function get_link($url)
-    {
+    public function get_link($url) {
         // Hardcoded user data here. Has to be replaced as soon as OAuth is ready.
         // TODO How can requests be send without user data in clear text?
         $username = $this->options['webdav_user'];
