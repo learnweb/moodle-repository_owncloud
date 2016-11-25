@@ -27,8 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once($CFG->libdir.'/oauthlib.php');
-require_once($CFG->dirroot . '/repository/sciebo/mywebdavlib.php');
-
+require_once($CFG->dirroot . '/lib/webdavlib.php');
 /**
  * sciebo repository plugin.
  *
@@ -81,7 +80,7 @@ class repository_sciebo extends repository {
         $this->options['webdav_password'] = get_user_preferences('webdav_pass');
 
         $this->webdav_host = $this->webdav_type.$this->options['webdav_server'].$port;
-        $this->dav = new sciebo_webdav_client($this->options['webdav_server'], $this->options['webdav_user'],
+        $this->dav = new webdav_client($this->options['webdav_server'], $this->options['webdav_user'],
             $this->options['webdav_password'], $this->options['webdav_auth'], $this->webdav_type);
         $this->dav->port = $this->webdav_port;
         $this->dav->debug = false;
@@ -160,7 +159,7 @@ class repository_sciebo extends repository {
                         'path'=>$v['href']
                     );
                 }
-            }else{
+            } else {
                 // a file
                 $size = !empty($v['getcontentlength'])? $v['getcontentlength']:'';
                 $files[strtoupper($title)] = array(
