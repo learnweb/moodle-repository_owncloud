@@ -26,7 +26,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-require_once($CFG->libdir.'/oauthlib.php');
 require_once($CFG->dirroot . '/lib/webdavlib.php');
 /**
  * sciebo repository plugin.
