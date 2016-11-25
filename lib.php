@@ -177,6 +177,86 @@ class repository_sciebo extends repository {
         $ret['list'] = array_merge($folders, $files);
         return $ret;
     }
+
+    /**
+     * Method to generate a downloadlink for a chosen file (in the file picker).
+     * The link is not generated properly yet and the file has to be shared by its owner beforehand.
+     * TODO Authorization process has to be implemented differently.
+     * @param string $url relative path to the chosen file
+     * @return string returns the generated downloadlink
+     * @throws repository_exception if $url is empty an exception is thrown
+     */
+    public function get_link($url) {
+
+        $username = $this->options['webdav_user'];
+        $password = $this->options['webdav_password'];
+
+        if (($this->options['webdav_type']) === 0) {
+            $pref = 'http://';
+        } else {
+            $pref = 'https://';
+        }
+
+        $ch = new curl();
+        $output = $ch->post($pref.$this->options['webdav_server'].'/ocs/v1.php/apps/files_sharing/api/v1/shares',
+            http_build_query(array('path' => $url,
+                'shareType' => 3,
+                'publicUpload' => false,
+                'permissions' => 31,
+            ), null, "&"),
+            array('CURLOPT_USERPWD' => "$username:$password"));
+
+        $xml = simplexml_load_string($output);
+        $fields = explode("/s/", $xml->data[0]->url[0]);
+        $fileid = $fields[1];
+        $this->logout();
+        return $pref.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
+    }
+
+    /**
+     * Method that generates a reference link to the chosen file. The Link does not work yet, another solution is needed.
+     * At the moment the get_link method is used to fetch the downloadlink to the file.
+     */
+    public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
+        $ref = $storedfile->get_reference();
+        $ref = $this->get_link($ref);
+        header('Location: ' . $ref);
+        $this->logout();
+    }
+
+    public function check_login() {
+        if (($this->options['webdav_user'] == '') || ($this->options['webdav_password'] == '')) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public function print_login() {
+        $ret = array();
+        $username = new stdClass();
+        $username->type = 'text';
+        $username->id   = 'webdav_user';
+        $username->name = 'webdav_user';
+        $username->label = get_string('username').': ';
+        $password = new stdClass();
+        $password->type = 'password';
+        $password->id   = 'webdav_pass';
+        $password->name = 'webdav_pass';
+        $password->label = get_string('password').': ';
+        $ret['login'] = array($username, $password);
+        $ret['login_btn_label'] = get_string('login');
+        $ret['login_btn_action'] = 'login';
+        return $ret;
+    }
+
+    public function logout()
+    {
+        set_user_preference('webdav_user', null);
+        set_user_preference('webdav_pass', null);
+        return $this->print_login();
+    }
+
     public static function get_instance_option_names() {
         return array('webdav_type', 'webdav_server', 'webdav_port', 'webdav_path', 'webdav_user', 'webdav_password', 'webdav_auth');
     }
@@ -204,7 +284,6 @@ class repository_sciebo extends repository {
         $mform->addElement('text', 'webdav_port', get_string('webdav_port', 'repository_webdav'), array('size' => '40'));
         $mform->setType('webdav_port', PARAM_INT);
     }
-
 
     /**
      * Is this repository accessing private data?
@@ -240,84 +319,9 @@ class repository_sciebo extends repository {
         return FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
     }
 
-    /**
-     * Method to generate a downloadlink for a chosen file (in the file picker).
-     * The link is not generated properly yet and the file has to be shared by its owner beforehand.
-     * TODO Authorization process has to be implemented differently.
-     * @param string $url relative path to the chosen file
-     * @return string returns the generated downloadlink
-     * @throws repository_exception if $url is empty an exception is thrown
-     */
-    public function get_link($url) {
-
-        $username = $this->options['webdav_user'];
-        $password = $this->options['webdav_password'];
-
-        if (($this->options['webdav_type']) === 0) {
-            $pref = 'http://';
-        } else {
-            $pref = 'https://';
-        }
-        
-        $ch = new curl();
-        $output = $ch->post($pref.$this->options['webdav_server'].'/ocs/v1.php/apps/files_sharing/api/v1/shares',
-            http_build_query(array('path' => $url,
-                'shareType' => 3,
-                'publicUpload' => false,
-                'permissions' => 31,
-            ), null, "&"),
-            array('CURLOPT_USERPWD' => "$username:$password"));
-
-        $xml = simplexml_load_string($output);
-        $fields = explode("/s/", $xml->data[0]->url[0]);
-        $fileid = $fields[1];
-        return $pref.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
-    }
-
-    /**
-     * Method that generates a reference link to the chosen file. The Link does not work yet, another solution is needed.
-     * At the moment the get_link method is used to fetch the downloadlink to the file.
-     */
-    public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
-        $ref = $storedfile->get_reference();
-        $ref = $this->get_link($ref);
-        header('Location: ' . $ref);
-    }
-
-    public function check_login() {
-        if (($this->options['webdav_user'] == '') || ($this->options['webdav_password'] == '')) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    public function print_login() {
-        global $CFG;
-        $ret = array();
-        $username = new stdClass();
-        $username->type = 'text';
-        $username->id   = 'webdav_user';
-        $username->name = 'webdav_user';
-        $username->label = get_string('username').': ';
-        $password = new stdClass();
-        $password->type = 'password';
-        $password->id   = 'webdav_pass';
-        $password->name = 'webdav_pass';
-        $password->label = get_string('password').': ';
-        $ret['login'] = array($username, $password);
-        $ret['login_btn_label'] = get_string('login');
-        $ret['login_btn_action'] = 'login';
-        return $ret;
-    }
-
 
     // TODO override optional- evaluate of neccessary
     /*
-    public function logout()
-    {
-        return parent::logout(); // TODO: Change the autogenerated stub
-    }
     public function get_file_reference($source)
     {
         return parent::get_file_reference($source); // TODO: Change the autogenerated stub
