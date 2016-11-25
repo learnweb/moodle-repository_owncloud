@@ -41,7 +41,7 @@ class repository_sciebo extends repository {
     private $sciebo = null;
 
 
-    public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()){
+    public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
         // set up webdav client (webdav core)
         if (empty($this->options['webdav_server'])) {
@@ -71,7 +71,7 @@ class repository_sciebo extends repository {
         // The previously set username and password are copied to user preferences.
         // Therefore, the concerning data is available while the user browses through
         // the file picker.
-        if((get_user_preferences('webdav_user') == '') || (get_user_preferences('webdav_pass') == '')){
+        if ((get_user_preferences('webdav_user') == '') || (get_user_preferences('webdav_pass') == '')) {
             set_user_preference('webdav_user', optional_param('webdav_user', '', PARAM_RAW));
             set_user_preference('webdav_pass', optional_param('webdav_pass', '', PARAM_RAW));
         }
@@ -96,7 +96,7 @@ class repository_sciebo extends repository {
         $this->dav->get_file($webdavpath . $url, $path);
         $this->logout();
 
-        return array('path'=>$path);
+        return array('path' => $path);
     }
 
     public function global_search() {
@@ -110,21 +110,21 @@ class repository_sciebo extends repository {
         $ret['dynload'] = true;
         $ret['nosearch'] = true;
         $ret['nologin'] = false;
-        $ret['path'] = array(array('name'=>get_string('webdav', 'repository_webdav'), 'path'=>''));
+        $ret['path'] = array(array('name' => get_string('webdav', 'repository_webdav'), 'path' => ''));
         $ret['list'] = array();
 
         if (!$this->dav->open()) {
             return $ret;
         }
         $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // without slash in the end
-        if (empty($path) || $path =='/') {
+        if (empty($path) || $path == '/') {
             $path = '/';
         } else {
             $chunks = preg_split('|/|', trim($path, '/'));
             for ($i = 0; $i < count($chunks); $i++) {
                 $ret['path'][] = array(
                     'name' => urldecode($chunks[$i]),
-                    'path' => '/'. join('/', array_slice($chunks, 0, $i+1)). '/'
+                    'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
                 );
             }
         }
@@ -152,22 +152,22 @@ class repository_sciebo extends repository {
                 // a folder
                 if ($path != $v['href']) {
                     $folders[strtoupper($title)] = array(
-                        'title'=>rtrim($title, '/'),
-                        'thumbnail'=>$OUTPUT->pix_url(file_folder_icon(90))->out(false),
-                        'children'=>array(),
-                        'datemodified'=>$v['lastmodified'],
-                        'path'=>$v['href']
+                        'title' => rtrim($title, '/'),
+                        'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
+                        'children' => array(),
+                        'datemodified' => $v['lastmodified'],
+                        'path' => $v['href']
                     );
                 }
             } else {
                 // a file
-                $size = !empty($v['getcontentlength'])? $v['getcontentlength']:'';
+                $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
                 $files[strtoupper($title)] = array(
-                    'title'=>$title,
+                    'title' => $title,
                     'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
-                    'size'=>$size,
-                    'datemodified'=>$v['lastmodified'],
-                    'source'=>$v['href']
+                    'size' => $size,
+                    'datemodified' => $v['lastmodified'],
+                    'source' => $v['href']
                 );
             }
         }
@@ -236,7 +236,7 @@ class repository_sciebo extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL|FILE_REFERENCE|FILE_EXTERNAL;
+        return FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
     }
 
     /**
@@ -307,13 +307,14 @@ class repository_sciebo extends repository {
     }
 
     public function check_login() {
-        if(($this->options['webdav_user'] == '') || ($this->options['webdav_password'] == '')){
+        if (($this->options['webdav_user'] == '') || ($this->options['webdav_password'] == '')) {
             return false;
-        } else return true;
+        } else {
+            return true;
+        }
     }
 
-    public function print_login()
-    {
+    public function print_login() {
         global $CFG;
         $ret = array();
         $username = new stdClass();
@@ -333,8 +334,8 @@ class repository_sciebo extends repository {
     }
 
 
-// TODO override optional- evaluate of neccessary
-/*
+    // TODO override optional- evaluate of neccessary
+    /*
     public function logout()
     {
         return parent::logout(); // TODO: Change the autogenerated stub
