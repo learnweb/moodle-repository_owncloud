@@ -26,7 +26,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-require_once($CFG->libdir.'/filelib.php');
 require_once($CFG->libdir.'/webdavlib.php');
 /**
  * sciebo repository plugin.
@@ -37,8 +36,6 @@ require_once($CFG->libdir.'/webdavlib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_sciebo extends repository {
-    /** @var later object for auth2.0 */
-    private $sciebo = null;
 
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
@@ -68,13 +65,23 @@ class repository_sciebo extends repository {
             $port = ':' . $this->webdav_port;
         }
 
-        // The previously set username and password are copied to user preferences.
-        // Therefore, the concerning data is available while the user browses through
-        // the file picker.
-        if ((get_user_preferences('webdav_user') == '') || (get_user_preferences('webdav_pass') == '')) {
+        /* Old version without event.
+        if((get_user_preferences('webdav_user') == null) || (get_user_preferences('webdav_pass') == null)) {
             set_user_preference('webdav_user', optional_param('webdav_user', '', PARAM_RAW));
             set_user_preference('webdav_pass', optional_param('webdav_pass', '', PARAM_RAW));
         }
+        */
+
+        // Trying to trigger the event which indicates a login request.
+        $params = array(
+            'context' => context_module::instance(9),
+            'other' => array(
+                'user' => optional_param('webdav_user', '', PARAM_RAW),
+                'pass' => optional_param('webdav_pass', '', PARAM_RAW),
+            )
+        );
+        $event = \repository_sciebo\event\login_requested::create($params);
+        $event->trigger();
 
         $this->options['webdav_user'] = get_user_preferences('webdav_user');
         $this->options['webdav_password'] = get_user_preferences('webdav_pass');
@@ -186,7 +193,6 @@ class repository_sciebo extends repository {
      * @throws repository_exception if $url is empty an exception is thrown
      */
     public function get_link($url) {
-
         $username = $this->options['webdav_user'];
         $password = $this->options['webdav_password'];
 
