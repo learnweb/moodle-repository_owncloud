@@ -94,7 +94,7 @@ class repository_sciebo extends repository {
         if (!$this->dav->open()) {
             return false;
         }
-        $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // without slash in the end
+        $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // Without slash in the end.
         $this->dav->get_file($webdavpath . $url, $path);
         $this->logout();
 
@@ -146,7 +146,7 @@ class repository_sciebo extends repository {
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
             $server = preg_quote($this->options['webdav_server']);
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
-            // Extracting object title from absolute path
+            // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
             $title = substr($v['href'], strlen($path));
 
