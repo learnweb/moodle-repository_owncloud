@@ -72,16 +72,7 @@ class repository_sciebo extends repository {
         }
         */
 
-        // Trying to trigger the event which indicates a login request.
-        $params = array(
-            'context' => context_module::instance(9),
-            'other' => array(
-                'user' => optional_param('webdav_user', '', PARAM_RAW),
-                'pass' => optional_param('webdav_pass', '', PARAM_RAW),
-            )
-        );
-        $event = \repository_sciebo\event\login_requested::create($params);
-        $event->trigger();
+        $this->trigger_event();
 
         $this->options['webdav_user'] = get_user_preferences('webdav_user');
         $this->options['webdav_password'] = get_user_preferences('webdav_pass');
@@ -91,6 +82,18 @@ class repository_sciebo extends repository {
             $this->options['webdav_password'], $this->options['webdav_auth'], $this->webdav_type);
         $this->dav->port = $this->webdav_port;
         $this->dav->debug = false;
+    }
+
+    private function trigger_event() {
+        $params = array(
+            'context' => $this->context,
+            'other' => array(
+                'user' => optional_param('webdav_user', '', PARAM_RAW),
+                'pass' => optional_param('webdav_pass', '', PARAM_RAW),
+            )
+        );
+        $event = \repository_sciebo\event\login_requested::create($params);
+        $event->trigger();
     }
 
     public function get_file($url, $title = '') {

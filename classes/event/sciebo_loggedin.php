@@ -26,6 +26,7 @@
 
 namespace repository_sciebo\event;
 
+defined('MOODLE_INTERNAL') || die();
 /**
  * The repository_sciebo event class for a login request.
  *
@@ -34,7 +35,7 @@ namespace repository_sciebo\event;
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class login_requested extends \core\event\base {
+class sciebo_loggedin extends \core\event\base {
 
     /**
      * Override in subclass.
@@ -53,7 +54,6 @@ class login_requested extends \core\event\base {
     {
         $this->data['crud'] = 'u';
         $this->data['edulevel'] = self::LEVEL_OTHER;
-        $this->data['objecttable'] = null;
     }
 
     /**
@@ -71,7 +71,7 @@ class login_requested extends \core\event\base {
      * @return string
      */
     public static function get_name() {
-        return "Login requested.";
+        return "Login on the sciebo instance requested.";
     }
 
     public function get_data() {
