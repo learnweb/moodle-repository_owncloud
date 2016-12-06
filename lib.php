@@ -39,7 +39,7 @@ class repository_sciebo extends repository {
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
-        // set up webdav client (webdav core)
+        // Set up webdav client (webdav core).
         if (empty($this->options['webdav_server'])) {
             return;
         }
@@ -80,7 +80,11 @@ class repository_sciebo extends repository {
      * Function which triggers the login event. It has yet to be decided where this function should be called.
      */
     private function trigger_event() {
-        $event = \repository_sciebo\event\sciebo_loggedin::create(array('context' => $this->context, 'other' => array('user' => optional_param('webdav_user', '', PARAM_RAW), 'pass' => optional_param('webdav_pass', '', PARAM_RAW))));
+        $event = \repository_sciebo\event\sciebo_loggedin::create(array(
+            'context' => $this->context,
+            'other' => array(
+                'user' => optional_param('webdav_user', '', PARAM_RAW),
+                'pass' => optional_param('webdav_pass', '', PARAM_RAW))));
         $event->trigger();
     }
 
@@ -114,7 +118,7 @@ class repository_sciebo extends repository {
         if (!$this->dav->open()) {
             return $ret;
         }
-        $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // without slash in the end
+        $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ ');
         if (empty($path) || $path == '/') {
             $path = '/';
         } else {
@@ -139,7 +143,7 @@ class repository_sciebo extends repository {
                 $v['lastmodified'] = null;
             }
 
-            // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014
+            // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
             $server = preg_quote($this->options['webdav_server']);
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
             // Extracting object title from absolute path
@@ -147,7 +151,7 @@ class repository_sciebo extends repository {
             $title = substr($v['href'], strlen($path));
 
             if (!empty($v['resourcetype']) && $v['resourcetype'] == 'collection') {
-                // a folder
+                // A folder.
                 if ($path != $v['href']) {
                     $folders[strtoupper($title)] = array(
                         'title' => rtrim($title, '/'),
@@ -158,7 +162,7 @@ class repository_sciebo extends repository {
                     );
                 }
             } else {
-                // a file
+                // A file.
                 $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
                 $files[strtoupper($title)] = array(
                     'title' => $title,
@@ -246,8 +250,7 @@ class repository_sciebo extends repository {
         return $ret;
     }
 
-    public function logout()
-    {
+    public function logout() {
         set_user_preference('webdav_user', null);
         set_user_preference('webdav_pass', null);
         return $this->print_login();
@@ -308,7 +311,8 @@ class repository_sciebo extends repository {
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
      * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
-     * FILE_REFERENCE - the file may be cached locally, but is automatically synchronised, as required, with any changes to the external original
+     * FILE_REFERENCE - the file may be cached locally, but is automatically synchronised, as required,
+     *                 with any changes to the external original
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {

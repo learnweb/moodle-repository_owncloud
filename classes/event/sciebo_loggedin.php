@@ -14,7 +14,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
 /**
  * The repository_sciebo event for a login request.
  *
@@ -50,19 +49,16 @@ class sciebo_loggedin extends \core\event\base {
      *
      * @return void
      */
-    protected function init()
-    {
+    protected function init() {
         $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_OTHER;
     }
 
-    public static function get_name()
-    {
+    public static function get_name() {
         return 'Sciebo login request';
     }
 
-    public function get_description()
-    {
+    public function get_description() {
         return 'Someone tries to login to the Sciebo instance.';
     }
 }
