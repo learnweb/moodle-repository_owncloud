@@ -52,29 +52,17 @@ class sciebo_loggedin extends \core\event\base {
      */
     protected function init()
     {
-        $this->data['crud'] = 'u';
+        $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_OTHER;
     }
 
-    /**
-     * Returns description of what happened.
-     *
-     * @return string
-     */
-    public function get_description() {
-        return "A user has accessed the sciebo Repository.";
+    public static function get_name()
+    {
+        return 'Sciebo login request';
     }
 
-    /**
-     * Return localised event name.
-     *
-     * @return string
-     */
-    public static function get_name() {
-        return "Login on the sciebo instance requested.";
-    }
-
-    public function get_data() {
-        parent::get_data();
+    public function get_description()
+    {
+        return 'Someone tries to login to the Sciebo instance.';
     }
 }

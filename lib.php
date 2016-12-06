@@ -37,7 +37,6 @@ require_once($CFG->libdir.'/webdavlib.php');
  */
 class repository_sciebo extends repository {
 
-
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
         // set up webdav client (webdav core)
@@ -65,13 +64,6 @@ class repository_sciebo extends repository {
             $port = ':' . $this->webdav_port;
         }
 
-        /* Old version without event.
-        if((get_user_preferences('webdav_user') == null) || (get_user_preferences('webdav_pass') == null)) {
-            set_user_preference('webdav_user', optional_param('webdav_user', '', PARAM_RAW));
-            set_user_preference('webdav_pass', optional_param('webdav_pass', '', PARAM_RAW));
-        }
-        */
-
         $this->trigger_event();
 
         $this->options['webdav_user'] = get_user_preferences('webdav_user');
@@ -84,15 +76,11 @@ class repository_sciebo extends repository {
         $this->dav->debug = false;
     }
 
+    /**
+     * Function which triggers the login event. It has yet to be decided where this function should be called.
+     */
     private function trigger_event() {
-        $params = array(
-            'context' => $this->context,
-            'other' => array(
-                'user' => optional_param('webdav_user', '', PARAM_RAW),
-                'pass' => optional_param('webdav_pass', '', PARAM_RAW),
-            )
-        );
-        $event = \repository_sciebo\event\login_requested::create($params);
+        $event = \repository_sciebo\event\sciebo_loggedin::create(array('context' => $this->context, 'other' => array('user' => optional_param('webdav_user', '', PARAM_RAW), 'pass' => optional_param('webdav_pass', '', PARAM_RAW))));
         $event->trigger();
     }
 
