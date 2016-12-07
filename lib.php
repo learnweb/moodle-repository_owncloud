@@ -64,7 +64,10 @@ class repository_sciebo extends repository {
             $port = ':' . $this->webdav_port;
         }
 
-        $this->trigger_event();
+        if (((get_user_preferences('webdav_user') == null) || (get_user_preferences('webdav_pass') == null))
+            && !(optional_param('webdav_user', '', PARAM_RAW) == null)) {
+            $this->trigger_event();
+        }
 
         $this->options['webdav_user'] = get_user_preferences('webdav_user');
         $this->options['webdav_password'] = get_user_preferences('webdav_pass');
