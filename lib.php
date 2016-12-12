@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once($CFG->libdir.'/webdavlib.php');
+use repository_sciebo\sciebo;
 /**
  * sciebo repository plugin.
  *
@@ -64,10 +65,19 @@ class repository_sciebo extends repository {
             $port = ':' . $this->webdav_port;
         }
 
-        if (((get_user_preferences('webdav_user') == null) || (get_user_preferences('webdav_pass') == null))
-            && !(optional_param('webdav_user', '', PARAM_RAW) == null)) {
-            $this->trigger_event();
-        }
+
+
+        $returnurl = new moodle_url('/repository/repository_callback.php', [
+            'callback'  => 'yes',
+            'repo_id'   => $repositoryid,
+            'sesskey'   => sesskey(),
+        ]);
+
+        $this->sciebo = new sciebo(
+            'Xe8tvMhUxw5hqNN27rDD87ESeKsF294Eq24B8pDDeE11Eo0Xl9Sk1ZS7hviEszHD',
+            'D0wgoP3PuVubsaESJpvhjv8x0byp6MZgztVJmOTAFmBXSsLdfDrHd1vIXl2dGVVt',
+            $returnurl
+        );
 
         $this->options['webdav_user'] = get_user_preferences('webdav_user');
         $this->options['webdav_password'] = get_user_preferences('webdav_pass');
@@ -236,7 +246,7 @@ class repository_sciebo extends repository {
     }
 
     public function print_login() {
-        $ret = array();
+        /*$ret = array();
         $username = new stdClass();
         $username->type = 'text';
         $username->id   = 'webdav_user';
@@ -251,6 +261,18 @@ class repository_sciebo extends repository {
         $ret['login_btn_label'] = get_string('login');
         $ret['login_btn_action'] = 'login';
         return $ret;
+        */
+        $url = $this->sciebo->get_login_url();
+        if ($this->options['ajax']) {
+            $ret = array();
+            $btn = new \stdClass();
+            $btn->type = 'popup';
+            $btn->url = $url->out(false);
+            $ret['login'] = array($btn);
+            return $ret;
+        } else {
+            echo html_writer::link($url, get_string('login', 'repository'), array('target' => '_blank'));
+        }
     }
 
     public function logout() {
