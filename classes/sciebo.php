@@ -28,8 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/oauthlib.php');
 
-class sciebo extends \oauth2_client
-{
+class sciebo extends \oauth2_client {
     /**
      * Create the DropBox API Client.
      *
@@ -45,8 +44,7 @@ class sciebo extends \oauth2_client
      * Returns the auth url for OAuth 2.0 request
      * @return string the auth url
      */
-    protected function auth_url()
-    {
+    protected function auth_url() {
         return 'http://localhost/owncloud/index.php/apps/oauth2/authorize';
     }
 
@@ -54,8 +52,7 @@ class sciebo extends \oauth2_client
      * Returns the token url for OAuth 2.0 request
      * @return string the auth url
      */
-    protected function token_url()
-    {
+    protected function token_url() {
         return 'http://localhost/owncloud/index.php/apps/oauth2/api/v1/token';
     }
 
