@@ -64,9 +64,6 @@ class repository_sciebo extends repository {
             $this->webdav_port = $this->options['webdav_port'];
             $port = ':' . $this->webdav_port;
         }
-
-
-
         $returnurl = new moodle_url('/repository/repository_callback.php', [
             'callback'  => 'yes',
             'repo_id'   => $repositoryid,
