@@ -45,7 +45,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function auth_url() {
-        return 'http://localhost/owncloud/index.php/apps/oauth2/authorize';
+        return 'https://pssl16.uni-muenster.de/owncloud9.2/index.php/apps/oauth2/authorize';
     }
 
     /**
@@ -53,7 +53,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function token_url() {
-        return 'http://localhost/owncloud/index.php/apps/oauth2/api/v1/token';
+        return ': https://pssl16.uni-muenster.de/owncloud9.2/index.php/apps/oauth2/api/v1/token';
     }
 
 }
