@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace repository_sciebo;
+
 /**
  * webdav_client v0.1.5, a php based webdav client class.
  * class webdav client. a php based nearly RFC 2518 conforming client.
@@ -33,7 +35,7 @@
  * @version 0.1.5
  */
 
-class webdav_client {
+class sciebo_client {
 
     /**#@+
      * @access private

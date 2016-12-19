@@ -27,7 +27,8 @@ namespace repository_sciebo;
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/oauthlib.php');
-require_once($CFG->dirroot . '/repository/sciebo/mywebdavlib.php');
+
+use repository_sciebo\sciebo_client;
 
 class sciebo extends \oauth2_client {
     /**
@@ -40,9 +41,9 @@ class sciebo extends \oauth2_client {
     public function __construct($key, $secret, $callback) {
         parent::__construct($key, $secret, $callback, '');
 
-        $this->webdav_host = 'http://localhost:80';
-        $this->dav = new webdav_client(localhost, '', '', 'bearer', 'http');
-        $this->dav->port = 80;
+        $this->webdav_host = 'https://SERVERNAME:443';
+        $this->dav = new sciebo_client(localhost, '', '', 'bearer', 'https');
+        $this->dav->port = 443;
         $this->dav->debug = false;
     }
 
@@ -51,7 +52,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function auth_url() {
-        return 'https://pssl16.uni-muenster.de/owncloud9.2/index.php/apps/oauth2/authorize';
+        return '';
     }
 
     /**
@@ -59,7 +60,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function token_url() {
-        return ': https://pssl16.uni-muenster.de/owncloud9.2/index.php/apps/oauth2/api/v1/token';
+        return '';
     }
 
     public function get_listing($path) {
@@ -67,4 +68,8 @@ class sciebo extends \oauth2_client {
         return $this->dav->ls($path);
     }
 
+    public function callback() {
+        $this->log_out();
+        $this->is_logged_in();
+    }
 }

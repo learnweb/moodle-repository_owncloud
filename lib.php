@@ -40,28 +40,7 @@ class repository_sciebo extends repository {
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
-        /* Not needed right now.
-        if (empty($this->options['webdav_server'])) {
-            return;
-        }
-        $this->options['webdav_auth'] == 'bearer';
-        if (empty($this->options['webdav_type'])) {
-            $this->webdav_type = '';
-        } else {
-            $this->webdav_type = 'ssl://';
-        }
-        if (empty($this->options['webdav_port'])) {
-            $port = '';
-            if (empty($this->webdav_type)) {
-                $this->webdav_port = 80;
-            } else {
-                $this->webdav_port = 443;
-                $port = ':443';
-            }
-        } else {
-            $this->webdav_port = $this->options['webdav_port'];
-            $port = ':' . $this->webdav_port;
-        }*/
+
         $returnurl = new moodle_url('/repository/repository_callback.php', [
             'callback'  => 'yes',
             'repo_id'   => $repositoryid,
@@ -69,8 +48,8 @@ class repository_sciebo extends repository {
         ]);
 
         $this->sciebo = new sciebo(
-            'Ljh5yaDOIJZu8UDDF9daSh0rCo3WVqLkDuK83t1Sflp9oMNK2UHjMSHecupVoJJB',
-            'rZlOqLeDWDPPgwzqqtgMQ9m2COb4rWGANaB4vutALdvLOOXDntteSiKRgyFwikS4',
+            'z1k9MDZPGU2nWbRnm3SkovyS3Pv1Iwwi4o58VmNW0tNAS4H5v1kXt59hd1qUXe2m',
+            'dGHbPhRsmYDx5rpqNnuWGVfYTr2TxHbXVqY8tPUaldoWrmGVBqFtuMKS9WHK45bt',
             $returnurl
         );
     }
@@ -226,7 +205,7 @@ class repository_sciebo extends repository {
     }
 
     public function check_login() {
-        return $this->dropbox->is_logged_in();
+        return $this->sciebo->is_logged_in();
     }
 
     public function print_login() {
@@ -247,6 +226,10 @@ class repository_sciebo extends repository {
         $this->sciebo->logout();
 
         return $this->print_login();
+    }
+
+    public function callback() {
+        $this->sciebo->callback();
     }
 
     public static function get_instance_option_names() {
