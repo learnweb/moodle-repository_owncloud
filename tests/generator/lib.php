@@ -56,6 +56,13 @@ class repository_sciebo_generator extends testing_block_generator {
         $data['grouping2'] = $grouping2;
         $grouping3 = $generator->create_grouping(array('courseid' => $course->id));
         $data['grouping3'] = $grouping3;
+
+        /*$record = new stdClass();
+        $record->pluginname = 'Sciebo';
+        $record->secret = '12345';
+        $record->key = '67890';
+
+        $repository = $generator->create_repository('sciebo', $record);*/
         // Add Grouping to groups.
         $generator->create_grouping_group(array('groupingid' => $grouping1->id, 'groupid' => $group1->id));
         $generator->create_grouping_group(array('groupingid' => $grouping2->id, 'groupid' => $group2->id));
