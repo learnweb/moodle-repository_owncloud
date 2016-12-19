@@ -40,13 +40,11 @@ class repository_sciebo extends repository {
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
-        // Set up webdav client (webdav core).
+        /* Not needed right now.
         if (empty($this->options['webdav_server'])) {
             return;
         }
-        if ($this->options['webdav_auth'] == 'none') {
-            $this->options['webdav_auth'] = false;
-        }
+        $this->options['webdav_auth'] == 'bearer';
         if (empty($this->options['webdav_type'])) {
             $this->webdav_type = '';
         } else {
@@ -63,7 +61,7 @@ class repository_sciebo extends repository {
         } else {
             $this->webdav_port = $this->options['webdav_port'];
             $port = ':' . $this->webdav_port;
-        }
+        }*/
         $returnurl = new moodle_url('/repository/repository_callback.php', [
             'callback'  => 'yes',
             'repo_id'   => $repositoryid,
@@ -75,15 +73,6 @@ class repository_sciebo extends repository {
             'rZlOqLeDWDPPgwzqqtgMQ9m2COb4rWGANaB4vutALdvLOOXDntteSiKRgyFwikS4',
             $returnurl
         );
-
-        $this->options['webdav_user'] = get_user_preferences('webdav_user');
-        $this->options['webdav_password'] = get_user_preferences('webdav_pass');
-
-        $this->webdav_host = $this->webdav_type.$this->options['webdav_server'].$port;
-        $this->dav = new webdav_client($this->options['webdav_server'], $this->options['webdav_user'],
-            $this->options['webdav_password'], $this->options['webdav_auth'], $this->webdav_type);
-        $this->dav->port = $this->webdav_port;
-        $this->dav->debug = false;
     }
 
     /**
@@ -125,7 +114,7 @@ class repository_sciebo extends repository {
         $ret['path'] = array(array('name' => get_string('webdav', 'repository_webdav'), 'path' => ''));
         $ret['list'] = array();
 
-        if (!$this->dav->open()) {
+        if (!$this->sciebo->dav->open()) {
             return $ret;
         }
         $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ ');
@@ -140,7 +129,9 @@ class repository_sciebo extends repository {
                 );
             }
         }
-        $dir = $this->dav->ls($webdavpath. urldecode($path));
+
+        $dir = $this->sciebo->get_listing($webdavpath. urldecode($path));
+
         if (!is_array($dir)) {
             return $ret;
         }
@@ -235,30 +226,10 @@ class repository_sciebo extends repository {
     }
 
     public function check_login() {
-        if (($this->options['webdav_user'] == '') || ($this->options['webdav_password'] == '')) {
-            return false;
-        } else {
-            return true;
-        }
+        return $this->dropbox->is_logged_in();
     }
 
     public function print_login() {
-        /*$ret = array();
-        $username = new stdClass();
-        $username->type = 'text';
-        $username->id   = 'webdav_user';
-        $username->name = 'webdav_user';
-        $username->label = get_string('username').': ';
-        $password = new stdClass();
-        $password->type = 'password';
-        $password->id   = 'webdav_pass';
-        $password->name = 'webdav_pass';
-        $password->label = get_string('password').': ';
-        $ret['login'] = array($username, $password);
-        $ret['login_btn_label'] = get_string('login');
-        $ret['login_btn_action'] = 'login';
-        return $ret;
-        */
         $url = $this->sciebo->get_login_url();
         if ($this->options['ajax']) {
             $ret = array();
@@ -273,8 +244,8 @@ class repository_sciebo extends repository {
     }
 
     public function logout() {
-        set_user_preference('webdav_user', null);
-        set_user_preference('webdav_pass', null);
+        $this->sciebo->logout();
+
         return $this->print_login();
     }
 
