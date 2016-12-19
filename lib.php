@@ -71,8 +71,8 @@ class repository_sciebo extends repository {
         ]);
 
         $this->sciebo = new sciebo(
-            'Xe8tvMhUxw5hqNN27rDD87ESeKsF294Eq24B8pDDeE11Eo0Xl9Sk1ZS7hviEszHD',
-            'D0wgoP3PuVubsaESJpvhjv8x0byp6MZgztVJmOTAFmBXSsLdfDrHd1vIXl2dGVVt',
+            'Ljh5yaDOIJZu8UDDF9daSh0rCo3WVqLkDuK83t1Sflp9oMNK2UHjMSHecupVoJJB',
+            'rZlOqLeDWDPPgwzqqtgMQ9m2COb4rWGANaB4vutALdvLOOXDntteSiKRgyFwikS4',
             $returnurl
         );
 
