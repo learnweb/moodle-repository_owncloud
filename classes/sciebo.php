@@ -41,7 +41,8 @@ class sciebo extends \oauth2_client {
     public function __construct($key, $secret, $callback) {
         parent::__construct($key, $secret, $callback, '');
 
-        $this->webdav_host = 'http://localhost:80';
+        // The WebDav configuration is currently hardcoded. Will be moved to user interface.
+        $this->webdav_host = 'localhost';
         $this->dav = new sciebo_client('localhost', '', '', 'bearer', '');
         $this->dav->port = 80;
         $this->dav->debug = false;
@@ -63,6 +64,11 @@ class sciebo extends \oauth2_client {
         return 'http://localhost/owncloud/index.php/apps/oauth2/api/v1/token';
     }
 
+    /**
+     * The WebDav listing function is encapsulated into this helper function.
+     * @param $path
+     * @return array
+     */
     public function get_listing($path) {
         $this->dav->set_token($this->get_accesstoken()->token);
         return $this->dav->ls($path);
@@ -73,11 +79,9 @@ class sciebo extends \oauth2_client {
         $this->is_logged_in();
     }
 
-    protected function use_http_get() {
-        return false;
-    }
-
     public function post($url, $params = '', $options = array()) {
+        // A basic auth header has to be added to the request in order to provide the necessary user
+        // credentials to the ownCloud interface.
         $this->setHeader(array(
             'Authorization: Basic ' . base64_encode($this->get_clientid() . ':' . $this->get_clientsecret())
         ));

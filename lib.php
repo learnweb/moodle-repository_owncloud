@@ -41,12 +41,15 @@ class repository_sciebo extends repository {
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
 
+        // The WebDav client is no longer handled in here.
         $returnurl = new moodle_url('/repository/repository_callback.php', [
             'callback'  => 'yes',
             'repo_id'   => $repositoryid,
             'sesskey'   => sesskey(),
         ]);
 
+        // The client ID and secret will later be fetched through the Interface of the
+        // admin tool oauth2ciebo.
         $this->sciebo = new sciebo(
             'z1k9MDZPGU2nWbRnm3SkovyS3Pv1Iwwi4o58VmNW0tNAS4H5v1kXt59hd1qUXe2m',
             'dGHbPhRsmYDx5rpqNnuWGVfYTr2TxHbXVqY8tPUaldoWrmGVBqFtuMKS9WHK45bt',
@@ -55,7 +58,9 @@ class repository_sciebo extends repository {
     }
 
     /**
-     * Function which triggers the login event. It has yet to be decided where this function should be called.
+     * Function which triggers the login event.
+     * Will probably not be needed anymore, since event responses cannot be processed within
+     * the repository functions.
      */
     private function trigger_event() {
         $event = \repository_sciebo\event\sciebo_loggedin::create(array(
@@ -66,6 +71,7 @@ class repository_sciebo extends repository {
         $event->trigger();
     }
 
+    // TODO WebDav method has to be encapsulated.
     public function get_file($url, $title = '') {
         $url = urldecode($url);
         $path = $this->prepare_file($title);
@@ -109,6 +115,7 @@ class repository_sciebo extends repository {
             }
         }
 
+        // The WebDav methods are getting outsourced and encapsulated to the sciebo class.
         $dir = $this->sciebo->get_listing($webdavpath. urldecode($path));
 
         if (!is_array($dir)) {
@@ -223,7 +230,7 @@ class repository_sciebo extends repository {
     }
 
     public function logout() {
-        $this->sciebo->logout();
+        $this->sciebo->log_out();
 
         return $this->print_login();
     }
@@ -236,6 +243,10 @@ class repository_sciebo extends repository {
         return array('webdav_type', 'webdav_server', 'webdav_port', 'webdav_path', 'webdav_user', 'webdav_password', 'webdav_auth');
     }
 
+    /**
+     * The Interface is not used at the moment. Will be edited, as soon as the integration works properly.
+     * @param moodleform $mform
+     */
     public static function instance_config_form($mform) {
         $choices = array(0 => get_string('http', 'repository_webdav'), 1 => get_string('https', 'repository_webdav'));
         $mform->addElement('select', 'webdav_type', get_string('webdav_type', 'repository_webdav'), $choices);
@@ -282,7 +293,6 @@ class repository_sciebo extends repository {
 
     /**
      * Method to define which Files are supported (hardcoded can not be changed in Admin Menü)
-     * TODO: Define necessary
      *
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
