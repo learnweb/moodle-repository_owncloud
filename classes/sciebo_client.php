@@ -16,6 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace repository_sciebo;
+use core_php_time_limit;
 
 /**
  * webdav_client v0.1.5, a php based webdav client class.

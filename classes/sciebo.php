@@ -41,9 +41,9 @@ class sciebo extends \oauth2_client {
     public function __construct($key, $secret, $callback) {
         parent::__construct($key, $secret, $callback, '');
 
-        $this->webdav_host = 'https://SERVERNAME:443';
-        $this->dav = new sciebo_client(localhost, '', '', 'bearer', 'https');
-        $this->dav->port = 443;
+        $this->webdav_host = 'http://localhost:80';
+        $this->dav = new sciebo_client('localhost', '', '', 'bearer', '');
+        $this->dav->port = 80;
         $this->dav->debug = false;
     }
 
@@ -52,7 +52,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function auth_url() {
-        return '';
+        return 'http://localhost/owncloud/index.php/apps/oauth2/authorize';
     }
 
     /**
@@ -60,7 +60,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function token_url() {
-        return '';
+        return 'http://localhost/owncloud/index.php/apps/oauth2/api/v1/token';
     }
 
     public function get_listing($path) {
@@ -71,5 +71,17 @@ class sciebo extends \oauth2_client {
     public function callback() {
         $this->log_out();
         $this->is_logged_in();
+    }
+
+    protected function use_http_get() {
+        return false;
+    }
+
+    public function post($url, $params = '', $options = array()) {
+        $this->setHeader(array(
+            'Authorization: Basic ' . base64_encode($this->get_clientid() . ':' . $this->get_clientsecret())
+        ));
+
+        return parent::post($url, $params, $options);
     }
 }
