@@ -26,8 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-require_once($CFG->libdir.'/webdavlib.php');
-use repository_sciebo\sciebo;
+use tool_oauth2sciebo\sciebo;
 /**
  * sciebo repository plugin.
  *
@@ -50,35 +49,16 @@ class repository_sciebo extends repository {
 
         // The client ID and secret will later be fetched through the Interface of the
         // admin tool oauth2ciebo.
-        $this->sciebo = sciebo::getInstance(
-            '5YVIs9PwGdnj0T9oCyXcGUEGMSTR6f2enTCfZXn1NsCpiWdH5h1e09jUGAHisfdf',
-            'FSsTd8V7KQFTmsYjmTjFUpewyWHk3VqPaDi7CL3qesKJXtvKvj0oidMnByWD47rk',
-            $returnurl
-        );
+        $this->sciebo = new sciebo($returnurl);
     }
 
-    /**
-     * Function which triggers the login event.
-     * Will probably not be needed anymore, since event responses cannot be processed within
-     * the repository functions.
-     */
-    private function trigger_event() {
-        $event = \repository_sciebo\event\sciebo_loggedin::create(array(
-            'context' => $this->context,
-            'other' => array(
-                'user' => optional_param('webdav_user', '', PARAM_RAW),
-                'pass' => optional_param('webdav_pass', '', PARAM_RAW))));
-        $event->trigger();
-    }
-
-    // TODO WebDav method has to be encapsulated.
     public function get_file($url, $title = '') {
         $url = urldecode($url);
         $path = $this->prepare_file($title);
         if (!$this->sciebo->dav->open()) {
             return false;
         }
-        $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // Without slash in the end.
+        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2sciebo', 'path'), '/ '), '/ '); // Without slash in the end.
         $this->sciebo->get_file($webdavpath . $url, $path);
         $this->logout();
 
@@ -102,7 +82,7 @@ class repository_sciebo extends repository {
         if (!$this->sciebo->dav->open()) {
             return $ret;
         }
-        $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ ');
+        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2sciebo', 'path'), '/ '), '/ ');
         if (empty($path) || $path == '/') {
             $path = '/';
         } else {
@@ -131,7 +111,7 @@ class repository_sciebo extends repository {
             }
 
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
-            $server = preg_quote($this->options['webdav_server']);
+            $server = preg_quote(get_config('tool_oauth2sciebo', 'server'));
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
             // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
@@ -175,17 +155,17 @@ class repository_sciebo extends repository {
      * @throws repository_exception if $url is empty an exception is thrown
      */
     public function get_link($url) {
-        $username = $this->options['webdav_user'];
-        $password = $this->options['webdav_password'];
+        $username = $this->get_config('tool_oauth2sciebo', 'user');
+        $password = $this->get_config('tool_oauth2sciebo', 'pass');
 
-        if (($this->options['webdav_type']) === 0) {
+        if (get_config('tool_oauth2sciebo', 'path') === 'http') {
             $pref = 'http://';
         } else {
             $pref = 'https://';
         }
 
         $ch = new curl();
-        $output = $ch->post($pref.$this->options['webdav_server'].'/ocs/v1.php/apps/files_sharing/api/v1/shares',
+        $output = $ch->post($pref.get_config('tool_oauth2sciebo', 'server').'/ocs/v1.php/apps/files_sharing/api/v1/shares',
             http_build_query(array('path' => $url,
                 'shareType' => 3,
                 'publicUpload' => false,
@@ -197,7 +177,7 @@ class repository_sciebo extends repository {
         $fields = explode("/s/", $xml->data[0]->url[0]);
         $fileid = $fields[1];
         $this->logout();
-        return $pref.$this->options['webdav_server'].'/public.php?service=files&t='.$fileid.'&download';
+        return $pref.get_config('tool_oauth2sciebo', 'server').'/public.php?service=files&t='.$fileid.'&download';
     }
 
     /**
@@ -237,38 +217,6 @@ class repository_sciebo extends repository {
 
     public function callback() {
         $this->sciebo->callback();
-    }
-
-    public static function get_instance_option_names() {
-        return array('webdav_type', 'webdav_server', 'webdav_port', 'webdav_path', 'webdav_user', 'webdav_password', 'webdav_auth');
-    }
-
-    /**
-     * The Interface is not used at the moment. Will be edited, as soon as the integration works properly.
-     * @param moodleform $mform
-     */
-    public static function instance_config_form($mform) {
-        $choices = array(0 => get_string('http', 'repository_webdav'), 1 => get_string('https', 'repository_webdav'));
-        $mform->addElement('select', 'webdav_type', get_string('webdav_type', 'repository_webdav'), $choices);
-        $mform->addRule('webdav_type', get_string('required'), 'required', null, 'client');
-
-        $mform->addElement('text', 'webdav_server', get_string('webdav_server', 'repository_webdav'), array('size' => '40'));
-        $mform->addRule('webdav_server', get_string('required'), 'required', null, 'client');
-        $mform->setType('webdav_server', PARAM_HOST);
-
-        $mform->addElement('text', 'webdav_path', get_string('webdav_path', 'repository_webdav'), array('size' => '40'));
-        $mform->addRule('webdav_path', get_string('required'), 'required', null, 'client');
-        $mform->setType('webdav_path', PARAM_PATH);
-
-        $choices = array();
-        $choices['none'] = get_string('none');
-        $choices['basic'] = get_string('webdavbasicauth', 'repository_webdav');
-        $choices['digest'] = get_string('webdavdigestauth', 'repository_webdav');
-        $mform->addElement('select', 'webdav_auth', get_string('authentication', 'admin'), $choices);
-        $mform->addRule('webdav_auth', get_string('required'), 'required', null, 'client');
-
-        $mform->addElement('text', 'webdav_port', get_string('webdav_port', 'repository_webdav'), array('size' => '40'));
-        $mform->setType('webdav_port', PARAM_INT);
     }
 
     /**
