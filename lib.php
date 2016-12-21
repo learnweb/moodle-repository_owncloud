@@ -50,9 +50,9 @@ class repository_sciebo extends repository {
 
         // The client ID and secret will later be fetched through the Interface of the
         // admin tool oauth2ciebo.
-        $this->sciebo = new sciebo(
-            'z1k9MDZPGU2nWbRnm3SkovyS3Pv1Iwwi4o58VmNW0tNAS4H5v1kXt59hd1qUXe2m',
-            'dGHbPhRsmYDx5rpqNnuWGVfYTr2TxHbXVqY8tPUaldoWrmGVBqFtuMKS9WHK45bt',
+        $this->sciebo = sciebo::getInstance(
+            '5YVIs9PwGdnj0T9oCyXcGUEGMSTR6f2enTCfZXn1NsCpiWdH5h1e09jUGAHisfdf',
+            'FSsTd8V7KQFTmsYjmTjFUpewyWHk3VqPaDi7CL3qesKJXtvKvj0oidMnByWD47rk',
             $returnurl
         );
     }
@@ -75,11 +75,11 @@ class repository_sciebo extends repository {
     public function get_file($url, $title = '') {
         $url = urldecode($url);
         $path = $this->prepare_file($title);
-        if (!$this->dav->open()) {
+        if (!$this->sciebo->dav->open()) {
             return false;
         }
         $webdavpath = rtrim('/'.ltrim($this->options['webdav_path'], '/ '), '/ '); // Without slash in the end.
-        $this->dav->get_file($webdavpath . $url, $path);
+        $this->sciebo->get_file($webdavpath . $url, $path);
         $this->logout();
 
         return array('path' => $path);

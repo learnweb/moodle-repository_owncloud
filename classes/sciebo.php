@@ -31,6 +31,9 @@ require_once($CFG->libdir . '/oauthlib.php');
 use repository_sciebo\sciebo_client;
 
 class sciebo extends \oauth2_client {
+
+    protected static $_instance = null;
+
     /**
      * Create the DropBox API Client.
      *
@@ -42,10 +45,19 @@ class sciebo extends \oauth2_client {
         parent::__construct($key, $secret, $callback, '');
 
         // The WebDav configuration is currently hardcoded. Will be moved to user interface.
-        $this->webdav_host = 'localhost';
-        $this->dav = new sciebo_client('localhost', '', '', 'bearer', '');
-        $this->dav->port = 80;
+        $this->webdav_host = 'pssl16.uni-muenster.de';
+        $this->dav = new sciebo_client('pssl16.uni-muenster.de', '', '', 'bearer', 'ssl://');
+        $this->dav->port = 443;
         $this->dav->debug = false;
+    }
+
+    public static function getInstance($key, $secret, $callback)
+    {
+        if (null === self::$_instance)
+        {
+            self::$_instance = new sciebo($key, $secret, $callback);
+        }
+        return self::$_instance;
     }
 
     /**
@@ -53,7 +65,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function auth_url() {
-        return 'http://localhost/owncloud/index.php/apps/oauth2/authorize';
+        return 'https://pssl16.uni-muenster.de/owncloud9.2/index.php/apps/oauth2/authorize';
     }
 
     /**
@@ -61,7 +73,7 @@ class sciebo extends \oauth2_client {
      * @return string the auth url
      */
     protected function token_url() {
-        return 'http://localhost/owncloud/index.php/apps/oauth2/api/v1/token';
+        return 'https://pssl16.uni-muenster.de/owncloud9.2/index.php/apps/oauth2/api/v1/token';
     }
 
     /**
@@ -72,6 +84,11 @@ class sciebo extends \oauth2_client {
     public function get_listing($path) {
         $this->dav->set_token($this->get_accesstoken()->token);
         return $this->dav->ls($path);
+    }
+
+    public function get_file($arg1, $arg2) {
+        $this->dav->set_token($this->get_accesstoken()->token);
+        return $this->dav->get_file($arg1, $arg2);
     }
 
     public function callback() {
