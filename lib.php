@@ -47,11 +47,18 @@ class repository_sciebo extends repository {
             'sesskey'   => sesskey(),
         ]);
 
-        // The client ID and secret will later be fetched through the Interface of the
-        // admin tool oauth2ciebo.
+        // The Sciebo Object, which is described in the Admin Tool oauth2sciebo
+        // is created. From now on is will handle all interactions with the Sciebo OAuth2 Client.
         $this->sciebo = new sciebo($returnurl);
     }
 
+    /**
+     * This function does exactly the same as in the WebDAV repository. The only difference is, that
+     * the Sciebo OAuth2 client uses OAuth2 instead of Basic Authentication.
+     * @param string $url relative path to the file.
+     * @param string $title title of the file.
+     * @return array|bool returns either the moodle path to the file or false.
+     */
     public function get_file($url, $title = '') {
         $url = urldecode($url);
         $path = $this->prepare_file($title);
@@ -65,10 +72,21 @@ class repository_sciebo extends repository {
         return array('path' => $path);
     }
 
+    /**
+     * Searching is not available at the moment.
+     * @return bool false
+     */
     public function global_search() {
         return false;
     }
 
+    /**
+     * This function does exactly the same as in the WebDAV repository. The only difference is, that
+     * the Sciebo OAuth2 client uses OAuth2 instead of Basic Authentication.
+     * @param string $path relative path the the directory or file.
+     * @param string $page
+     * @return array directory properties.
+     */
     public function get_listing($path='', $page = '') {
         global $CFG, $OUTPUT;
         $list = array();
@@ -148,8 +166,10 @@ class repository_sciebo extends repository {
 
     /**
      * Method to generate a downloadlink for a chosen file (in the file picker).
-     * The link is not generated properly yet and the file has to be shared by its owner beforehand.
-     * TODO Authorization process has to be implemented differently.
+     * Creates a share for the chosen file and fetches the specific file ID through
+     * the OCS Share API (ownCloud).
+     * TODO Authorization process has to be implemented differently, since username and password are
+     * TODO required at the moment.
      * @param string $url relative path to the chosen file
      * @return string returns the generated downloadlink
      * @throws repository_exception if $url is empty an exception is thrown
@@ -181,8 +201,8 @@ class repository_sciebo extends repository {
     }
 
     /**
-     * Method that generates a reference link to the chosen file. The Link does not work yet, another solution is needed.
-     * At the moment the get_link method is used to fetch the downloadlink to the file.
+     * Method that generates a reference link to the chosen file.
+     * TODO Find another method then just calling the get_link function.
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         $ref = $storedfile->get_reference();
@@ -191,10 +211,18 @@ class repository_sciebo extends repository {
         $this->logout();
     }
 
+    /**
+     * Function which checks whether the user is logged in on the Sciebo instance.
+     * @return bool return false, if no Access Token is set or can be requested.
+     */
     public function check_login() {
         return $this->sciebo->is_logged_in();
     }
 
+    /**
+     * Prints a simple Login Button which redirects to a Authorization window from ownCloud.
+     * @return array login window properties.
+     */
     public function print_login() {
         $url = $this->sciebo->get_login_url();
         if ($this->options['ajax']) {
@@ -209,12 +237,19 @@ class repository_sciebo extends repository {
         }
     }
 
+    /**
+     * Deletes the held Access Token and prints the Login window.
+     * @return array login window properties.
+     */
     public function logout() {
         $this->sciebo->log_out();
 
         return $this->print_login();
     }
 
+    /**
+     * Sets up access token after the redirection from ownCloud.
+     */
     public function callback() {
         $this->sciebo->callback();
     }
