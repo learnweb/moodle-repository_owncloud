@@ -101,8 +101,9 @@ class repository_sciebo extends repository {
         $ret['dynload'] = true;
         $ret['nosearch'] = true;
         $ret['nologin'] = false;
-        $ret['path'] = array(array('name' => get_string('webdav', 'repository_webdav'), 'path' => ''));
+        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_sciebo'), 'path' => ''));
         $ret['list'] = array();
+        $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2sciebo/index.php';
 
         if (!$this->sciebo->dav->open()) {
             return $ret;

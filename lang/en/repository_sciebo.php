@@ -23,6 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 $string['pluginname'] = 'Sciebo';
+$string['owncloud'] = 'ownCloud';
 $string['cachedef_foldername'] = 'Folder name cache';
 $string['clientid'] = 'Client ID';
 $string['configplugin'] = 'Sciebo Configuration';
