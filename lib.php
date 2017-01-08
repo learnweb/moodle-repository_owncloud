@@ -50,6 +50,13 @@ class repository_sciebo extends repository {
         // The Sciebo Object, which is described in the Admin Tool oauth2sciebo
         // is created. From now on is will handle all interactions with the Sciebo OAuth2 Client.
         $this->sciebo = new sciebo($returnurl);
+
+        // Checks, whether all the required data is available. $this->options['checked'] is set to true, if the
+        // data was checked once to prevend multiple printings of the warning.
+        if (empty($this->options['checked'])) {
+            $this->sciebo->check_data();
+            $this->options['checked'] = true;
+        }
     }
 
     /**
