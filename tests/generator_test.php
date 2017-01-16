@@ -43,7 +43,6 @@ class repository_sciebo_generator_testcase extends advanced_testcase {
         /** @var block_online_users_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_sciebo');
         $this->assertInstanceOf('repository_sciebo_generator', $generator);
-//        $this->assertEquals('groups', $generator->get_blockname());
 
         $generator->create_instance();
         $this->assertEquals($beforeblocks + 1, $DB->count_records('block_instances'));

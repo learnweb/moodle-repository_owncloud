@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_sciebo_generator extends testing_block_generator {
+class repository_sciebo_generator extends testing_data_generator {
     /**
      * Creates Course, course members, groups and groupings to test the block.
      */
