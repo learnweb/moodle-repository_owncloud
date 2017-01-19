@@ -176,36 +176,12 @@ class repository_sciebo extends repository {
      * Method to generate a downloadlink for a chosen file (in the file picker).
      * Creates a share for the chosen file and fetches the specific file ID through
      * the OCS Share API (ownCloud).
-     * TODO Authorization process has to be implemented differently, since username and password are
-     * TODO required at the moment.
      * @param string $url relative path to the chosen file
-     * @return string returns the generated downloadlink
-     * @throws repository_exception if $url is empty an exception is thrown
+     * @return string the generated downloadlink.
+     * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        $username = $this->get_config('tool_oauth2sciebo', 'user');
-        $password = $this->get_config('tool_oauth2sciebo', 'pass');
-
-        if (get_config('tool_oauth2sciebo', 'path') === 'http') {
-            $pref = 'http://';
-        } else {
-            $pref = 'https://';
-        }
-
-        $ch = new curl();
-        $output = $ch->post($pref.get_config('tool_oauth2sciebo', 'server').'/ocs/v1.php/apps/files_sharing/api/v1/shares',
-            http_build_query(array('path' => $url,
-                'shareType' => 3,
-                'publicUpload' => false,
-                'permissions' => 31,
-            ), null, "&"),
-            array('CURLOPT_USERPWD' => "$username:$password"));
-
-        $xml = simplexml_load_string($output);
-        $fields = explode("/s/", $xml->data[0]->url[0]);
-        $fileid = $fields[1];
-        $this->logout();
-        return $pref.get_config('tool_oauth2sciebo', 'server').'/public.php?service=files&t='.$fileid.'&download';
+        return $this->sciebo->get_link($url) . '&download';
     }
 
     /**
@@ -221,7 +197,7 @@ class repository_sciebo extends repository {
 
     /**
      * Function which checks whether the user is logged in on the Sciebo instance.
-     * @return bool return false, if no Access Token is set or can be requested.
+     * @return bool false, if no Access Token is set or can be requested.
      */
     public function check_login() {
         return $this->sciebo->is_logged_in();
