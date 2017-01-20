@@ -181,7 +181,18 @@ class repository_sciebo extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        return $this->sciebo->get_link($url) . '&download';
+        if (get_config('tool_oauth2sciebo', 'path') === 'http') {
+            $pref = 'http://';
+        } else {
+            $pref = 'https://';
+        }
+
+        $output = $this->sciebo->get_link($url);
+        $xml = simplexml_load_string($output);
+        $fields = explode("/s/", $xml->data[0]->url[0]);
+        $fileid = $fields[1];
+
+        return $pref . get_config('tool_oauth2sciebo', 'server').'/public.php?service=files&t=' . $fileid . '&download';
     }
 
     /**
