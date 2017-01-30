@@ -191,7 +191,8 @@ class repository_sciebo extends repository {
 
         $path = str_replace('remote.php/webdav/', '', get_config('tool_oauth2sciebo', 'path'));
 
-        return $pref . get_config('tool_oauth2sciebo', 'server'). '/' . $path . 'public.php?service=files&t=' . $fileid . '&download';
+        return $pref . get_config('tool_oauth2sciebo', 'server'). '/' . $path .
+                'public.php?service=files&t=' . $fileid . '&download';
     }
 
     /**
