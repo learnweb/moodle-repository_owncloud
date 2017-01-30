@@ -280,7 +280,7 @@ class repository_sciebo extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
+        return FILE_INTERNAL | FILE_EXTERNAL;
     }
 
 
