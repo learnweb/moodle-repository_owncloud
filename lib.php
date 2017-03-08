@@ -299,6 +299,27 @@ class repository_sciebo extends repository {
     }
 
     /**
+     * This method adds a notification to the global settings form, which redirects to the OAuth 2.0
+     * ownCloud client settings.
+     *
+     * @param moodleform $mform Moodle form (passed by reference)
+     * @param string $classname repository class name
+     */
+    public static function type_config_form($mform, $classname = 'repository') {
+        global $CFG, $OUTPUT;
+
+        $link = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2sciebo/index.php';
+
+        $html = $OUTPUT->notification(get_string('settings', 'repository_sciebo', '<a href="'.$link.'" target="_blank">'.
+                get_string('oauth2', 'repository_sciebo') .'</a>'), 'warning');
+
+        // The notification is added as an html element to the form.
+        $mform->addElement('html', $html);
+
+        parent::type_config_form($mform);
+    }
+
+    /**
      * Is this repository accessing private data?
      *
      * @return bool

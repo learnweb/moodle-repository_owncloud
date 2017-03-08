@@ -15,27 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Language definition for Repository Sciebo
+ * Language definition for Repository ownCloud
  *
- * @package    repository_Sciebo
- * @copyright  2016 Westfälische Universität Münster (WWU Münster)
+ * @package    repository_owncloud
+ * @copyright  2016 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$string['pluginname'] = 'Sciebo';
+$string['pluginname'] = 'ownCloud';
+$string['configplugin'] = 'ownCloud client configuration';
 $string['owncloud'] = 'ownCloud';
 $string['cachedef_foldername'] = 'Folder name cache';
-$string['clientid'] = 'Client ID';
-$string['configplugin'] = 'Sciebo Configuration';
-$string['oauthinfo'] = 'some important installing sentence';
-$string['secret'] = 'Secret';
-$string['sciebo:view'] = 'View Sciebo';
+$string['sciebo:view'] = 'View ownCloud';
 $string['required'] = 'Required';
-$string['pluginname_help'] = 'A Sciebo public repository';
-$string['clientid'] = 'Client ID';
-$string['secret'] = 'Secret';
-$string['oauthinfo'] = 'To use this plugin, you must register your site with OwnCloud.
-As part of the registration process, you will need to enter the following URL as \'Redirect domain\': {$a}
-Once registered, you will be provided with a client ID and secret which can be entered here.';
+$string['pluginname_help'] = 'An ownCloud public repository';
 
-
+$string['settings'] = 'If you have not done it yet, you should edit your {$a}. It is crucial in order to be able to connect to ownCloud.';
+$string['oauth2'] = 'OAuth 2.0 client configuration';
