@@ -37,14 +37,17 @@ use tool_oauth2sciebo\sciebo;
  */
 class repository_sciebo extends repository {
 
+    /** @var null|sciebo the ownCloud client. */
+    private $sciebo = null;
+
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
 
         // The WebDav client is no longer handled in here.
         $returnurl = new moodle_url('/repository/repository_callback.php', [
-            'callback'  => 'yes',
-            'repo_id'   => $repositoryid,
-            'sesskey'   => sesskey(),
+                'callback'  => 'yes',
+                'repo_id'   => $repositoryid,
+                'sesskey'   => sesskey(),
         ]);
 
         // The Sciebo Object, which is described in the Admin Tool oauth2sciebo
@@ -69,12 +72,11 @@ class repository_sciebo extends repository {
     public function get_file($url, $title = '') {
         $url = urldecode($url);
         $path = $this->prepare_file($title);
-        if (!$this->sciebo->dav->open()) {
+        if (!$this->sciebo->open()) {
             return false;
         }
         $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2sciebo', 'path'), '/ '), '/ '); // Without slash in the end.
         $this->sciebo->get_file($webdavpath . $url, $path);
-        $this->logout();
 
         return array('path' => $path);
     }
@@ -105,7 +107,7 @@ class repository_sciebo extends repository {
         $ret['list'] = array();
         $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2sciebo/index.php';
 
-        if (!$this->sciebo->dav->open()) {
+        if (!$this->sciebo->open()) {
             return $ret;
         }
         $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2sciebo', 'path'), '/ '), '/ ');
@@ -115,8 +117,8 @@ class repository_sciebo extends repository {
             $chunks = preg_split('|/|', trim($path, '/'));
             for ($i = 0; $i < count($chunks); $i++) {
                 $ret['path'][] = array(
-                    'name' => urldecode($chunks[$i]),
-                    'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
+                        'name' => urldecode($chunks[$i]),
+                        'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
                 );
             }
         }
@@ -147,22 +149,22 @@ class repository_sciebo extends repository {
                 // A folder.
                 if ($path != $v['href']) {
                     $folders[strtoupper($title)] = array(
-                        'title' => rtrim($title, '/'),
-                        'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
-                        'children' => array(),
-                        'datemodified' => $v['lastmodified'],
-                        'path' => $v['href']
+                            'title' => rtrim($title, '/'),
+                            'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
+                            'children' => array(),
+                            'datemodified' => $v['lastmodified'],
+                            'path' => $v['href']
                     );
                 }
             } else {
                 // A file.
                 $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
                 $files[strtoupper($title)] = array(
-                    'title' => $title,
-                    'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
-                    'size' => $size,
-                    'datemodified' => $v['lastmodified'],
-                    'source' => $v['href']
+                        'title' => $title,
+                        'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
+                        'size' => $size,
+                        'datemodified' => $v['lastmodified'],
+                        'source' => $v['href']
                 );
             }
         }
@@ -191,23 +193,36 @@ class repository_sciebo extends repository {
         $path = str_replace('remote.php/webdav/', '', get_config('tool_oauth2sciebo', 'path'));
 
         return $pref . get_config('tool_oauth2sciebo', 'server'). '/' . $path .
-                'public.php?service=files&t=' . $fileid . '&download';
+        'public.php?service=files&t=' . $fileid . '&download';
+    }
+
+    /**
+     * This method converts the source from the file picker (chosen by the user) into
+     * information, which will be received by methods that fetch files/references from
+     * the ownCloud server.
+     *
+     * @param string $source source of the file, returned by repository as 'source' and received back from user (not cleaned)
+     * @return string file reference, ready to be stored
+     */
+    public function get_file_reference($source) {
+        $usefilereference = optional_param('usefilereference', false, PARAM_BOOL);
+
+        $reference = $source;
+
+        // If a filereference was requested, a public link to the file has to be generated and returned.
+        if($usefilereference) {
+            $reference = $this->get_link($source);
+        }
+
+        // Otherwise, the simple relative path to the file is enough.
+        return $reference;
     }
 
     /**
      * Method that generates a reference link to the chosen file.
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
-        $ref = $storedfile->get_reference();
-
-        // Before a link can be generated, we need to make sure that the current user
-        // has an Access Token for the ownCloud server.
-        if ($this->check_login()) {
-
-            $ref = $this->get_link($ref);
-            header('Location: ' . $ref);
-
-        }
+        header('Location: ' . $storedfile->get_reference());
     }
 
     /**
