@@ -25,7 +25,6 @@
 $string['pluginname'] = 'ownCloud';
 $string['configplugin'] = 'ownCloud client configuration';
 $string['owncloud'] = 'ownCloud';
-$string['cachedef_foldername'] = 'Folder name cache';
 $string['sciebo:view'] = 'View ownCloud';
 $string['required'] = 'Required';
 $string['pluginname_help'] = 'An ownCloud public repository';

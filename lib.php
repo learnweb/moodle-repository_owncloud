@@ -65,6 +65,7 @@ class repository_sciebo extends repository {
     /**
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the Sciebo OAuth2 client uses OAuth2 instead of Basic Authentication.
+     *
      * @param string $url relative path to the file.
      * @param string $title title of the file.
      * @return array|bool returns either the moodle path to the file or false.
@@ -82,16 +83,9 @@ class repository_sciebo extends repository {
     }
 
     /**
-     * Searching is not available at the moment.
-     * @return bool false
-     */
-    public function global_search() {
-        return false;
-    }
-
-    /**
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the Sciebo OAuth2 client uses OAuth2 instead of Basic Authentication.
+     *
      * @param string $path relative path the the directory or file.
      * @param string $page
      * @return array directory properties.
@@ -175,9 +169,10 @@ class repository_sciebo extends repository {
     }
 
     /**
-     * Method to generate a downloadlink for a chosen file (in the file picker).
+     * Method to generate a download link for a chosen file (in the file picker).
      * Creates a share for the chosen file and fetches the specific file ID through
      * the OCS Share API (ownCloud).
+     *
      * @param string $url relative path to the chosen file
      * @return string the generated downloadlink.
      * @throws repository_exception if $url is empty an exception is thrown.
@@ -222,11 +217,13 @@ class repository_sciebo extends repository {
      * Method that generates a reference link to the chosen file.
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
+        // Delivers a download link to the concerning file.
         header('Location: ' . $storedfile->get_reference());
     }
 
     /**
-     * Function which checks whether the user is logged in on the Sciebo instance.
+     * Function which checks whether the user is logged in on the ownCloud instance.
+     *
      * @return bool false, if no Access Token is set or can be requested.
      */
     public function check_login() {
@@ -251,7 +248,8 @@ class repository_sciebo extends repository {
     }
 
     /**
-     * Prints a simple Login Button which redirects to a Authorization window from ownCloud.
+     * Prints a simple Login Button which redirects to an authorization window from ownCloud.
+     *
      * @return array login window properties.
      */
     public function print_login() {
@@ -270,6 +268,7 @@ class repository_sciebo extends repository {
 
     /**
      * Deletes the held Access Token and prints the Login window.
+     *
      * @return array login window properties.
      */
     public function logout() {
@@ -299,8 +298,7 @@ class repository_sciebo extends repository {
     }
 
     /**
-     * This method adds a notification to the global settings form, which redirects to the OAuth 2.0
-     * ownCloud client settings.
+     * This method adds a notification to the settings form, which redirects to the OAuth 2.0 client.
      *
      * @param moodleform $mform Moodle form (passed by reference)
      * @param string $classname repository class name
@@ -310,10 +308,10 @@ class repository_sciebo extends repository {
 
         $link = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2sciebo/index.php';
 
-        $html = $OUTPUT->notification(get_string('settings', 'repository_sciebo', '<a href="'.$link.'" target="_blank">'.
-                get_string('oauth2', 'repository_sciebo') .'</a>'), 'warning');
+        // A notification is added to the settings page in form of a notification.
+        $html = $OUTPUT->notification(get_string('settings', 'repository_sciebo',
+                '<a href="'.$link.'" target="_blank">'. get_string('oauth2', 'repository_sciebo') .'</a>'), 'warning');
 
-        // The notification is added as an html element to the form.
         $mform->addElement('html', $html);
 
         parent::type_config_form($mform);
