@@ -15,19 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Language definition for Repository ownCloud
+ * Language strings' definition for ownCloud repository.
  *
  * @package    repository_owncloud
- * @copyright  2016 Westfälische Wilhelms-Universität Münster (WWU Münster)
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+// General.
 $string['pluginname'] = 'ownCloud';
-$string['configplugin'] = 'ownCloud client configuration';
+$string['configplugin'] = 'ownCloud repository configuration';
 $string['owncloud'] = 'ownCloud';
-$string['sciebo:view'] = 'View ownCloud';
-$string['required'] = 'Required';
-$string['pluginname_help'] = 'An ownCloud public repository';
+$string['owncloud:view'] = 'View ownCloud';
 
+// Settings reminder.
 $string['settings'] = 'If you have not done it yet, you should edit your {$a}. It is crucial in order to be able to connect to ownCloud.';
 $string['oauth2'] = 'OAuth 2.0 client configuration';

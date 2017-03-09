@@ -15,10 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capability definitions for Sciebo repository
+ * Capability definitions for ownCloud repository.
  *
- * @package    repository_Sciebo
- * @copyright  2016 Westfälische Universität Münster (WWU Münster)
+ * @package    repository_owncloud
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = array(
-    'repository/sciebo:view' => array(
+    'repository/owncloud:view' => array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => array(

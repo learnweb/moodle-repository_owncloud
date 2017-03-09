@@ -15,10 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Sciebo Repository Plugin
+ * ownCloud repository plugin library.
  *
- * @package    repository_Sciebo
- * @copyright  2016 Westfälische Universität Münster (WWU Münster)
+ * @package    repository_owncloud
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,19 +26,19 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-use tool_oauth2sciebo\sciebo;
+use tool_oauth2owncloud\owncloud;
 /**
- * sciebo repository plugin.
+ * ownCloud repository class.
  *
- * @package    repository_Sciebo
- * @copyright  2016 Westfälische Universität Münster (WWU Münster)
+ * @package    repository_owncloud
+ * @copyright  2017 Westfälische Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_sciebo extends repository {
+class repository_owncloud extends repository {
 
-    /** @var null|sciebo the ownCloud client. */
-    private $sciebo = null;
+    /** @var null|owncloud the ownCloud client. */
+    private $owncloud = null;
 
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
@@ -50,21 +50,21 @@ class repository_sciebo extends repository {
                 'sesskey'   => sesskey(),
         ]);
 
-        // The Sciebo Object, which is described in the Admin Tool oauth2sciebo
-        // is created. From now on is will handle all interactions with the Sciebo OAuth2 Client.
-        $this->sciebo = new sciebo($returnurl);
+        // The owncloud Object, which is described in the Admin Tool oauth2owncloud
+        // is created. From now on is will handle all interactions with the owncloud OAuth2 Client.
+        $this->owncloud = new owncloud($returnurl);
 
         // Checks, whether all the required data is available. $this->options['checked'] is set to true, if the
         // data was checked once to prevend multiple printings of the warning.
         if (empty($this->options['checked'])) {
-            $this->sciebo->check_data();
+            $this->owncloud->check_data();
             $this->options['checked'] = true;
         }
     }
 
     /**
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
-     * the Sciebo OAuth2 client uses OAuth2 instead of Basic Authentication.
+     * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
      * @param string $url relative path to the file.
      * @param string $title title of the file.
@@ -73,18 +73,18 @@ class repository_sciebo extends repository {
     public function get_file($url, $title = '') {
         $url = urldecode($url);
         $path = $this->prepare_file($title);
-        if (!$this->sciebo->open()) {
+        if (!$this->owncloud->open()) {
             return false;
         }
-        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2sciebo', 'path'), '/ '), '/ '); // Without slash in the end.
-        $this->sciebo->get_file($webdavpath . $url, $path);
+        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ '); // Without slash in the end.
+        $this->owncloud->get_file($webdavpath . $url, $path);
 
         return array('path' => $path);
     }
 
     /**
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
-     * the Sciebo OAuth2 client uses OAuth2 instead of Basic Authentication.
+     * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
      * @param string $path relative path the the directory or file.
      * @param string $page
@@ -97,14 +97,14 @@ class repository_sciebo extends repository {
         $ret['dynload'] = true;
         $ret['nosearch'] = true;
         $ret['nologin'] = false;
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_sciebo'), 'path' => ''));
+        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
         $ret['list'] = array();
-        $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2sciebo/index.php';
+        $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
 
-        if (!$this->sciebo->open()) {
+        if (!$this->owncloud->open()) {
             return $ret;
         }
-        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2sciebo', 'path'), '/ '), '/ ');
+        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
         if (empty($path) || $path == '/') {
             $path = '/';
         } else {
@@ -117,8 +117,8 @@ class repository_sciebo extends repository {
             }
         }
 
-        // The WebDav methods are getting outsourced and encapsulated to the sciebo class.
-        $dir = $this->sciebo->get_listing($webdavpath. urldecode($path));
+        // The WebDav methods are getting outsourced and encapsulated to the owncloud class.
+        $dir = $this->owncloud->get_listing($webdavpath. urldecode($path));
 
         if (!is_array($dir)) {
             return $ret;
@@ -133,7 +133,7 @@ class repository_sciebo extends repository {
             }
 
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
-            $server = preg_quote(get_config('tool_oauth2sciebo', 'server'));
+            $server = preg_quote(get_config('tool_oauth2owncloud', 'server'));
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
             // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
@@ -178,16 +178,16 @@ class repository_sciebo extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        $pref = get_config('tool_oauth2sciebo', 'type') . '://';
+        $pref = get_config('tool_oauth2owncloud', 'type') . '://';
 
-        $output = $this->sciebo->get_link($url);
+        $output = $this->owncloud->get_link($url);
         $xml = simplexml_load_string($output);
         $fields = explode("/s/", $xml->data[0]->url[0]);
         $fileid = $fields[1];
 
-        $path = str_replace('remote.php/webdav/', '', get_config('tool_oauth2sciebo', 'path'));
+        $path = str_replace('remote.php/webdav/', '', get_config('tool_oauth2owncloud', 'path'));
 
-        return $pref . get_config('tool_oauth2sciebo', 'server'). '/' . $path .
+        return $pref . get_config('tool_oauth2owncloud', 'server'). '/' . $path .
         'public.php?service=files&t=' . $fileid . '&download';
     }
 
@@ -228,13 +228,13 @@ class repository_sciebo extends repository {
      */
     public function check_login() {
         $token = unserialize(get_user_preferences('oC_token'));
-        $this->sciebo->set_access_token($token);
+        $this->owncloud->set_access_token($token);
 
         // If a user Access Token is available or can be refreshed, it is stored within the user specific
         // preferences.
-        if ($this->sciebo->is_logged_in()) {
+        if ($this->owncloud->is_logged_in()) {
 
-            $tok = serialize($this->sciebo->get_accesstoken());
+            $tok = serialize($this->owncloud->get_accesstoken());
             set_user_preference('oC_token', $tok);
             return true;
 
@@ -253,7 +253,7 @@ class repository_sciebo extends repository {
      * @return array login window properties.
      */
     public function print_login() {
-        $url = $this->sciebo->get_login_url();
+        $url = $this->owncloud->get_login_url();
         if ($this->options['ajax']) {
             $ret = array();
             $btn = new \stdClass();
@@ -272,7 +272,7 @@ class repository_sciebo extends repository {
      * @return array login window properties.
      */
     public function logout() {
-        $this->sciebo->log_out();
+        $this->owncloud->log_out();
         set_user_preference('oC_token', null);
         return $this->print_login();
     }
@@ -281,13 +281,13 @@ class repository_sciebo extends repository {
      * Sets up access token after the redirection from ownCloud.
      */
     public function callback() {
-        $this->sciebo->callback();
+        $this->owncloud->callback();
 
         // The user Access Token, as soon as it is received and verified, gets stored within
         // the user specific preferences.
-        if ($this->sciebo->is_logged_in()) {
+        if ($this->owncloud->is_logged_in()) {
 
-            $tok = serialize($this->sciebo->get_accesstoken());
+            $tok = serialize($this->owncloud->get_accesstoken());
             set_user_preference('oC_token', $tok);
 
         } else {
@@ -306,11 +306,11 @@ class repository_sciebo extends repository {
     public static function type_config_form($mform, $classname = 'repository') {
         global $CFG, $OUTPUT;
 
-        $link = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2sciebo/index.php';
+        $link = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
 
         // A notification is added to the settings page in form of a notification.
-        $html = $OUTPUT->notification(get_string('settings', 'repository_sciebo',
-                '<a href="'.$link.'" target="_blank">'. get_string('oauth2', 'repository_sciebo') .'</a>'), 'warning');
+        $html = $OUTPUT->notification(get_string('settings', 'repository_owncloud',
+                '<a href="'.$link.'" target="_blank">'. get_string('oauth2', 'repository_owncloud') .'</a>'), 'warning');
 
         $mform->addElement('html', $html);
 

@@ -15,20 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version.php for Sciebo repository
+ * Version.php for ownCloud repository.
  *
- * @package    repository_Sciebo
- * @copyright  2016 Westfälische Universität Münster (WWU Münster)
+ * @package    repository_owncloud
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017010800;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2017030900;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2016051900;        // Requires this Moodle version.
-$plugin->component = 'repository_sciebo'; // Full name of the plugin (used for diagnostics).
+$plugin->component = 'repository_owncloud'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = array(
-    'tool_oauth2sciebo' => ANY_VERSION
+    'tool_oauth2owncloud' => ANY_VERSION
 );
