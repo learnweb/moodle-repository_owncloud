@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_sciebo_generator extends testing_data_generator {
+class repository_sciebo_generator extends testing_repository_generator {
     /**
      * Creates Course, course members, groups and groupings to test the block.
      */
@@ -42,46 +42,14 @@ class repository_sciebo_generator extends testing_data_generator {
         $data = array();
         $course = $generator->create_course(array('name' => 'A course'));
         $data['course'] = $course;
-        // Creates groups.
-        $group1 = $generator->create_group(array('courseid' => $course->id));
-        $data['group1'] = $group1;
-        $group2 = $generator->create_group(array('courseid' => $course->id));
-        $data['group2'] = $group2;
-        $group21 = $generator->create_group(array('courseid' => $course->id));
-        $data['group21'] = $group21;
-        // Create 3 groupings in course 2.
-        $grouping1 = $generator->create_grouping(array('courseid' => $course->id));
-        $data['grouping1'] = $grouping1;
-        $grouping2 = $generator->create_grouping(array('courseid' => $course->id));
-        $data['grouping2'] = $grouping2;
-        $grouping3 = $generator->create_grouping(array('courseid' => $course->id));
-        $data['grouping3'] = $grouping3;
 
+        $this->create_instance();
         /*$record = new stdClass();
         $record->pluginname = 'Sciebo';
         $record->secret = '12345';
-        $record->key = '67890';
+        $record->key = '67890';*/
 
-        $repository = $generator->create_repository('sciebo', $record);*/
-        // Add Grouping to groups.
-        $generator->create_grouping_group(array('groupingid' => $grouping1->id, 'groupid' => $group1->id));
-        $generator->create_grouping_group(array('groupingid' => $grouping2->id, 'groupid' => $group2->id));
-        $generator->create_grouping_group(array('groupingid' => $grouping2->id, 'groupid' => $group21->id));
 
-        // Initiates the groupings and grouping members.
-        // Creates 4 Users, enroles them in course.
-        for ($i = 1; $i <= 4; $i++) {
-            $user = $generator->create_user();
-            $generator->enrol_user($user->id, $course->id);
-            $data['user' . $i] = $user;
-        }
-        $generator->create_group_member(array('groupid' => $group1->id, 'userid' => $data['user1']->id));
-        $generator->create_group_member(array('groupid' => $group1->id, 'userid' => $data['user2']->id));
-        $generator->create_group_member(array('groupid' => $group2->id, 'userid' => $data['user3']->id));
-        $generator->create_group_member(array('groupid' => $group21->id, 'userid' => $data['user4']->id));
-        $generator->create_group_member(array('groupid' => $group21->id, 'userid' => $data['user3']->id));
-        $generator->create_group_member(array('groupid' => $group2->id, 'userid' => $data['user4']->id));
-        $generator->create_group_member(array('groupid' => $group21->id, 'userid' => $data['user2']->id));
         return $data; // Return the user, course and group objects.
     }
 }

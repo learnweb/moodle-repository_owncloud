@@ -35,26 +35,10 @@ class repository_sciebo_testcase extends advanced_testcase {
     /**
      * Function to test the locallib functions.
      */
-    public function test_locallib() {
+    public function test_lib() {
         global $DB, $CFG;
         $data = $this->set_up();
-        // Test the function that changes the database.
 
-        /*$functionresultshow = $DB->get_records('block_groups_hide', array('id' => $data['group1']->id));
-        $functionresulthide = $DB->get_records('block_groups_hide', array('id' => $data['group2']->id));
-        $booleanvisible = empty($functionresultshow);
-        $booleandeleted = empty($functionresulthide);
-
-        $this->assertEquals(false, $booleanvisible);
-        $this->assertEquals(true, $booleandeleted);
-
-        // Test the function that counts the grouping members.
-        $functioncount = count_grouping_members();
-        $this->assertEquals(2, $functioncount[$data['grouping1']->id]->number);
-        // Members are not counted multiple.
-        $this->assertEquals(3, $functioncount[$data['grouping2']->id]->number);
-        // Test empty grouping.
-        $this->assertEquals(0, $functioncount[$data['grouping3']->id]->number);*/
     }
     /**
      * Methodes recommended by moodle to assure database and dataroot is reset.
