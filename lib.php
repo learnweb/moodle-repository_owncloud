@@ -178,17 +178,8 @@ class repository_owncloud extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        $pref = get_config('tool_oauth2owncloud', 'type') . '://';
-
-        $output = $this->owncloud->get_link($url);
-        $xml = simplexml_load_string($output);
-        $fields = explode("/s/", $xml->data[0]->url[0]);
-        $fileid = $fields[1];
-
-        $path = str_replace('remote.php/webdav/', '', get_config('tool_oauth2owncloud', 'path'));
-
-        return $pref . get_config('tool_oauth2owncloud', 'server'). '/' . $path .
-        'public.php?service=files&t=' . $fileid . '&download';
+        $response = $this->owncloud->get_link($url);
+        return $response['link'];
     }
 
     /**
@@ -218,7 +209,7 @@ class repository_owncloud extends repository {
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         // Delivers a download link to the concerning file.
-        header('Location: ' . $storedfile->get_reference());
+        redirect($storedfile->get_reference());
     }
 
     /**
@@ -227,30 +218,13 @@ class repository_owncloud extends repository {
      * @return bool false, if no Access Token is set or can be requested.
      */
     public function check_login() {
-        $token = unserialize(get_user_preferences('oC_token'));
-        $this->owncloud->set_access_token($token);
-
-        // If a user Access Token is available or can be refreshed, it is stored within the user specific
-        // preferences.
-        if ($this->owncloud->is_logged_in()) {
-
-            $tok = serialize($this->owncloud->get_accesstoken());
-            set_user_preference('oC_token', $tok);
-            return true;
-
-        } else {
-
-            // Otherwise it is set to null.
-            set_user_preference('oC_token', null);
-            return false;
-
-        }
+        return $this->owncloud->check_login();
     }
 
     /**
      * Prints a simple Login Button which redirects to an authorization window from ownCloud.
      *
-     * @return array login window properties.
+     * @return mixed login window properties.
      */
     public function print_login() {
         $url = $this->owncloud->get_login_url();
@@ -262,7 +236,8 @@ class repository_owncloud extends repository {
             $ret['login'] = array($btn);
             return $ret;
         } else {
-            echo html_writer::link($url, get_string('login', 'repository'), array('target' => '_blank'));
+            echo html_writer::link($url, get_string('login', 'repository'),
+                    array('target' => '_blank', 'rel' => 'noopener noreferrer'));
         }
     }
 
@@ -315,15 +290,6 @@ class repository_owncloud extends repository {
         $mform->addElement('html', $html);
 
         parent::type_config_form($mform);
-    }
-
-    /**
-     * Is this repository accessing private data?
-     *
-     * @return bool
-     */
-    public function contains_private_data() {
-        return false;
     }
 
     /**
