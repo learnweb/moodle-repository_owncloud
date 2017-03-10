@@ -76,8 +76,8 @@ class repository_owncloud extends repository {
         if (!$this->owncloud->open()) {
             return false;
         }
-        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ '); // Without slash in the end.
-        $this->owncloud->get_file($webdavpath . $url, $path);
+
+        $this->owncloud->get_file($url, $path);
 
         return array('path' => $path);
     }
@@ -104,7 +104,7 @@ class repository_owncloud extends repository {
         if (!$this->owncloud->open()) {
             return $ret;
         }
-        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
+
         if (empty($path) || $path == '/') {
             $path = '/';
         } else {
@@ -118,7 +118,7 @@ class repository_owncloud extends repository {
         }
 
         // The WebDav methods are getting outsourced and encapsulated to the owncloud class.
-        $dir = $this->owncloud->get_listing($webdavpath. urldecode($path));
+        $dir = $this->owncloud->get_listing(urldecode($path));
 
         if (!is_array($dir)) {
             return $ret;
@@ -237,7 +237,7 @@ class repository_owncloud extends repository {
             return $ret;
         } else {
             echo html_writer::link($url, get_string('login', 'repository'),
-                    array('target' => '_blank', 'rel' => 'noopener noreferrer'));
+                    array('target' => '_blank'));
         }
     }
 
