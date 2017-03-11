@@ -57,8 +57,23 @@ class repository_owncloud extends repository {
         // Checks, whether all the required data is available. $this->options['checked'] is set to true, if the
         // data was checked once to prevend multiple printings of the warning.
         if (empty($this->options['checked'])) {
-            $this->owncloud->check_data();
             $this->options['checked'] = true;
+            $this->options['success'] = $this->owncloud->check_data();
+        }
+    }
+
+    /**
+     * If the plugin is set to hidden in the settings or any client settings date is missing,
+     * the plugin is set to invisible and thus, not shown in the file picker.
+     *
+     * @return bool false, if set to hidden or settings date is missing.
+     */
+    public function is_visible() {
+        if (!parent::is_visible()) {
+            return false;
+        } else {
+            // If any settings data is missing, return false.
+            return $this->options['success'];
         }
     }
 
