@@ -237,7 +237,7 @@ class repository_owncloud extends repository {
             return $ret;
         } else {
             echo html_writer::link($url, get_string('login', 'repository'),
-                    array('target' => '_blank'));
+                    array('target' => '_blank',  'rel' => 'noopener noreferrer'));
         }
     }
 
@@ -285,7 +285,8 @@ class repository_owncloud extends repository {
 
         // A notification is added to the settings page in form of a notification.
         $html = $OUTPUT->notification(get_string('settings', 'repository_owncloud',
-                '<a href="'.$link.'" target="_blank">'. get_string('oauth2', 'repository_owncloud') .'</a>'), 'warning');
+                '<a href="'.$link.'" target="_blank" rel="noopener noreferrer">'.
+                get_string('oauth2', 'repository_owncloud') .'</a>'), 'warning');
 
         $mform->addElement('html', $html);
 
