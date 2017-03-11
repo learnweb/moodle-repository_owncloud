@@ -86,21 +86,38 @@ class repository_owncloud extends repository {
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
-     * @param string $path relative path the the directory or file.
-     * @param string $page
+     * @param string $path relative path to the directory or file.
+     * @param string $page page number (given multiple pages of elements).
      * @return array directory properties.
      */
     public function get_listing($path='', $page = '') {
         global $CFG, $OUTPUT;
-        $list = array();
+        // Array, which will have to be returned by this function.
         $ret  = array();
+
+        // Tells the file picker to fetch the list dynamically. An AJAX request is send to the server,
+        // as soon as the user opens a folder.
         $ret['dynload'] = true;
+
+        // Search is disabled in this plugin.
         $ret['nosearch'] = true;
+
+        // We need to provide a login link, because the user needs login himself with his own ownCloud
+        // user account.
         $ret['nologin'] = false;
+
+        // Contains all parent paths to the current path.
         $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
+
+        // Contains all file/folder information and is required to build the file/folder tree.
         $ret['list'] = array();
+
+        // URL to manage a external repository. It is displayed in the file picker and in this case directs
+        // the settings page of the oauth2owncloud admin tool.
         $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
 
+        // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
+        // which connects to the server.
         if (!$this->owncloud->open()) {
             return $ret;
         }
@@ -108,7 +125,10 @@ class repository_owncloud extends repository {
         if (empty($path) || $path == '/') {
             $path = '/';
         } else {
+            // This calculates all the parents paths form the current path. This is shown in the
+            // navigation bar of the file picker.
             $chunks = preg_split('|/|', trim($path, '/'));
+            // Ever sub-path to the last part of the current path, is a parent path.
             for ($i = 0; $i < count($chunks); $i++) {
                 $ret['path'][] = array(
                         'name' => urldecode($chunks[$i]),
@@ -118,8 +138,13 @@ class repository_owncloud extends repository {
         }
 
         // The WebDav methods are getting outsourced and encapsulated to the owncloud class.
+        // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
+        // (because they depict actual web-paths), the received paths need to be decoded back
+        // for the plugin to be able to work with them.
         $dir = $this->owncloud->get_listing(urldecode($path));
 
+        // The method get_listing return all information about all child files/folders of the
+        // current directory. If no information was received, the directory must be empty.
         if (!is_array($dir)) {
             return $ret;
         }
