@@ -107,6 +107,7 @@ class repository_owncloud extends repository {
      */
     public function get_listing($path='', $page = '') {
         global $CFG, $OUTPUT;
+
         // Array, which will have to be returned by this function.
         $ret  = array();
 
@@ -165,6 +166,7 @@ class repository_owncloud extends repository {
         }
         $folders = array();
         $files = array();
+        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
         foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
                 $v['lastmodified'] = strtotime($v['lastmodified']);
