@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_sciebo_generator extends testing_repository_generator {
+class repository_owncloud_generator extends testing_repository_generator {
     /**
      * Creates Course, course members, groups and groupings to test the block.
      */
@@ -44,11 +44,6 @@ class repository_sciebo_generator extends testing_repository_generator {
         $data['course'] = $course;
 
         $this->create_instance();
-        /*$record = new stdClass();
-        $record->pluginname = 'Sciebo';
-        $record->secret = '12345';
-        $record->key = '67890';*/
-
 
         return $data; // Return the user, course and group objects.
     }

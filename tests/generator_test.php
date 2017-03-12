@@ -33,14 +33,14 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2016 Nina Herrmann
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_sciebo_generator_testcase extends advanced_testcase {
+class repository_owncloud_generator_testcase extends advanced_testcase {
     public function test_generator() {
         global $DB;
         $this->resetAfterTest(true);
 
         /** @var block_online_users_generator $generator */
-        $generator = $this->getDataGenerator()->get_plugin_generator('repository_sciebo');
-        $this->assertInstanceOf('repository_sciebo_generator', $generator);
+        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
+        $this->assertInstanceOf('repository_owncloud_generator', $generator);
         $generator->test_create_preparation();
     }
 }

@@ -21,25 +21,20 @@
  * @copyright 2016 N Herrmann
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 defined('MOODLE_INTERNAL') || die();
-class repository_sciebo_testcase extends advanced_testcase {
+
+class repository_owncloud_testcase extends advanced_testcase {
 
     protected function set_up() {
         // Recommended in Moodle docs to always include CFG.
         global $CFG;
-        $generator = $this->getDataGenerator()->get_plugin_generator('repository_sciebo');
+        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
         $data = $generator->test_create_preparation();
         $this->resetAfterTest(true);
         return $data;
     }
-    /**
-     * Function to test the locallib functions.
-     */
-    public function test_lib() {
-        global $DB, $CFG;
-        $data = $this->set_up();
 
-    }
     /**
      * Methodes recommended by moodle to assure database and dataroot is reset.
      */
@@ -49,6 +44,7 @@ class repository_sciebo_testcase extends advanced_testcase {
         $DB->delete_records('user');
         $this->assertEmpty($DB->get_records('user'));
     }
+
     /**
      * Methodes recommended by moodle to assure database is reset.
      */
