@@ -13,12 +13,12 @@ This Plugin should go into `repository/owncloud`.
 ### Admin Settings
 Please ensure that all necessary settings are filled in the `admin_tool_oauth2owncloud` Plugin.
 Otherwise the Plugin will not work. Repositorys plugins have to be activated from the side administrator
-in `Site-Administration>Plugins>Repositories`. 
+in `Site-Administration ► Plugins ► Repositories`. 
 The admin can change the name of the plugin instance in the settings. This name is used globally.
 
 ### User View
 The repository is available in course and private context, and has not to be activated by e.g. the course manager.
-However course admins can delete the repository in the path `Course Administartion>repositories`
+However course admins can delete the repository in the path `Course Administartion ► repositories`
 The usage of the plugin can not be limited to specific user groups.
 In the File Picker a login button is displayed (assumed that the user is not authenticated):
  
@@ -42,11 +42,12 @@ Dieses Repository Plugin bietet eine Schnittstelle zu einer ownCloud Instanz. Zu
 
 ## Installation
 
-Das Plugin muss in `repository/owncloud` platziert werden.
+Das Plugin muss in `repository/owncloud` platziert werden. Um genutzt werden zu können muss ein Administrator 
+das Plugin noch auf sichtbar schalten in `Site administration ► Plugins ► Repositories`
 
 ### Admin Einstellungen
 Bitte beachten Sie, dass in den Einstellungen des admin_tool alle notwendigen Einträge getätigt wurden, ansonsten funktioniert die Authentifizierung des Repositorys nicht. 
-Repositorys Plugins müssen zusätzlich von einem Administrator unter dem Menüpunkt `Website-Administration>PluginsRepositories>Übersicht` aktiviert werden. 
+Repositorys Plugins müssen zusätzlich von einem Administrator unter dem Menüpunkt `Website-Administration ► Plugins ► Repositories ► Übersicht` aktiviert werden. 
 Der Administrator kann dem Repository zusätzlich unter `Einstellungen` einen globalen Namen geben.
 
 
