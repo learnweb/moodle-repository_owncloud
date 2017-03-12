@@ -38,12 +38,13 @@ For additional information *(only available in german)* please visit our [docume
 # German
 
 Dieses Repository Plugin bietet eine Schnittstelle zu einer ownCloud Instanz. Zur Nutzung dieses Plugins wird zuerst das
-[tool_oauth2owncloud Plugin](https://github.com/pssl16/moodle-tool_oauth2sciebo) benötigt. Die Installation ist nicht möglich, bevor das admin_tool installiert wurde.
+[oauth2owncloud Plugin](https://github.com/pssl16/moodle-tool_oauth2sciebo) benötigt. 
+Die Installation ist nicht möglich, bevor das `admin_tool` installiert wurde.
 
 ## Installation
 
 Das Plugin muss in `repository/owncloud` platziert werden. Um genutzt werden zu können muss ein Administrator 
-das Plugin noch auf sichtbar schalten in `Site administration ► Plugins ► Repositories`
+das Plugin noch auf sichtbar schalten in `Site administration ► Plugins ► Repositories`.
 
 ### Admin Einstellungen
 Bitte beachten Sie, dass in den Einstellungen des admin_tool alle notwendigen Einträge getätigt wurden, ansonsten funktioniert die Authentifizierung des Repositorys nicht. 
@@ -59,11 +60,13 @@ Im File Picker wird der Nutzer (wenn er nicht angemeldet ist) zunächst zum Logi
 
  ![filepickerlogin](pix/filepickerlogin.png)
  
-Drückt er diesen Button erscheint ein Popup-Window oder in einem neuen Tab in dem er sich in ownCloud anzumeldet und die App autorisiert. 
+Drückt er diesen Button erscheint ein Popup-Window oder ein neuer Tab in dem der Nutzer 
+sich in ownCloud anmeldet und die App autorisiert. 
 Nach erfolgreicher Autorisierung sieht der Nutzer eine tabellarische Auflistung der vorhandenen Dateien:
 
 ![Plugin-Struktur](pix/FilePickerredblock.png)
 
-Im roten Kasten sehen sie Buttons um den Inhalt neu zu laden, sich auszuloggen und nur als Admin sieht man den letzten Button in dem man die Einstellungen des OAuth2 admin_tool bearbeiten kann.
+Im roten Kasten sehen sie Buttons um den Inhalt neu zu laden, sich auszuloggen und nur als Admin sieht man den 
+letzten Button in dem man die Einstellungen des `oauth2owncloud` plugins bearbeiten kann.
 
 Für genauere Informationen besuchen sie unsere [Website Dokumentation](https://pssl16.github.io).
