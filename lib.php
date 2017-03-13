@@ -132,9 +132,9 @@ class repository_owncloud extends repository {
         if (has_capability('moodle/site:config', $sitecontext)) {
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
             // the settings page of the oauth2owncloud admin tool.
-            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
+            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'settings.php?section=oauth2owncloud';
         }
-        
+
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
         if (!$this->owncloud->open()) {
