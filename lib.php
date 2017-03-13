@@ -241,7 +241,7 @@ class repository_owncloud extends repository {
         $reference = $source;
 
         // If a filereference was requested, a public link to the file has to be generated and returned.
-        if($usefilereference) {
+        if ($usefilereference) {
             $reference = $this->get_link($source);
         }
 
