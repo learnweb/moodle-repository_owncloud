@@ -128,10 +128,13 @@ class repository_owncloud extends repository {
         // Contains all file/folder information and is required to build the file/folder tree.
         $ret['list'] = array();
 
-        // URL to manage a external repository. It is displayed in the file picker and in this case directs
-        // the settings page of the oauth2owncloud admin tool.
-        $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
-
+        $sitecontext = context_system::instance();
+        if (has_capability('moodle/site:config', $sitecontext)) {
+            // URL to manage a external repository. It is displayed in the file picker and in this case directs
+            // the settings page of the oauth2owncloud admin tool.
+            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
+        }
+        
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
         if (!$this->owncloud->open()) {
