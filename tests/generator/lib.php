@@ -45,8 +45,6 @@ class repository_owncloud_generator extends testing_repository_generator {
         $course = $generator->create_course(array('name' => 'A course'));
         $data['course'] = $course;
 
-        $this->create_instance();
-
         return $data; // Return the user, course and group objects.
     }
 }
