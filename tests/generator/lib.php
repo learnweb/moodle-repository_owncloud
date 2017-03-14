@@ -16,9 +16,10 @@
 
 /**
  *
- * @package    repository_sciebo
+ * @package    repository_owncloud
  * @category   test
- * @copyright
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
+ * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -30,7 +31,8 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @package    repository_sciebo
  * @category   test
- * @copyright
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
+ * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud_generator extends testing_repository_generator {

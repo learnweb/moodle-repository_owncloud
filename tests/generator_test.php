@@ -16,9 +16,10 @@
 /**
  * PHPUnit data generator tests
  *
- * @package    block_groups
+ * @package    repository_owncloud
  * @category   phpunit
- * @copyright  2016 Nina Herrmann
+ * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
+ * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,9 +29,9 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * PHPUnit data generator testcase
  *
- * @package    block_groups
- * @category   phpunit
- * @copyright  2016 Nina Herrmann
+ * @package    repository_owncloud
+ * @category   2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
+ * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud_generator_testcase extends advanced_testcase {

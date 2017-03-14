@@ -17,8 +17,9 @@
 /**
  * The class contains a test script for the moodle block groups
  *
- * @package repository_sciebo
- * @copyright 2016 N Herrmann
+ * @package     repository_owncloud
+ * @copyright   2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
+ * @author      Projektseminar Uni Münster
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
