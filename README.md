@@ -1,7 +1,7 @@
 # moodle-repository_sciebo *(beta_candidate)*
 # English
-[![Build Status](https://travis-ci.org/pssl16/moodle-repository_sciebo.svg?branch=master)]
-(https://travis-ci.org/pssl16/moodle-repository_sciebo)</br>
+[![Build Status](https://travis-ci.org/pssl16/moodle-repository_owncloud.svg?branch=master)]
+(https://travis-ci.org/pssl16/moodle-repository_owncloud)</br>
 This Repository connects ownCloud with Moodle.
 This Plugin is a subplugin of [OAuth2Sciebo Plugin](https://github.com/pssl16/moodle-tool_oauth2sciebo).
 It is written by the 
