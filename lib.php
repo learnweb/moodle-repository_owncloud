@@ -55,7 +55,7 @@ class repository_owncloud extends repository {
         $this->owncloud = new owncloud($returnurl);
 
         // Checks, whether all the required data is available. $this->options['checked'] is set to true, if the
-        // data was checked once to prevend multiple printings of the warning.
+        // data was checked once to prevent multiple printings of the warning.
         if (empty($this->options['checked'])) {
             $this->options['checked'] = true;
             $this->options['success'] = $this->owncloud->check_data();
@@ -66,7 +66,7 @@ class repository_owncloud extends repository {
      * If the plugin is set to hidden in the settings or any client settings date is missing,
      * the plugin is set to invisible and thus, not shown in the file picker.
      *
-     * @return bool false, if set to hidden or settings date is missing.
+     * @return bool false, if set to hidden or settings data is missing.
      */
     public function is_visible() {
         if (!parent::is_visible()) {
@@ -147,7 +147,7 @@ class repository_owncloud extends repository {
             // This calculates all the parents paths form the current path. This is shown in the
             // navigation bar of the file picker.
             $chunks = preg_split('|/|', trim($path, '/'));
-            // Ever sub-path to the last part of the current path, is a parent path.
+            // Every sub-path to the last part of the current path, is a parent path.
             for ($i = 0; $i < count($chunks); $i++) {
                 $ret['path'][] = array(
                         'name' => urldecode($chunks[$i]),
@@ -301,20 +301,7 @@ class repository_owncloud extends repository {
      * Sets up access token after the redirection from ownCloud.
      */
     public function callback() {
-        $this->owncloud->callback();
-
-        // The user Access Token, as soon as it is received and verified, gets stored within
-        // the user specific preferences.
-        if ($this->owncloud->is_logged_in()) {
-
-            $tok = serialize($this->owncloud->get_accesstoken());
-            set_user_preference('oC_token', $tok);
-
-        } else {
-            // If the Access Token has expired, not received or cannot be refreshed,
-            // the user specific preference is set to null.
-            set_user_preference('oC_token', null);
-        }
+        $this->owncloud->check_login();
     }
 
     /**
