@@ -11,13 +11,15 @@ php:
  - 7.0
 
 env:
+ global:
+  - IGNORE_PATHS=db,tests
  matrix:
-    - DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
-    - DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
-    - DB=pgsql MOODLE_BRANCH=master
-    - DB=mysqli MOODLE_BRANCH=MOODLE_31_STABLE
-    - DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
-    - DB=mysqli MOODLE_BRANCH=master
+  - DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
+  - DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
+  - DB=pgsql MOODLE_BRANCH=master
+  - DB=mysqli MOODLE_BRANCH=MOODLE_31_STABLE
+  - DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
+  - DB=mysqli MOODLE_BRANCH=master
 
 before_install:
   - phpenv config-rm xdebug.ini
