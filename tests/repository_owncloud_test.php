@@ -28,8 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 class repository_owncloud_testcase extends advanced_testcase {
 
     protected function set_up() {
-        // Recommended in Moodle docs to always include CFG.
-        global $CFG;
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
         $data = $generator->test_create_preparation();
         $this->resetAfterTest(true);
