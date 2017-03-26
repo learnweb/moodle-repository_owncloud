@@ -16,6 +16,7 @@
 
 /**
  *
+ * @codeCoverageIgnore
  * @package    repository_owncloud
  * @category   test
  * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
@@ -24,7 +25,6 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-
 
 /**
  *
