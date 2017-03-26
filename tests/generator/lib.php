@@ -16,7 +16,6 @@
 
 /**
  *
- * @codeCoverageIgnore
  * @package    repository_owncloud
  * @category   test
  * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
@@ -24,7 +23,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// @codeCoverageIgnoreStart
 defined('MOODLE_INTERNAL') || die();
+// @codeCoverageIgnoreEnd
 
 /**
  *
