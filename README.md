@@ -1,72 +1,64 @@
-# moodle-repository_sciebo *(beta_candidate)*
-# English
+# Moodle Repository Plugin `owncloud`
+
 [![Build Status](https://travis-ci.org/pssl16/moodle-repository_owncloud.svg?branch=master)](https://travis-ci.org/pssl16/moodle-repository_owncloud)
-[![codecov](https://codecov.io/gh/pssl16/moodle-repository_owncloud/branch/master/graph/badge.svg)](https://codecov.io/gh/pssl16/moodle-repository_owncloud)</br>
-This Repository connects ownCloud with Moodle.
-This Plugin is a subplugin of [OAuth2Sciebo Plugin](https://github.com/pssl16/moodle-tool_oauth2sciebo).
-It is written by the
-[ProjectsSeminar Sciebo@Learnweb](https://github.com/pssl16) of the University of Muenster.
+[![codecov](https://codecov.io/gh/pssl16/moodle-repository_owncloud/branch/master/graph/badge.svg)](https://codecov.io/gh/pssl16/moodle-repository_owncloud)
 
-## Installation
-This Plugin should go into `repository/owncloud`.
+# English
 
-### Admin Settings
-Please ensure that all necessary settings are filled in the `admin_tool_oauth2owncloud` Plugin.
-Otherwise the Plugin will not work. Repositorys plugins have to be activated from the side administrator
-in `Site-Administration ► Plugins ► Repositories`.
-The admin can change the name of the plugin instance in the settings. This name is used globally.
+This plugin is depending on the [`oauth2owncloud` plugin](https://github.com/pssl16/moodle-tool_oauth2owncloud) and can not be used separately.
 
-### User View
-The repository is available in course and private context, and has not to be activated by e.g. the course manager.
-However course admins can delete the repository in the path `Course Administartion ► repositories`
-The usage of the plugin can not be limited to specific user groups.
-In the File Picker a login button is displayed (assumed that the user is not authenticated):
-
- ![filepickerlogin](pix/filepickerlogin.png)
-
- When the button is clicked a pop-up window or a new tab
- is opened and the user will be requested to authorize the App.
-When the user is successfully authenticated he sees a tabular listing of the available files:
-
-![Plugin-Struktur](pix/FilePickerredblock.png)
-
-The first icon in the red block is used to dynamically load the content. The second button can be used to logout. The last button is only available
-for admins and redirects to the `oauth2owncloud` settings.
-
-For additional information *(only available in german)* please visit our [documentation page](https://pssl16.github.io).
-
-# German
-
-Dieses Repository Plugin bietet eine Schnittstelle zu einer ownCloud Instanz. Zur Nutzung dieses Plugins wird zuerst das
-[oauth2owncloud Plugin](https://github.com/pssl16/moodle-tool_oauth2sciebo) benötigt.
-Die Installation ist nicht möglich, bevor das `admin_tool` installiert wurde.
+Created by the project seminar sciebo@Learnweb of the University of Münster.
 
 ## Installation
 
-Das Plugin muss in `repository/owncloud` platziert werden. Um genutzt werden zu können muss ein Administrator
-das Plugin noch auf sichtbar schalten in `Site administration ► Plugins ► Repositories`.
+Copy the content of this repository to `repository/owncloud`.
 
-### Admin Einstellungen
-Bitte beachten Sie, dass in den Einstellungen des admin_tool alle notwendigen Einträge getätigt wurden, ansonsten funktioniert die Authentifizierung des Repositorys nicht.
-Repositorys Plugins müssen zusätzlich von einem Administrator unter dem Menüpunkt `Website-Administration ► Plugins ► Repositories ► Übersicht` aktiviert werden.
-Der Administrator kann dem Repository zusätzlich unter `Einstellungen` einen globalen Namen geben.
+## Admin Settings
 
+Firstly, please ensure that the `oauth2owncloud` plugin is configured correctly. Otherwise this plugin will not work. Repository Plugins are activated under `Site-Administration ► Plugins ► Repositories`.
 
-### Nutzer Sicht
-Das Repository ist sowohl in den Kursen, als auch für private Instanzen verfügbar, und muss nicht mehr hinzugefügt werden.
-Kurs Administratoren können das Repository jedoch unter `Speicherorte` löschen.
-Die Nutzung lässt sich nicht auf bestimmte Nutzer oder Aktivitäten einschränken.
-Im File Picker wird der Nutzer (wenn er nicht angemeldet ist) zunächst zum Login aufgefordert:
+## User View
 
- ![filepickerlogin](pix/filepickerlogin.png)
+This plugin is available in all Activities where the file picker is used. However, course admins can disable it under `Course Administration ► Repositories`. The usage of this plugin can not be limited to specific user groups.
 
-Drückt er diesen Button erscheint ein Popup-Window oder ein neuer Tab in dem der Nutzer
-sich in ownCloud anmeldet und die App autorisiert.
-Nach erfolgreicher Autorisierung sieht der Nutzer eine tabellarische Auflistung der vorhandenen Dateien:
+In the file picker a login button is displayed (assuming that the user is not authenticated yet):
 
-![Plugin-Struktur](pix/FilePickerredblock.png)
+![File picker login](pix/filepickerlogin.png)
 
-Im roten Kasten sehen sie Buttons um den Inhalt neu zu laden, sich auszuloggen und nur als Admin sieht man den
-letzten Button in dem man die Einstellungen des `oauth2owncloud` plugins bearbeiten kann.
+When the button is clicked a pop-up window or a new tab is opened and the user will be requested to login and authorize Moodle. If authorization is granted, the user sees a tabular listing of the files available:
 
-Für genauere Informationen besuchen sie unsere [Website Dokumentation](https://pssl16.github.io).
+![File picker](pix/FilePickerredblock.png)
+
+The first icon in the red block is used to reload the content. The second button can be used to logout. The third button is only available for admins and redirects to the settings in the `oauth2owncloud` plugin.
+
+Additional information can be found in our [documentation](https://pssl16.github.io).
+
+# Deutsch
+
+Dieses Plugin hängt vom [`oauth2owncloud` Plugin](https://github.com/pssl16/moodle-tool_oauth2owncloud) ab und kann nicht separat davon verwendet werden.
+
+Erstellt vom Projektseminar sciebo@Learnweb der Westfälischen Wilhelms-Universität Münster.
+
+## Installation
+
+Kopieren Sie den Inhalt dieses Repositorys nach `repository/owncloud`.
+
+## Admin Einstellungen
+
+Bitte stellen Sie zuerst sicher, dass das `oauth2owncloud` Plugin korrekt konfiguriert ist. Sonst wird dieses Plugin nicht funktionieren. Repository Plugins werden unter `Site-Administration ► Plugins ► Repositories` aktiviert.
+
+## Sicht des Nutzers
+
+Dieses Plugin ist in allen Aktivitäten verfügbar, die die Dateiauswahl nutzen. Kurs Administratoren können es jedoch unter `Course Administration ► Repositories` deaktivieren. Die Benutzung dieses Plugins kann nicht auf bestimmte Nutzergruppen begrenzt werden.
+
+In der Dateiauswahl wird ein Login-Button angezeigt (angenommen der Nutzer hat sich noch nicht authentifiziert):
+
+![Dateiauswahl Login](pix/filepickerlogin.png)
+
+Beim Klicken auf den Button wird ein Pop-up Fenster oder ein neuer Tab geöffnet und der Nutzer wird darum gebeten, Moodle zu autorisieren. Wenn die Autorisierung gewährt wurde, sieht der Nutzer eine tabellarische Auflistung der verfügbaren Dateien:
+
+![Dateiauswahl](pix/FilePickerredblock.png)
+
+Mit dem ersten Icon im roten Kasten kann der Inhalt neu geladen werden. Der zweite Button kann zum Abmelden verwendet werden. Der dritte Button ist nur für Administratoren verfügbar und leitet zu den Einstellungen des `oauth2owncloud` plugins weiter.
+
+Nähere Informationen finden Sie in unserer [Dokumentation](https://pssl16.github.io).
