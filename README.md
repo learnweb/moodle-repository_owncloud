@@ -59,6 +59,6 @@ Beim Klicken auf den Button wird ein Pop-up Fenster oder ein neuer Tab geöffnet
 
 ![Dateiauswahl](pix/FilePickerredblock.png)
 
-Mit dem ersten Icon im roten Kasten kann der Inhalt neu geladen werden. Der zweite Button kann zum Abmelden verwendet werden. Der dritte Button ist nur für Administratoren verfügbar und leitet zu den Einstellungen des `oauth2owncloud` plugins weiter.
+Mit dem ersten Icon im roten Kasten kann der Inhalt neu geladen werden. Der zweite Button kann zum Abmelden verwendet werden. Der dritte Button ist nur für Administratoren verfügbar und leitet zu den Einstellungen des `oauth2owncloud` Plugins weiter.
 
 Nähere Informationen finden Sie in unserer [Dokumentation](https://pssl16.github.io).
