@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  *
- *
+ * @codeCoverageIgnore
  * @package    repository_sciebo
  * @category   test
  * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
