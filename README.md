@@ -19,17 +19,17 @@ Firstly, please ensure that the `oauth2owncloud` plugin is configured correctly.
 
 ## User View
 
-This plugin is available in all Activities where the file picker is used. However, course admins can disable it under `Course Administration ► Repositories`. The usage of this plugin can not be limited to specific user groups.
+This plugin is available in all Activities where the file picker is used. However, course admins can disable it under `Course Administration ► Repositories`. The usage of this plugin cannot be limited to specific user groups.
 
 In the file picker a login button is displayed (assuming that the user is not authenticated yet):
 
-![File picker login](pix/filepickerlogin.png)
+![File picker login](pix/file_picker_login.png)
 
 When the button is clicked a pop-up window or a new tab is opened and the user will be requested to login and authorize Moodle. If authorization is granted, the user sees a tabular listing of the files available:
 
-![File picker](pix/FilePickerredblock.png)
+![File picker](pix/file_picker_files.png)
 
-The first icon in the red block is used to reload the content. The second button can be used to logout. The third button is only available for admins and redirects to the settings in the `oauth2owncloud` plugin.
+Here the user can select files, reload the content and logout. For the settings the admin is redirected to the `oauth2owncloud` plugin.
 
 Additional information can be found in our [documentation](https://pssl16.github.io).
 
@@ -53,12 +53,12 @@ Dieses Plugin ist in allen Aktivitäten verfügbar, die die Dateiauswahl nutzen.
 
 In der Dateiauswahl wird ein Login-Button angezeigt (angenommen der Nutzer hat sich noch nicht authentifiziert):
 
-![Dateiauswahl Login](pix/filepickerlogin.png)
+![Dateiauswahl Login](pix/file_picker_login.png)
 
 Beim Klicken auf den Button wird ein Pop-up Fenster oder ein neuer Tab geöffnet und der Nutzer wird darum gebeten, Moodle zu autorisieren. Wenn die Autorisierung gewährt wurde, sieht der Nutzer eine tabellarische Auflistung der verfügbaren Dateien:
 
-![Dateiauswahl](pix/FilePickerredblock.png)
+![Dateiauswahl](pix/file_picker_files.png)
 
-Mit dem ersten Icon im roten Kasten kann der Inhalt neu geladen werden. Der zweite Button kann zum Abmelden verwendet werden. Der dritte Button ist nur für Administratoren verfügbar und leitet zu den Einstellungen des `oauth2owncloud` Plugins weiter.
+Hier kann der Nutzer Dateien auswählen, die Inhalte neu laden und sich abmelden. Für die Einstellungen wird der Administrator zum `oauth2owncloud` Plugin weitergeleitet.
 
 Nähere Informationen finden Sie in unserer [Dokumentation](https://pssl16.github.io).
