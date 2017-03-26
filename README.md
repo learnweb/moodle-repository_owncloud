@@ -15,7 +15,7 @@ Copy the content of this repository to `repository/owncloud`.
 
 ## Admin Settings
 
-Firstly, please ensure that the `oauth2owncloud` plugin is configured correctly. Otherwise this plugin will not work. Repository Plugins are activated under `Site-Administration ► Plugins ► Repositories`.
+Firstly, please ensure that the `oauth2owncloud` plugin is configured correctly. Otherwise this plugin will not work. Repository Plugins are activated under `Site Administration ► Plugins ► Repositories`.
 
 ## User View
 
@@ -45,7 +45,7 @@ Kopieren Sie den Inhalt dieses Repositorys nach `repository/owncloud`.
 
 ## Admin Einstellungen
 
-Bitte stellen Sie zuerst sicher, dass das `oauth2owncloud` Plugin korrekt konfiguriert ist. Sonst wird dieses Plugin nicht funktionieren. Repository Plugins werden unter `Site-Administration ► Plugins ► Repositories` aktiviert.
+Bitte stellen Sie zuerst sicher, dass das `oauth2owncloud` Plugin korrekt konfiguriert ist. Sonst wird dieses Plugin nicht funktionieren. Repository Plugins werden unter `Site Administration ► Plugins ► Repositories` aktiviert.
 
 ## Sicht des Nutzers
 
