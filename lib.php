@@ -23,10 +23,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// @codeCoverageIgnoreStart
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
+// @codeCoverageIgnoreEnd
 use tool_oauth2owncloud\owncloud;
+
 /**
  * ownCloud repository class.
  *
