@@ -30,6 +30,8 @@ global $CFG;
 
 require($CFG->dirroot . '/repository/owncloud/lib.php');
 
+use tool_oauth2owncloud\owncloud;
+
 class repository_owncloud_testcase extends advanced_testcase {
 
     /** @var null|repository_owncloud the repository_owncloud object, which the tests are run on. */
@@ -97,18 +99,18 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
-     * Test for the get_file method of the repository_owncloud class.
+     * Test for the get_file method from the repository_owncloud class.
      */
     public function test_get_file() {
         // WebDAV socket is not open.
-        $mock = $this->createMock(\tool_oauth2owncloud\owncloud::class);
+        $mock = $this->createMock(owncloud::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(false));
         $private = $this->set_private_repository($mock);
 
         $this->assertFalse($this->repo->get_file('path'));
 
         // WebDAV socket is open and the request successful.
-        $mock = $this->createMock(\tool_oauth2owncloud\owncloud::class);
+        $mock = $this->createMock(owncloud::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(true));
         $mock->expects($this->once())->method('get_file')->will($this->returnValue(true));
         $private->setValue($this->repo, $mock);
@@ -116,6 +118,54 @@ class repository_owncloud_testcase extends advanced_testcase {
         $result = $this->repo->get_file('path', 'file');
 
         $this->assertNotNull($result['path']);
+    }
+
+    /**
+     * Test the get_link method.
+     */
+    public function test_get_link() {
+        $mock = $this->createMock(owncloud::class);
+        $mock->expects($this->once())->method('get_link')->will($this->returnValue(array('link' => 'link')));
+        $this->set_private_repository($mock);
+
+        $this->assertEquals('link', $this->repo->get_link('path'));
+    }
+
+    /**
+     * Tests for the get_file_reference method from the repository_owncloud class.
+     */
+    public function test_get_file_reference() {
+        $mock = $this->createMock(owncloud::class);
+        $mock->expects($this->once())->method('get_link')->will($this->returnValue(array('link' => 'link')));
+        $this->set_private_repository($mock);
+
+        $source = 'path';
+
+        // Reference for a download.
+        $this->assertEquals($source, $this->repo->get_file_reference($source));
+
+        // A link should be generated.
+        $_POST['usefilereference'] = true;
+
+        $this->assertEquals('link', $this->repo->get_file_reference($source));
+    }
+
+    /**
+     * Test check_login.
+     */
+    public function test_check_login() {
+        $mock = $this->createMock(owncloud::class);
+        $mock->expects($this->once())->method('check_login')->will($this->returnValue(true));
+        $this->set_private_repository($mock);
+
+        $this->assertTrue($this->repo->check_login());
+    }
+
+    /**
+     * Test print_login.
+     */
+    public function test_print_login() {
+        $this->assertEquals(1, 1);
     }
 
     /**

@@ -334,6 +334,7 @@ class repository_owncloud extends repository {
     /**
      * This method adds a notification to the settings form, which redirects to the OAuth 2.0 client.
      *
+     * @codeCoverageIgnore
      * @param moodleform $mform Moodle form (passed by reference)
      * @param string $classname repository class name
      */
