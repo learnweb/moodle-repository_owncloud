@@ -19,7 +19,8 @@ env:
 
 matrix:
  allow_failures:
-  - env: MOODLE_BRANCH=master
+  - env: DB=pgsql MOODLE_BRANCH=master
+  - env: DB=mysqli MOODLE_BRANCH=master
  fast_finish: true
 
 before_install:
