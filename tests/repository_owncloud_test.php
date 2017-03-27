@@ -151,17 +151,6 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
-     * Tests for the check_login method from the repository_owncloud class.
-     */
-    public function test_check_login() {
-        $mock = $this->createMock(owncloud::class);
-        // The call should be handled by the owncloud object.
-        $mock->expects($this->once())->method('check_login');
-        $this->set_private_repository($mock);
-        $this->repo->check_login();
-    }
-
-    /**
      * Test check_login.
      */
     public function test_check_login() {
