@@ -59,6 +59,32 @@ class repository_owncloud extends repository {
         if (empty($this->options['checked'])) {
             $this->options['checked'] = true;
             $this->options['success'] = $this->owncloud->check_data();
+
+            if (!$this->options['success']) {
+                $this->print_warning();
+            }
+        }
+    }
+
+    /**
+     * Output method, which prints a warning inside an activity, which uses the ownCloud repository.
+     */
+    private function print_warning() {
+        global $CFG, $OUTPUT;
+        $sitecontext = context_system::instance();
+
+        if (has_capability('moodle/site:config', $sitecontext)) {
+
+            $link = $CFG->wwwroot . '/' . $CFG->admin . '/settings.php?section=oauth2owncloud';
+
+            // Generates a link to the admin setting page.
+            echo $OUTPUT->notification('<a href="' . $link . '" target="_blank" rel="noopener noreferrer">
+                                ' . get_string('missing_settings_admin', 'tool_oauth2owncloud') . '</a>', 'warning');
+        } else {
+
+            // Otherwise, just print a notification, bacause the current user cannot configure admin
+            // settings himself.
+            echo $OUTPUT->notification(get_string('missing_settings_user', 'tool_oauth2owncloud'));
         }
     }
 
@@ -130,6 +156,7 @@ class repository_owncloud extends repository {
 
         $sitecontext = context_system::instance();
         if (has_capability('moodle/site:config', $sitecontext)) {
+
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
             // the settings page of the oauth2owncloud admin tool.
             $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'settings.php?section=oauth2owncloud';
