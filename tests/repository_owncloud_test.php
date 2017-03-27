@@ -201,7 +201,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->set_private_repository($mock);
         $this->repo->options['ajax'] = true;
 
-        $this->assertNull(get_user_preference('oC_token'));
+        $this->assertNull(get_user_preferences('oC_token'));
         $this->assertEquals($this->repo->print_login(), $this->repo->logout());
     }
 
