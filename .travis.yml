@@ -19,7 +19,7 @@ env:
 
 matrix:
  allow_failures:
-  - php: MOODLE_BRANCH=master
+  - env: MOODLE_BRANCH=master
  fast_finish: true
 
 before_install:
