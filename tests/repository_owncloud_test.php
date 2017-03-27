@@ -204,6 +204,20 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
+     * Test supported_filetypes.
+     */
+    public function test_supported_filetypes() {
+        $this->assertEquals('*', $this->repo->supported_filetypes());
+    }
+
+    /**
+     * Test supported_returntypes.
+     */
+    public function test_supported_returntypes() {
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE, $this->repo->supported_returntypes());
+    }
+
+    /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
      *
      * @param $mock object mock object, which needs to be inserted.
