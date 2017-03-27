@@ -17,6 +17,11 @@ env:
   - DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
   - DB=mysqli MOODLE_BRANCH=master
 
+matrix:
+ allow_failures:
+  - php: MOODLE_BRANCH=master
+ fast_finish: true
+
 before_install:
   - phpenv config-rm xdebug.ini
   - cd ../..
