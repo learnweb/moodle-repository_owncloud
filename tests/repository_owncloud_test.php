@@ -99,15 +99,10 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
-     * Test get_listing method with an example directory.
+     * Test get_listing method with an example directory. Tests error cases.
      */
-    public function test_get_listing() {
-        $ret = array();
-        $ret['dynload'] = true;
-        $ret['nosearch'] = true;
-        $ret['nologin'] = false;
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
-        $ret['list'] = array();
+    public function test_get_listing_error() {
+        $ret = $this->get_ret();
 
         // WebDAV socket is not opened.
         $mock = $this->createMock(owncloud::class);
@@ -123,61 +118,148 @@ class repository_owncloud_testcase extends advanced_testcase {
         $private->setValue($this->repo, $mock);
 
         $this->assertEquals($ret, $this->repo->get_listing('/'));
+    }
+    /**
+     * Test get_listing method with an example directory. Tests the root directory.
+     */
+    public function test_get_listing_root() {
+        $ret = $this->get_ret();
 
         $response = array(
                 array(
                         'href' => '/owncloud9.2/remote.php/webdav/',
-                        'lastmodified' => 'Mon, 27 Mar 2017 08:15:35 GMT',
+                        'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                         'resourcetype' => 'collection',
                         'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
                         'getcontentlength' => ''
                 ),
                 array(
                         'href' => '/owncloud9.2/remote.php/webdav/Documents/',
-                        'lastmodified' => 'Mon, 27 Mar 2017 08:15:35 GMT',
+                        'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                         'resourcetype' => 'collection',
                         'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
                         'getcontentlength' => ''
                 ),
                 array(
                         'href' => '/owncloud9.2/remote.php/webdav/welcome.txt',
-                        'lastmodified' => 'Mon, 27 Mar 2017 08:15:35 GMT',
+                        'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                         'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
                         'getcontentlength' => '163'
                 )
         );
 
         $ret['list'] = array(
-                        'DOCUMENTS/' => array(
-                                            'title' => 'Documents',
-                                            'thumbnail' => null,
-                                            'children' => array(),
-                                            'datemodified' => null,
-                                            'path' => '/Documents/'
-                                        ),
-                        'WELCOME.TXT' => array(
-                                            'title' => 'welcome.txt',
-                                            'thumbnail' => null,
-                                            'size' => '163',
-                                            'datemodified' => null,
-                                            'source' => '/welcome.txt'
-                                        )
+                'DOCUMENTS/' => array(
+                        'title' => 'Documents',
+                        'thumbnail' => null,
+                        'children' => array(),
+                        'datemodified' => 1481213186,
+                        'path' => '/Documents/'
+                ),
+                'WELCOME.TXT' => array(
+                        'title' => 'welcome.txt',
+                        'thumbnail' => null,
+                        'size' => '163',
+                        'datemodified' => 1481213186,
+                        'source' => '/welcome.txt'
+                )
         );
 
         // Valid response from the client.
         $mock = $this->createMock(owncloud::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(true));
         $mock->expects($this->once())->method('get_listing')->will($this->returnValue($response));
-        $private->setValue($this->repo, $mock);
+        $this->set_private_repository($mock);
 
         $ls = $this->repo->get_listing('/');
 
+        // Those attributes can not be tested properly.
         $ls['list']['DOCUMENTS/']['thumbnail'] = null;
-        $ls['list']['DOCUMENTS/']['datemodified'] = null;
         $ls['list']['WELCOME.TXT']['thumbnail'] = null;
-        $ls['list']['WELCOME.TXT']['datemodified'] = null;
 
         $this->assertEquals($ret, $ls);
+    }
+
+    /**
+     * Test get_listing method with an example directory. Tests a different directory than the root
+     * directory.
+     */
+    public function test_get_listing_directory() {
+        $ret = $this->get_ret();
+        $ret['path'][1] = array(
+                'name' => 'dir',
+                'path' => '/dir/'
+        );
+
+        $response = array(
+                array(
+                        'href' => '/owncloud9.2/remote.php/webdav/dir/',
+                        'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                        'resourcetype' => 'collection',
+                        'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                        'getcontentlength' => ''
+                ),
+                array(
+                        'href' => '/owncloud9.2/remote.php/webdav/dir/Documents/',
+                        'lastmodified' => null,
+                        'resourcetype' => 'collection',
+                        'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                        'getcontentlength' => ''
+                ),
+                array(
+                        'href' => '/owncloud9.2/remote.php/webdav/dir/welcome.txt',
+                        'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                        'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                        'getcontentlength' => '163'
+                )
+        );
+
+        $ret['list'] = array(
+                'DOCUMENTS/' => array(
+                        'title' => 'Documents',
+                        'thumbnail' => null,
+                        'children' => array(),
+                        'datemodified' => null,
+                        'path' => '/dir/Documents/'
+                ),
+                'WELCOME.TXT' => array(
+                        'title' => 'welcome.txt',
+                        'thumbnail' => null,
+                        'size' => '163',
+                        'datemodified' => 1481213186,
+                        'source' => '/dir/welcome.txt'
+                )
+        );
+
+        // Valid response from the client.
+        $mock = $this->createMock(owncloud::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
+        $mock->expects($this->once())->method('get_listing')->will($this->returnValue($response));
+        $this->set_private_repository($mock);
+
+        $ls = $this->repo->get_listing('/dir/');
+
+        // Can not be tested properly.
+        $ls['list']['DOCUMENTS/']['thumbnail'] = null;
+        $ls['list']['WELCOME.TXT']['thumbnail'] = null;
+
+        $this->assertEquals($ret, $ls);
+    }
+
+    /**
+     * Helper method to set required return parameters for get_listing.
+     *
+     * @return array array, which contains the parameters.
+     */
+    protected function get_ret() {
+        $ret = array();
+        $ret['dynload'] = true;
+        $ret['nosearch'] = true;
+        $ret['nologin'] = false;
+        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
+        $ret['list'] = array();
+
+        return $ret;
     }
 
     /**
