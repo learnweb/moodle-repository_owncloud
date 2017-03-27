@@ -125,6 +125,7 @@ class repository_owncloud_testcase extends advanced_testcase {
     public function test_get_listing_root() {
         $ret = $this->get_ret();
 
+        // This is the expected response from the get_listing method in the owncloud client.
         $response = array(
                 array(
                         'href' => '/owncloud9.2/remote.php/webdav/',
@@ -148,6 +149,7 @@ class repository_owncloud_testcase extends advanced_testcase {
                 )
         );
 
+        // The expected result from the get_listing method in the repository_owncloud class.
         $ret['list'] = array(
                 'DOCUMENTS/' => array(
                         'title' => 'Documents',
@@ -186,11 +188,14 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_get_listing_directory() {
         $ret = $this->get_ret();
+
+        // An additional directory path has to be added to the 'path' field within the returned array.
         $ret['path'][1] = array(
                 'name' => 'dir',
                 'path' => '/dir/'
         );
 
+        // This is the expected response from the get_listing method in the owncloud client.
         $response = array(
                 array(
                         'href' => '/owncloud9.2/remote.php/webdav/dir/',
@@ -214,6 +219,7 @@ class repository_owncloud_testcase extends advanced_testcase {
                 )
         );
 
+        // The expected result from the get_listing method in the repository_owncloud class.
         $ret['list'] = array(
                 'DOCUMENTS/' => array(
                         'title' => 'Documents',
