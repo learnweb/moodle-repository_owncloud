@@ -196,7 +196,7 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_logout() {
         $mock = $this->createMock(owncloud::class);
-        $mock->expects($this->once())->method('logout');
+        $mock->expects($this->once())->method('log_out');
         $mock->expects($this->once())->method('get_login_url')->will($this->returnValue(new moodle_url('url')));
         $this->set_private_repository($mock);
         $this->repo->options['ajax'] = true;
