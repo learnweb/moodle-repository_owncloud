@@ -68,6 +68,8 @@ class repository_owncloud extends repository {
 
     /**
      * Output method, which prints a warning inside an activity, which uses the ownCloud repository.
+     *
+     * @codeCoverageIgnore
      */
     private function print_warning() {
         global $CFG, $OUTPUT;

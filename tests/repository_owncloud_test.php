@@ -192,6 +192,18 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
+     * Test callback.
+     */
+    public function test_callback() {
+        $mock = $this->createMock(owncloud::class);
+        // Should call check_login exactly once.
+        $mock->expects($this->once())->method('check_login');
+        $this->set_private_repository($mock);
+
+        $this->repo->callback();
+    }
+
+    /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
      *
      * @param $mock object mock object, which needs to be inserted.
