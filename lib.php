@@ -361,7 +361,7 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Methode to define which filetypes are supported (hardcoded can not be changed in Admin Menü)
+     * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
      *
      * For a full list of possible types and groups, look in lib/filelib.php, function get_mimetypes_array()
      *
@@ -372,7 +372,7 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method to define which Files are supported (hardcoded can not be changed in Admin Menü)
+     * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
      *
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
