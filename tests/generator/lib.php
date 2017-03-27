@@ -37,15 +37,4 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud_generator extends testing_repository_generator {
-    /**
-     * Creates Course, course members, groups and groupings to test the block.
-     */
-    public function test_create_preparation () {
-        $generator = advanced_testcase::getDataGenerator();
-        $data = array();
-        $course = $generator->create_course(array('name' => 'A course'));
-        $data['course'] = $course;
-
-        return $data; // Return the user, course and group objects.
-    }
 }
