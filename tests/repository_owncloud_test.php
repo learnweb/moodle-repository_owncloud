@@ -97,6 +97,28 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
+     * Test for the get_file method of the repository_owncloud class.
+     */
+    public function test_get_file() {
+        // WebDAV socket is not open.
+        $mock = $this->createMock(\tool_oauth2owncloud\owncloud::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(false));
+        $private = $this->set_private_repository($mock);
+
+        $this->assertFalse($this->repo->get_file('path'));
+
+        // WebDAV socket is open and the request successful.
+        $mock = $this->createMock(\tool_oauth2owncloud\owncloud::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
+        $mock->expects($this->once())->method('get_file')->will($this->returnValue(true));
+        $private->setValue($this->repo, $mock);
+
+        $result = $this->repo->get_file('path', 'file');
+
+        $this->assertNotNull($result['path']);
+    }
+
+    /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
      *
      * @param $mock object mock object, which needs to be inserted.
