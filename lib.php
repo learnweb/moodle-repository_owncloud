@@ -278,6 +278,8 @@ class repository_owncloud extends repository {
 
     /**
      * Method that generates a reference link to the chosen file.
+     *
+     * @codeCoverageIgnore
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         // Delivers a download link to the concerning file.

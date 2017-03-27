@@ -165,7 +165,30 @@ class repository_owncloud_testcase extends advanced_testcase {
      * Test print_login.
      */
     public function test_print_login() {
-        $this->assertEquals(1, 1);
+        $mock = $this->createMock(owncloud::class);
+        $mock->expects($this->exactly(2))->method('get_login_url')->will($this->returnValue(new moodle_url('url')));
+        $this->set_private_repository($mock);
+
+        // Test with ajax activated.
+        $this->repo->options['ajax'] = true;
+
+        $url = new moodle_url('url');
+        $ret = array();
+        $btn = new \stdClass();
+        $btn->type = 'popup';
+        $btn->url = $url->out(false);
+        $ret['login'] = array($btn);
+
+        $this->assertEquals($ret, $this->repo->print_login());
+
+        // Test without ajax.
+        $this->repo->options['ajax'] = false;
+
+        $output = html_writer::link($url, get_string('login', 'repository'),
+                array('target' => '_blank',  'rel' => 'noopener noreferrer'));
+
+        $this->expectOutputString($output);
+        $this->repo->print_login();
     }
 
     /**
