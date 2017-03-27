@@ -23,10 +23,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// @codeCoverageIgnoreStart
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
+// @codeCoverageIgnoreEnd
 use tool_oauth2owncloud\owncloud;
+
 /**
  * ownCloud repository class.
  *
@@ -68,6 +71,8 @@ class repository_owncloud extends repository {
 
     /**
      * Output method, which prints a warning inside an activity, which uses the ownCloud repository.
+     *
+     * @codeCoverageIgnore
      */
     private function print_warning() {
         global $CFG, $OUTPUT;
@@ -356,7 +361,7 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Methode to define which filetypes are supported (hardcoded can not be changed in Admin Menü)
+     * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
      *
      * For a full list of possible types and groups, look in lib/filelib.php, function get_mimetypes_array()
      *
@@ -367,7 +372,7 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method to define which Files are supported (hardcoded can not be changed in Admin Menü)
+     * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
      *
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system

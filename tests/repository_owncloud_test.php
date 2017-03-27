@@ -274,6 +274,46 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
+     * Test logout.
+     */
+    public function test_logout() {
+        $mock = $this->createMock(owncloud::class);
+        $mock->expects($this->once())->method('log_out');
+        $mock->expects($this->exactly(2))->method('get_login_url')->will($this->returnValue(new moodle_url('url')));
+        $this->set_private_repository($mock);
+        $this->repo->options['ajax'] = true;
+
+        $this->assertNull(get_user_preferences('oC_token'));
+        $this->assertEquals($this->repo->print_login(), $this->repo->logout());
+    }
+
+    /**
+     * Test callback.
+     */
+    public function test_callback() {
+        $mock = $this->createMock(owncloud::class);
+        // Should call check_login exactly once.
+        $mock->expects($this->once())->method('check_login');
+        $this->set_private_repository($mock);
+
+        $this->repo->callback();
+    }
+
+    /**
+     * Test supported_filetypes.
+     */
+    public function test_supported_filetypes() {
+        $this->assertEquals('*', $this->repo->supported_filetypes());
+    }
+
+    /**
+     * Test supported_returntypes.
+     */
+    public function test_supported_returntypes() {
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE, $this->repo->supported_returntypes());
+    }
+
+    /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
      *
      * @param $mock object mock object, which needs to be inserted.
