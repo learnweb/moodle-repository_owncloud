@@ -31,5 +31,5 @@ $plugin->component = 'repository_owncloud'; // Full name of the plugin (used for
 $plugin->release = 'v0.1.0';
 $plugin->maturity = MATURITY_BETA;
 $plugin->dependencies = array(
-    'tool_oauth2owncloud' => 2017032305
+    'tool_oauth2owncloud' => 2017032700
 );
