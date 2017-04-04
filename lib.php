@@ -164,7 +164,7 @@ class repository_owncloud extends repository {
 
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
             // the settings page of the oauth2owncloud admin tool.
-            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'settings.php?section=oauth2owncloud';
+            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
         }
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
@@ -348,7 +348,7 @@ class repository_owncloud extends repository {
     public static function type_config_form($mform, $classname = 'repository') {
         global $CFG, $OUTPUT;
 
-        $link = $CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2owncloud/index.php';
+        $link = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
 
         // A notification is added to the settings page in form of a notification.
         $html = $OUTPUT->notification(get_string('settings', 'repository_owncloud',
