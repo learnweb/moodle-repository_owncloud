@@ -25,11 +25,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017032700;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2017051800;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2016052300;        // Requires Moodle 3.1 version.
 $plugin->component = 'repository_owncloud'; // Full name of the plugin (used for diagnostics).
 $plugin->release = 'v0.1.0';
-$plugin->maturity = MATURITY_BETA;
+$plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = array(
     'tool_oauth2owncloud' => 2017032700
 );
