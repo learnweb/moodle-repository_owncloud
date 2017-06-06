@@ -42,30 +42,30 @@ class repository_owncloud extends repository {
 
     /** @var null|owncloud the ownCloud client. */
     private $owncloud = null;
-
+    /**
+     * OAuth 2 client
+     * @var \core\oauth2\client
+     */
+    private $client = null;
+    /**
+     * OAuth 2 Issuer
+     * @var \core\oauth2\issuer
+     */
+    private $issuer = null;
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
-
-        // The WebDav client is no longer handled in here.
-        $returnurl = new moodle_url('/repository/repository_callback.php', [
-                'callback'  => 'yes',
-                'repo_id'   => $repositoryid,
-                'sesskey'   => sesskey(),
-        ]);
-
-        // The owncloud Object, which is described in the Admin Tool oauth2owncloud
-        // is created. From now on is will handle all interactions with the owncloud OAuth2 Client.
-        $this->owncloud = new owncloud($returnurl);
-
-        // Checks, whether all the required data is available. $this->options['checked'] is set to true, if the
-        // data was checked once to prevent multiple printings of the warning.
-        if (empty($this->options['checked'])) {
-            $this->options['checked'] = true;
-            $this->options['success'] = $this->owncloud->check_data();
-
-            if (!$this->options['success']) {
-                $this->print_warning();
-            }
+        global $DB;
+// A Repository is marked as disabled when no issuer is present
+        try {
+            // Needs the issuer id
+            // TODO check whether more than one issuer exist.
+            $issuer = $DB->get_record('oauth2_issuer', array('name' => 'testowncloud'));
+            $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
+        } catch (dml_missing_record_exception $e) {
+            $this->disabled = true;
+        }
+        if ($this->issuer && !$this->issuer->get('enabled')) {
+            $this->disabled = true;
         }
     }
 
@@ -100,12 +100,13 @@ class repository_owncloud extends repository {
      * @return bool false, if set to hidden or settings data is missing.
      */
     public function is_visible() {
-        if (!parent::is_visible()) {
+        /*if (!parent::is_visible()) {
             return false;
         } else {
             // If any settings data is missing, return false.
             return $this->options['success'];
-        }
+        }*/
+        return true;
     }
 
     /**
@@ -297,8 +298,26 @@ class repository_owncloud extends repository {
      * @return bool false, if no Access Token is set or can be requested.
      */
     public function check_login() {
-        return $this->owncloud->check_login();
+        $client = $this->get_user_oauth_client();
+        return $client->is_logged_in();
     }
+    protected function get_user_oauth_client($overrideurl = false) {
+        if ($this->client) {
+            return $this->client;
+        }
+        if ($overrideurl) {
+            $returnurl = $overrideurl;
+        } else {
+            $returnurl = new moodle_url('/repository/repository_callback.php');
+            $returnurl->param('callback', 'yes');
+            $returnurl->param('repo_id', $this->id);
+            $returnurl->param('sesskey', sesskey());
+        }
+        $this->client = \core\oauth2\api::get_user_oauth_client($this->issuer, $returnurl);
+        return $this->client;
+    }
+
+
 
     /**
      * Prints a simple Login Button which redirects to an authorization window from ownCloud.
@@ -306,7 +325,8 @@ class repository_owncloud extends repository {
      * @return mixed login window properties.
      */
     public function print_login() {
-        $url = $this->owncloud->get_login_url();
+        $client = $this->get_user_oauth_client();
+        $url = $client->get_login_url();
         if ($this->options['ajax']) {
             $ret = array();
             $btn = new \stdClass();
