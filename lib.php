@@ -59,7 +59,7 @@ class repository_owncloud extends repository {
         try {
             // Needs the issuer id
             // TODO check whether more than one issuer exist.
-            $issuer = $DB->get_record('oauth2_issuer', array('name' => 'testowncloud'));
+            $issuer = $DB->get_record('oauth2_issuer', array('name' => 'owncloud'));
             $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
         } catch (dml_missing_record_exception $e) {
             $this->disabled = true;
@@ -170,9 +170,9 @@ class repository_owncloud extends repository {
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
-        if (!$this->owncloud->open()) {
+        /*if (!$this->owncloud->open()) {
             return $ret;
-        }
+        }*/
 
         if (empty($path) || $path == '/') {
             $path = '/';
@@ -193,17 +193,17 @@ class repository_owncloud extends repository {
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        $dir = $this->owncloud->get_listing(urldecode($path));
+        //$dir = $this->owncloud->get_listing(urldecode($path));
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
-        if (!is_array($dir)) {
+        /*if (!is_array($dir)) {
             return $ret;
-        }
+        }*/
         $folders = array();
         $files = array();
         $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
-        foreach ($dir as $v) {
+        /*foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
                 $v['lastmodified'] = strtotime($v['lastmodified']);
             } else {
@@ -241,7 +241,7 @@ class repository_owncloud extends repository {
             }
         }
         ksort($files);
-        ksort($folders);
+        ksort($folders);*/
         $ret['list'] = array_merge($folders, $files);
         return $ret;
     }
@@ -256,8 +256,8 @@ class repository_owncloud extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        $response = $this->owncloud->get_link($url);
-        return $response['link'];
+    //    $response = $this->owncloud->get_link($url);
+     //   return $response['link'];
     }
 
     /**
@@ -346,16 +346,25 @@ class repository_owncloud extends repository {
      * @return array login window properties.
      */
     public function logout() {
-        $this->owncloud->log_out();
-        set_user_preference('oC_token', null);
-        return $this->print_login();
+        $client = $this->get_user_oauth_client();
+        $client->log_out();
+        return parent::logout();
     }
 
     /**
      * Sets up access token after the redirection from ownCloud.
      */
     public function callback() {
-        $this->owncloud->check_login();
+        $client = $this->get_user_oauth_client();
+        $client->setHeader(array(
+            'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
+        ));
+
+            // If an Access Token is stored within the Client, it has to be deleted to prevent the addidion
+            // of an Bearer Authorization Header in the request method.
+        //$client->log_out();
+        // This will upgrade to an access token if we have an authorization code and save the access token in the session.
+        $client->is_logged_in();
     }
 
     /**
