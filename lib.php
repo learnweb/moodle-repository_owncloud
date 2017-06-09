@@ -118,7 +118,7 @@ class repository_owncloud extends repository {
      * @return array|bool returns either the moodle path to the file or false.
      */
     public function get_file($url, $title = '') {
-        $url = urldecode($url);
+        /*$url = urldecode($url);
         $path = $this->prepare_file($title);
         if (!$this->owncloud->open()) {
             return false;
@@ -126,7 +126,7 @@ class repository_owncloud extends repository {
 
         $this->owncloud->get_file($url, $path);
 
-        return array('path' => $path);
+        return array('path' => $path);*/
     }
 
     /**
@@ -165,7 +165,8 @@ class repository_owncloud extends repository {
 
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
             // the settings page of the oauth2owncloud admin tool.
-            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
+            $settingsurl = new moodle_url('/admin/tool/oauth2/issuers.php');
+            $ret['manage'] = $settingsurl;
         }
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
@@ -301,6 +302,11 @@ class repository_owncloud extends repository {
         $client = $this->get_user_oauth_client();
         return $client->is_logged_in();
     }
+
+    /**
+     * @param bool $overrideurl
+     * @return \core\oauth2\client|\core\oauth2\core\oauth2\client
+     */
     protected function get_user_oauth_client($overrideurl = false) {
         if ($this->client) {
             return $this->client;
@@ -353,15 +359,18 @@ class repository_owncloud extends repository {
 
     /**
      * Sets up access token after the redirection from ownCloud.
+     * The Moodle API transfers the Client ID and the token as Params in the Request.
+     * However the OwnCLoud Plugin excepts the Client ID and Secret to be in the Request Header.
+     * Therefore the Header is set beforehand, and ClientID and Secret are passed twice.
      */
     public function callback() {
         $client = $this->get_user_oauth_client();
         $client->setHeader(array(
             'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
         ));
-
             // If an Access Token is stored within the Client, it has to be deleted to prevent the addidion
             // of an Bearer Authorization Header in the request method.
+        // TODO When is this neccessary?
         //$client->log_out();
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
