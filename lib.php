@@ -28,8 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
 // @codeCoverageIgnoreEnd
-use tool_oauth2owncloud\owncloud;
-
 /**
  * ownCloud repository class.
  *
@@ -38,7 +36,7 @@ use tool_oauth2owncloud\owncloud;
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_owncloud extends repository {
+class repository_owncloud2 extends repository {
 
     /** @var null|owncloud the ownCloud client. */
     private $owncloud = null;
@@ -52,23 +50,66 @@ class repository_owncloud extends repository {
      * @var \core\oauth2\issuer
      */
     private $issuer = null;
+
+    /** @var null|owncloud_client webdav client which is used for webdav operations. */
+    private $dav = null;
+
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
         global $DB;
-// A Repository is marked as disabled when no issuer is present
+        // A Repository is marked as disabled when no issuer is present
         try {
             // Needs the issuer id
             // TODO check whether more than one issuer exist.
             $issuer = $DB->get_record('oauth2_issuer', array('name' => 'owncloud'));
             $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
+            $this->initiate_webdavclient($issuer->id);
         } catch (dml_missing_record_exception $e) {
             $this->disabled = true;
         }
         if ($this->issuer && !$this->issuer->get('enabled')) {
             $this->disabled = true;
         }
+        // Initialise the webdavclient.
+        // The WebDAV attributes are set beforehand.
     }
 
+    /**
+     * Initiates the webdavclient.
+     * @param $issuerid
+     */
+    public function initiate_webdavclient($issuerid) {
+        global $DB;
+        try {
+            $record = $DB->get_record('oauth2_issuer', array('id' => $issuerid), 'baseurl');
+            $baseurl = $record->baseurl;
+        } catch (Exception $e){
+            // TODO some meaningfull exception
+        }
+        $https = 'https://';
+        $http = 'http://';
+        if (is_string($baseurl) || strlen($http)<strlen($baseurl)) {
+            if (substr($baseurl, 0, 8) === $https) {
+                $webdavtype = 'ssl://';
+                $webdavport = 443;
+                $server = substr($baseurl, 8);
+            }
+            if (substr($baseurl, 0, 7) === $http) {
+                $webdavtype = '';
+                $webdavport = 80;
+                $server = substr($baseurl, 7);
+            } else {
+                // TODO some meaningfull exception
+            }
+        } else {
+            // TODO some meaningfull exception
+        }
+        // Authentication method is set to Bearer, since we use OAuth 2.0.
+        // repository_googledocs\rest
+        $this->dav = new repository_owncloud2\owncloud_client2($server, '', '', 'bearer', $webdavtype);
+        $this->dav->port = $webdavport;
+        $this->dav->debug = false;
+    }
     /**
      * Output method, which prints a warning inside an activity, which uses the ownCloud repository.
      *
@@ -138,7 +179,7 @@ class repository_owncloud extends repository {
      * @return array directory properties.
      */
     public function get_listing($path='', $page = '') {
-        global $CFG, $OUTPUT;
+        global $CFG, $OUTPUT, $DB;
 
         // Array, which will have to be returned by this function.
         $ret  = array();
@@ -165,15 +206,14 @@ class repository_owncloud extends repository {
 
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
             // the settings page of the oauth2owncloud admin tool.
-            $settingsurl = new moodle_url('/admin/tool/oauth2/issuers.php');
-            $ret['manage'] = $settingsurl;
+            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
         }
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
-        /*if (!$this->owncloud->open()) {
+        if (!$this->dav->open()) {
             return $ret;
-        }*/
+        }
 
         if (empty($path) || $path == '/') {
             $path = '/';
@@ -184,8 +224,8 @@ class repository_owncloud extends repository {
             // Every sub-path to the last part of the current path, is a parent path.
             for ($i = 0; $i < count($chunks); $i++) {
                 $ret['path'][] = array(
-                        'name' => urldecode($chunks[$i]),
-                        'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
+                    'name' => urldecode($chunks[$i]),
+                    'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
                 );
             }
         }
@@ -194,17 +234,29 @@ class repository_owncloud extends repository {
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        //$dir = $this->owncloud->get_listing(urldecode($path));
+        try {
+            // Needs the issuer id
+            // TODO check whether more than one issuer exist.
+            $issuer = $DB->get_record('oauth2_issuer', array('name' => 'owncloud'));
+            $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
+        } catch (dml_missing_record_exception $e) {
+            // TODO Meaningfull exception
+        }
+        $client = $this->get_user_oauth_client();
+        $token = $client->get_accesstoken();
+        $this->dav->set_token($token);
+        // TODO Accesstoken is transfered, somehow ls is std class
+        $dir = $this->dav->ls('/remote.php/webdav' . '/');
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
-        /*if (!is_array($dir)) {
+        if (!is_array($dir)) {
             return $ret;
-        }*/
+        }
         $folders = array();
         $files = array();
         $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
-        /*foreach ($dir as $v) {
+        foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
                 $v['lastmodified'] = strtotime($v['lastmodified']);
             } else {
@@ -222,29 +274,30 @@ class repository_owncloud extends repository {
                 // A folder.
                 if ($path != $v['href']) {
                     $folders[strtoupper($title)] = array(
-                            'title' => rtrim($title, '/'),
-                            'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
-                            'children' => array(),
-                            'datemodified' => $v['lastmodified'],
-                            'path' => $v['href']
+                        'title' => rtrim($title, '/'),
+                        'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
+                        'children' => array(),
+                        'datemodified' => $v['lastmodified'],
+                        'path' => $v['href']
                     );
                 }
             } else {
                 // A file.
                 $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
                 $files[strtoupper($title)] = array(
-                        'title' => $title,
-                        'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
-                        'size' => $size,
-                        'datemodified' => $v['lastmodified'],
-                        'source' => $v['href']
+                    'title' => $title,
+                    'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
+                    'size' => $size,
+                    'datemodified' => $v['lastmodified'],
+                    'source' => $v['href']
                 );
             }
         }
         ksort($files);
-        ksort($folders);*/
+        ksort($folders);
         $ret['list'] = array_merge($folders, $files);
         return $ret;
+
     }
 
     /**
@@ -395,6 +448,7 @@ class repository_owncloud extends repository {
 
         $mform->addElement('html', $html);
 
+        // TODO add Elements for endpoints aber wo werte ich die aus?
         parent::type_config_form($mform);
     }
 

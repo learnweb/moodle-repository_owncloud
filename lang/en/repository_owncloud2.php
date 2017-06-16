@@ -23,10 +23,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 // General.
-$string['pluginname'] = 'ownCloud';
+$string['pluginname'] = 'ownCloud2';
 $string['configplugin'] = 'ownCloud repository configuration';
-$string['owncloud'] = 'ownCloud';
-$string['owncloud:view'] = 'View ownCloud';
+$string['owncloud2'] = 'ownCloud2';
+$string['owncloud2:view'] = 'View ownCloud2';
+$string['configplugin'] = 'ownCloud2 configuration';
+$string['pluginname_help'] = 'ownCloud2 repository';
 
 // Settings reminder.
 $string['settings'] = 'If you have not done it yet, you should edit your {$a}. It is crucial in order to be able to connect to ownCloud.';

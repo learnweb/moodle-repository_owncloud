@@ -1,0 +1,134 @@
+							      >	namespace tool_oauth2owncloud;
+							      >	use core_php_time_limit;
+							      >
+class webdav_client {					      |	class owncloud_client {
+    private $_token;					      <
+							      >	    /** The access token for OAuth2 is safed within the WebDa
+							      >	    private $_token = null;
+							      >
+    function __construct($server = '', $user = '', $pass = '' |	    public function __construct($server = '', $user = '', $pa
+    public function _set_token($token) {		      <
+        $this->_token = $token;				      <
+    }							      <
+    function set_protocol($version) {			      |	    public function set_protocol($version) {
+    function iso8601totime($iso8601) {			      |	    public function iso8601totime($iso8601) {
+    function open() {					      |	    public function open() {
+    function close() {					      |	    public function close() {
+    function check_webdav() {				      |	    public function check_webdav() {
+    function options() {				      |	    public function options() {
+     *							      <
+     * @param string path				      |	     * seems to be http ... proceed
+     * @return int status code received as response from webd <
+     */							      <
+    function mkcol($path) {				      <
+        $this->_path = $this->translate_uri($path);	      <
+        $this->header_unset();				      <
+        $this->create_basic_request('MKCOL');		      <
+        $this->send_request();				      <
+        $this->get_respond();				      <
+        $response = $this->process_respond();		      <
+        // validate the response ...			      <
+        // check http-version				      <
+        $http_version = $response['status']['http-version'];  <
+        if ($http_version == 'HTTP/1.1' || $http_version == ' <
+            /** seems to be http ... proceed		      <
+							      >	     * @param string path
+							      >	     * @return int status code received as response from webd
+							      >	    public function mkcol($path) {
+							      >	        $this->_path = $this->translate_uri($path);
+							      >	        $this->header_unset();
+							      >	        $this->create_basic_request('MKCOL');
+							      >	        $this->send_request();
+							      >	        $this->get_respond();
+							      >	        $response = $this->process_respond();
+							      >	        // validate the response ...
+							      >	        // check http-version
+							      >	        $httpversion = $response['status']['http-version'];
+							      >	        if ($httpversion == 'HTTP/1.1' || $httpversion == 'HT
+    function get($path, &$buffer, $fp = null) {		      |	    public function get($path, &$buffer, $fp = null) {
+        $http_version = $response['status']['http-version'];  |	        $httpversion = $response['status']['http-version'];
+        if ($http_version == 'HTTP/1.1' || $http_version == ' |	        if ($httpversion == 'HTTP/1.1' || $httpversion == 'HT
+    function put($path, $data ) {			      |	    public function put($path, $data ) {
+    function put_file($path, $filename) {		      |	    public function put_file($path, $filename) {
+    function get_file($srcpath, $localpath) {		      |	    public function get_file($srcpath, $localpath) {
+    function copy_file($src_path, $dst_path, $overwrite) {    |	    public function copy_file($srcpath, $dstpath, $overwrite)
+        $this->_path = $this->translate_uri($src_path);	      |	        $this->_path = $this->translate_uri($srcpath);
+        $this->header_add(sprintf('Destination: http://%s%s', |	        $this->header_add(sprintf('Destination: http://%s%s',
+    function copy_coll($src_path, $dst_path, $overwrite) {    |	    public function copy_coll($srcpath, $dstpath, $overwrite)
+        $this->_path = $this->translate_uri($src_path);	      |	        $this->_path = $this->translate_uri($srcpath);
+        $this->header_add(sprintf('Destination: http://%s%s', |	        $this->header_add(sprintf('Destination: http://%s%s',
+    function move($src_path,$dst_path, $overwrite) {	      |	    public function move($src_path, $dst_path, $overwrite) {
+        $this->_path = $this->translate_uri($src_path);	      |	        //$this->_path = $this->translate_uri($src_path);
+							      >	        $this->_path = $src_path;
+    function lock($path) {				      |	    public function lock($path) {
+    function unlock($path, $locktoken) {		      |	    public function unlock($path, $locktoken) {
+    function delete($path) {				      |	    public function delete($path) {
+    function ls($path) {				      |	    public function ls($path) {
+    function gpi($path) {				      |	    public function gpi($path) {
+    function is_file($path) {				      |	    public function is_file($path) {
+    function is_dir($path) {				      |	    public function is_dir($path) {
+    function mput($filelist) {				      |	    public function mput($filelist) {
+            for ($i=1; $i<sizeof($pathparts)-1; $i++) {	      |	            for ($i = 1; $i < count($pathparts) - 1; $i++) {
+    function mget($filelist) {				      |	    public function mget($filelist) {
+            for ($i=1; $i<sizeof($pathparts)-1; $i++) {	      |	            for ($i = 1; $i < count($pathparts) - 1; $i++) {
+        } else {					      <
+            // do nothing				      <
+        } else {					      <
+            // do nothing				      <
+        } else {					      <
+            // do nothing				      <
+        //$request .= sprintf('Connection: Keep-Alive');      |	        // Request .= sprintf('Connection: Keep-Alive');
+							      >	            // Our local WebDav client is adjusted to enable 
+							      >	     * Setter method for the Access Token, which is stored wi
+							      >	     * @param $token Access Token, which has to be stored.
+							      >	     */
+							      >	    public function set_token($token) {
+							      >	        $this->_token = $token;
+							      >	    }
+							      >
+							      >	    /**
+        // attention: do not make max_chunk_size to big....   |	        // attention: do not make maxchunksize to big....
+        $max_chunk_size = 8192;				      |	        $maxchunksize = 8192;
+                $chunk_size='';				      |	                    $chunksize = '';
+                    $chunk_size.=$byte;			      |	                        $chunksize .= $byte;
+                $chunk_size=hexdec($chunk_size);              |	                    $chunksize = hexdec($chunksize);         
+                if ($chunk_size > 0) {			      |	                    if ($chunksize > 0) {
+                    while ($read < $chunk_size) {	      |	                        while ($read < $chunksize) {
+            } while ($chunk_size);                            |	                } while ($chunksize);                        
+            if ($matches[1] <= $max_chunk_size ) {	      |	                if ($matches[1] <= $maxchunksize ) {
+                        $max_chunk_size = $loadsize;	      |	                            $maxchunksize = $loadsize;
+                            $mod = $max_chunk_size % ($matche |	                                $mod = $maxchunksize % ($matc
+                            $chunk_size = ($mod == $max_chunk |	                                $chunksize = ($mod == $maxchu
+                            $chunk .= fread($this->sock, $chu |	                                $chunk .= fread($this->sock, 
+                            $this->_error_log('mod: ' . $mod  |	                                $this->_error_log('mod: ' . $
+                        } while ($mod == $max_chunk_size);    |	                            } while ($mod == $maxchunksize);
+            //trying to get the full length of max_chunk_size |	                // Trying to get the full length of maxchunks
+            $chunk = fread($this->sock, $max_chunk_size);     |	                $chunk = fread($this->sock, $maxchunksize);
+            if ($loadsize < $max_chunk_size) {		      |	                if ($loadsize < $maxchunksize) {
+                $max_chunk_size = $loadsize;		      |	                    $maxchunksize = $loadsize;
+                $mod = $max_chunk_size % ($matches[1] - $load |	                    $mod = $maxchunksize % ($matches[1] - $lo
+                $chunk_size = ($mod == $max_chunk_size ? $max |	                    $chunksize = ($mod == $maxchunksize ? $ma
+                $chunk = fread($this->sock, $chunk_size);     |	                    $chunk = fread($this->sock, $chunksize);
+                $this->_error_log('mod: ' . $mod . ' chunk: ' |	                    $this->_error_log('mod: ' . $mod . ' chun
+            } while ($mod == $max_chunk_size);		      |	                } while ($mod == $maxchunksize);
+        $header_done = false;				      |	        $headerdone = false;
+        list($ret_struct['status']['http-version'],	      |	        list($retstruct['status']['http-version'],
+            $ret_struct['status']['status-code'],	      |	            $retstruct['status']['status-code'],
+            $ret_struct['status']['reason-phrase']) = explode |	            $retstruct['status']['reason-phrase']) = explode(
+            if (rtrim($lines[$i]) == '' && !$header_done) {   |	            if (rtrim($lines[$i]) == '' && !$headerdone) {
+                $header_done = true;			      |	                $headerdone = true;
+            if (!$header_done ) {			      |	            if (!$headerdone ) {
+                if (empty($ret_struct['header'])) {	      |	                if (empty($retstruct['header'])) {
+                    $ret_struct['header'] = array();	      |	                    $retstruct['header'] = array();
+                if (empty($ret_struct['header'][$fieldname])) |	                if (empty($retstruct['header'][$fieldname])) 
+                    $ret_struct['header'][$fieldname] = trim( |	                    $retstruct['header'][$fieldname] = trim($
+                    $ret_struct['header'][$fieldname] .= ','  |	                    $retstruct['header'][$fieldname] .= ',' .
+        $ret_struct['body'] = $this->_body;		      |	        $retstruct['body'] = $this->_body;
+        $this->_error_log('process_respond: ' . var_export($r |	        $this->_error_log('process_respond: ' . var_export($r
+        return $ret_struct;				      |	        return $retstruct;
+        $native_path = html_entity_decode($uri);	      |	        $nativepath = html_entity_decode($uri);
+        $parts = explode('/', $native_path);		      |	        $parts = explode('/', $nativepath);
+    private function _error_log($err_string) {		      |	    private function _error_log($errstring) {
+        if ($this->_debug) {				      |	        // if ($this->_debug) {
+            error_log($err_string);			      |	        // error_log($errstring);
+        }						      |	        // }
