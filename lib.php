@@ -159,15 +159,18 @@ class repository_owncloud2 extends repository {
      * @return array|bool returns either the moodle path to the file or false.
      */
     public function get_file($url, $title = '') {
-        /*$url = urldecode($url);
+        $url = urldecode($url);
         $path = $this->prepare_file($title);
-        if (!$this->owncloud->open()) {
+        if (!$this->dav->open()) {
             return false;
         }
+        $client = $this->get_user_oauth_client();
+        $token = $client->get_accesstoken();
+        // Merely the token code is transfered, expirationdate is not neccessary
+        $this->dav->set_token($token->token);
+        $this->dav->get_file('/remote.php/webdav' . $url, $path);
 
-        $this->owncloud->get_file($url, $path);
-
-        return array('path' => $path);*/
+        return array('path' => $path);
     }
 
     /**
