@@ -38,8 +38,6 @@ require_once($CFG->dirroot . '/repository/lib.php');
  */
 class repository_owncloud2 extends repository {
 
-    /** @var null|owncloud the ownCloud client. */
-    private $owncloud = null;
     /**
      * OAuth 2 client
      * @var \core\oauth2\client
@@ -54,6 +52,12 @@ class repository_owncloud2 extends repository {
     /** @var null|owncloud_client webdav client which is used for webdav operations. */
     private $dav = null;
 
+    /**
+     * repository_owncloud2 constructor.
+     * @param int $repositoryid
+     * @param bool|int|stdClass $context
+     * @param array $options
+     */
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
         global $DB;
@@ -164,11 +168,9 @@ class repository_owncloud2 extends repository {
         if (!$this->dav->open()) {
             return false;
         }
-        $client = $this->get_user_oauth_client();
-        $token = $client->get_accesstoken();
-        // Merely the token code is transfered, expirationdate is not neccessary
-        $this->dav->set_token($token->token);
-        $this->dav->get_file('/remote.php/webdav' . $url, $path);
+        $this->set_accesstoken();
+        $parsedurl = $this->get_parsedurl('webdav');
+        $this->dav->get_file($parsedurl['path'] . $url, $path);
 
         return array('path' => $path);
     }
@@ -182,35 +184,10 @@ class repository_owncloud2 extends repository {
      * @return array directory properties.
      */
     public function get_listing($path='', $page = '') {
-        global $CFG, $OUTPUT, $DB;
-
-        // Array, which will have to be returned by this function.
-        $ret  = array();
-
-        // Tells the file picker to fetch the list dynamically. An AJAX request is send to the server,
-        // as soon as the user opens a folder.
-        $ret['dynload'] = true;
-
-        // Search is disabled in this plugin.
-        $ret['nosearch'] = true;
-
-        // We need to provide a login link, because the user needs login himself with his own ownCloud
-        // user account.
-        $ret['nologin'] = false;
-
-        // Contains all parent paths to the current path.
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
-
-        // Contains all file/folder information and is required to build the file/folder tree.
-        $ret['list'] = array();
-
+        global $OUTPUT;
         $sitecontext = context_system::instance();
-        if (has_capability('moodle/site:config', $sitecontext)) {
 
-            // URL to manage a external repository. It is displayed in the file picker and in this case directs
-            // the settings page of the oauth2owncloud admin tool.
-            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
-        }
+        $ret = $this->prepare_get_listing();
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
@@ -232,24 +209,15 @@ class repository_owncloud2 extends repository {
                 );
             }
         }
+        // Firstly the accesstoken is set ...
+        $this->set_accesstoken();
+        // Then the endpoint for webdav access is generated from the registered endpoints and parsed.
+        $parsedurl = $this->get_parsedurl('webdav');
 
-        // The WebDav methods are getting outsourced and encapsulated to the owncloud class.
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        try {
-            // Needs the issuer id
-            // TODO check whether more than one issuer exist.
-            $issuer = $DB->get_record('oauth2_issuer', array('name' => 'owncloud'));
-            $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
-        } catch (dml_missing_record_exception $e) {
-            // TODO Meaningfull exception
-        }
-        $client = $this->get_user_oauth_client();
-        $token = $client->get_accesstoken();
-        // Merely the token code is transfered, expirationdate is not neccessary
-        $this->dav->set_token($token->token);
-        $dir = $this->dav->ls('/remote.php/webdav' . '/' . urldecode($path));
+        $dir = $this->dav->ls($parsedurl['path'] . '/' . urldecode($path));
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
@@ -258,7 +226,7 @@ class repository_owncloud2 extends repository {
         }
         $folders = array();
         $files = array();
-        $webdavpath = rtrim('/'.ltrim('remote.php/webdav', '/ '), '/ ');
+        $webdavpath = rtrim('/'.ltrim($parsedurl['path'], '/ '), '/ ');
         foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
                 $v['lastmodified'] = strtotime($v['lastmodified']);
@@ -267,7 +235,7 @@ class repository_owncloud2 extends repository {
             }
 
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
-            $server = preg_quote('sns-testing.sciebo.de');
+            $server = preg_quote($parsedurl['path']);
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
             // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
@@ -478,5 +446,67 @@ class repository_owncloud2 extends repository {
      */
     public function supported_returntypes() {
         return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
+    }
+
+    /**
+     *  Sets the accesstoken for the current instance.
+     */
+    private function set_accesstoken() {
+        // Sets the Access token.
+        $client = $this->get_user_oauth_client();
+        $token = $client->get_accesstoken();
+        // Merely the token code is transfered, expirationdate is not neccessary.
+        $this->dav->set_token($token->token);
+    }
+
+    /**
+     * Returns the parsed url of the choosen endpoint.
+     * @param string $endpointname
+     * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
+     */
+    private function get_parsedurl($endpointname) {
+        try {
+            $webdavurl = $this->issuer->get_endpoint_url($endpointname);
+        } catch (Exception $e) {
+            // TODO Some meaningfull exception
+        }
+        // $parseurl = scheme https host sns-testing.sciebo.de port 443 path /remote.php/webdav
+        return parse_url($webdavurl);
+    }
+
+    /**
+     * Prepares the Params for the get_listing method.
+     * @return array
+     */
+    private function prepare_get_listing() {
+        global $CFG;
+        // Array, which will have to be returned by this function.
+        $ret  = array();
+
+        // Tells the file picker to fetch the list dynamically. An AJAX request is send to the server,
+        // as soon as the user opens a folder.
+        $ret['dynload'] = true;
+
+        // Search is disabled in this plugin.
+        $ret['nosearch'] = true;
+
+        // We need to provide a login link, because the user needs login himself with his own ownCloud
+        // user account.
+        $ret['nologin'] = false;
+
+        // Contains all parent paths to the current path.
+        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
+
+        // Contains all file/folder information and is required to build the file/folder tree.
+        $ret['list'] = array();
+
+        $sitecontext = context_system::instance();
+        if (has_capability('moodle/site:config', $sitecontext)) {
+
+            // URL to manage a external repository. It is displayed in the file picker and in this case directs
+            // the settings page of the oauth2owncloud admin tool.
+            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
+        }
+        return $ret;
     }
 }
