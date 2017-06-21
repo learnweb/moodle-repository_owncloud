@@ -244,8 +244,8 @@ class repository_owncloud2 extends repository {
         }
         $client = $this->get_user_oauth_client();
         $token = $client->get_accesstoken();
-        $this->dav->set_token($token);
-        // TODO Accesstoken is transfered, somehow ls is std class
+        // Merely the token code is transfered, expirationdate is not neccessary
+        $this->dav->set_token($token->token);
         $dir = $this->dav->ls('/remote.php/webdav' . '/');
 
         // The method get_listing return all information about all child files/folders of the
