@@ -249,7 +249,7 @@ class repository_owncloud2 extends repository {
         $token = $client->get_accesstoken();
         // Merely the token code is transfered, expirationdate is not neccessary
         $this->dav->set_token($token->token);
-        $dir = $this->dav->ls('/remote.php/webdav' . '/');
+        $dir = $this->dav->ls('/remote.php/webdav' . '/' . urldecode($path));
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
@@ -258,7 +258,7 @@ class repository_owncloud2 extends repository {
         }
         $folders = array();
         $files = array();
-        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
+        $webdavpath = rtrim('/'.ltrim('remote.php/webdav', '/ '), '/ ');
         foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
                 $v['lastmodified'] = strtotime($v['lastmodified']);
@@ -267,7 +267,7 @@ class repository_owncloud2 extends repository {
             }
 
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
-            $server = preg_quote(get_config('tool_oauth2owncloud', 'server'));
+            $server = preg_quote('sns-testing.sciebo.de');
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
             // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
