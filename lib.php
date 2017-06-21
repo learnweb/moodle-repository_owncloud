@@ -60,17 +60,31 @@ class repository_owncloud2 extends repository {
      */
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
-        global $DB;
+        global $DB, $OUTPUT;
         // A Repository is marked as disabled when no issuer is present
         try {
             // Needs the issuer id
-            // TODO check whether more than one issuer exist.
+            // When more than one issuer exist merely the first issuer is returned.
             $issuer = $DB->get_record('oauth2_issuer', array('name' => 'owncloud'));
             $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
-            $this->initiate_webdavclient($issuer->id);
         } catch (dml_missing_record_exception $e) {
             $this->disabled = true;
+        } try {
+            // Check the webdavendpoint
+            $this->get_parsedurl('webdav');
+        } catch (Exception $e) {
+            $sitecontext = context_system::instance();
+            if (has_capability('moodle/site:config', $sitecontext)) {
+                \core\notification::fetch();
+                // TODO notification is displayed multiple times
+                \core\notification::add(get_string('exception_config', 'repository_owncloud2', '.')
+                    . get_string('web_endpoint_missing', 'repository_owncloud2'), 'warning');
+            }
+            $this->disabled = true;
         }
+
+        $this->initiate_webdavclient($issuer->id);
+
         if ($this->issuer && !$this->issuer->get('enabled')) {
             $this->disabled = true;
         }
@@ -78,17 +92,20 @@ class repository_owncloud2 extends repository {
         // The WebDAV attributes are set beforehand.
     }
 
+
     /**
-     * Initiates the webdavclient.
+     * Initiates the webdav client.
      * @param $issuerid
+     * @throws \repository_owncloud2\configuration_exception
      */
     public function initiate_webdavclient($issuerid) {
         global $DB;
         try {
             $record = $DB->get_record('oauth2_issuer', array('id' => $issuerid), 'baseurl');
             $baseurl = $record->baseurl;
-        } catch (Exception $e){
-            // TODO some meaningfull exception
+        } catch (dml_missing_record_exception $e){
+            $newexception = new \repository_owncloud2\configuration_exception();
+            throw $newexception;
         }
         $https = 'https://';
         $http = 'http://';
@@ -102,11 +119,14 @@ class repository_owncloud2 extends repository {
                 $webdavtype = '';
                 $webdavport = 80;
                 $server = substr($baseurl, 7);
-            } else {
-                // TODO some meaningfull exception
+            }
+            if (empty($webdavport)){
+                $newexception = new \repository_owncloud2\configuration_exception();
+                throw $newexception;
             }
         } else {
-            // TODO some meaningfull exception
+            $newexception = new \repository_owncloud2\configuration_exception();
+            throw $newexception;
         }
         // Authentication method is set to Bearer, since we use OAuth 2.0.
         // repository_googledocs\rest
@@ -185,7 +205,6 @@ class repository_owncloud2 extends repository {
      */
     public function get_listing($path='', $page = '') {
         global $OUTPUT;
-        $sitecontext = context_system::instance();
 
         $ret = $this->prepare_get_listing();
 
@@ -410,16 +429,17 @@ class repository_owncloud2 extends repository {
     public static function type_config_form($mform, $classname = 'repository') {
         global $CFG, $OUTPUT;
 
-        $link = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
+        $link = new moodle_url($CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2/issuers.php');
 
         // A notification is added to the settings page in form of a notification.
-        $html = $OUTPUT->notification(get_string('settings', 'repository_owncloud',
+        $html = $OUTPUT->notification(get_string('settings', 'repository_owncloud2',
                 '<a href="'.$link.'" target="_blank" rel="noopener noreferrer">'.
-                get_string('oauth2', 'repository_owncloud') .'</a>'), 'warning');
+                get_string('oauth2', 'repository_owncloud2') .'</a>') .
+                html_writer::link('https://docs.moodle.org/dev/OAuth_2_API',
+                    'Moodle Dokumentation on OAuth2.'), 'warning');
 
         $mform->addElement('html', $html);
 
-        // TODO add Elements for endpoints aber wo werte ich die aus?
         parent::type_config_form($mform);
     }
 
@@ -465,10 +485,11 @@ class repository_owncloud2 extends repository {
      * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
      */
     private function get_parsedurl($endpointname) {
-        try {
-            $webdavurl = $this->issuer->get_endpoint_url($endpointname);
-        } catch (Exception $e) {
-            // TODO Some meaningfull exception
+
+        $webdavurl = $this->issuer->get_endpoint_url($endpointname);
+        if (empty($webdavurl)) {
+            $exception = new \repository_owncloud2\configuration_exception();
+            throw $exception;
         }
         // $parseurl = scheme https host sns-testing.sciebo.de port 443 path /remote.php/webdav
         return parse_url($webdavurl);
