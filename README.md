@@ -55,8 +55,7 @@ Here the user can select files, reload the content and logout. For the settings 
 Additional information can be found in our [documentation](https://pssl16.github.io).
 # Current Status
 TODOs:
-* Use Endpoints to extract paths (**NOW:** some paths hardcoded)
-* Allow user specific names of the Oauth2 Client (**NOW:** only owncloud allowed)
+* Allow user to select between Oauth2 issuers (**NOW:** only owncloud allowed)
 * Adjust *get_link()* to new API
 * Implement Exceptions
 

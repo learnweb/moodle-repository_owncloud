@@ -73,13 +73,6 @@ class repository_owncloud2 extends repository {
             // Check the webdavendpoint
             $this->get_parsedurl('webdav');
         } catch (Exception $e) {
-            $sitecontext = context_system::instance();
-            if (has_capability('moodle/site:config', $sitecontext)) {
-                \core\notification::fetch();
-                // TODO notification is displayed multiple times
-                \core\notification::add(get_string('exception_config', 'repository_owncloud2', '.')
-                    . get_string('web_endpoint_missing', 'repository_owncloud2'), 'warning');
-            }
             $this->disabled = true;
         }
 
@@ -88,8 +81,6 @@ class repository_owncloud2 extends repository {
         if ($this->issuer && !$this->issuer->get('enabled')) {
             $this->disabled = true;
         }
-        // Initialise the webdavclient.
-        // The WebDAV attributes are set beforehand.
     }
 
 
@@ -456,7 +447,7 @@ class repository_owncloud2 extends repository {
 
     /**
      * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
-     *
+     * Now only FILE_INTERNAL since get_line and get_file_reference is not implemented.
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
      * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
@@ -465,7 +456,8 @@ class repository_owncloud2 extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
+        // | FILE_EXTERNAL | FILE_REFERENCE
+        return FILE_INTERNAL ;
     }
 
     /**
