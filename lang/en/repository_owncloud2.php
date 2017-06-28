@@ -45,5 +45,5 @@ $string['chooseissuer_link'] = 'OAuth_2_services';
 
 // Exceptions.
 $string['exception_config'] = 'A Mistake in the configuration of the OAuth2 Client occurred{$a}';
-$string['web_endpoint_missing'] = 'The webdav endpoint for the owncloud oauth2 issuer is not working. 
+$string['web_endpoint_missing'] = 'The webdav endpoint for the owncloud oauth2 issuer is not working.
 Therefore the owncloud repository is disabled';

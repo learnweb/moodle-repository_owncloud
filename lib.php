@@ -62,7 +62,7 @@ class repository_owncloud2 extends repository {
         parent::__construct($repositoryid, $context, $options);
         try {
             // Issuer from config table
-            $issuerid =  get_config('owncloud2', 'issuerid');
+            $issuerid = get_config('owncloud2', 'issuerid');
             $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
             // A Repository is marked as disabled when no issuer is present.
@@ -77,7 +77,7 @@ class repository_owncloud2 extends repository {
             $this->disabled = true;
         }
         // In case no issuer is present the webdavclient will not be initiated.
-        if(!empty($issuerid)) {
+        if (!empty($issuerid)) {
             $this->initiate_webdavclient($issuerid);
         }
 
@@ -96,13 +96,13 @@ class repository_owncloud2 extends repository {
         try {
             $issuer = \core\oauth2\api::get_issuer($issuerid);
             $baseurl = $issuer->get('baseurl');
-        } catch (Exception $e){
+        } catch (Exception $e) {
             $newexception = new \repository_owncloud2\configuration_exception();
             throw $newexception;
         }
         $https = 'https://';
         $http = 'http://';
-        if (is_string($baseurl) || strlen($http)<strlen($baseurl)) {
+        if (is_string($baseurl) || strlen($http) < strlen($baseurl)) {
             if (substr($baseurl, 0, 8) === $https) {
                 $webdavtype = 'ssl://';
                 $webdavport = 443;
@@ -113,7 +113,7 @@ class repository_owncloud2 extends repository {
                 $webdavport = 80;
                 $server = substr($baseurl, 7);
             }
-            if (empty($webdavport)){
+            if (empty($webdavport)) {
                 $newexception = new \repository_owncloud2\configuration_exception();
                 throw $newexception;
             }
@@ -329,7 +329,7 @@ class repository_owncloud2 extends repository {
      */
     public function get_path($type, $id) {
         $baseurl = $this->issuer->get('baseurl');
-        $pathurl = $baseurl . ':' . $this->dav->port ;
+        $pathurl = $baseurl . ':' . $this->dav->port;
         switch ($type) {
             case 'public':
                 return $pathurl . '/public.php?service=files&t=' . $id . '&download';
@@ -479,8 +479,7 @@ class repository_owncloud2 extends repository {
         ));
             // If an Access Token is stored within the Client, it has to be deleted to prevent the addidion
             // of an Bearer Authorization Header in the request method.
-        // TODO When is this neccessary?
-        //$client->log_out();
+        $client->log_out();
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
     }
@@ -503,7 +502,7 @@ class repository_owncloud2 extends repository {
 
         // Validates which issuers implement the right endpoints.
         $validissuers = '';
-        foreach ($issuers as $issuer){
+        foreach ($issuers as $issuer) {
             $endpoinwebdav = false;
             $endpointoken = false;
             $endpoinuserinfo = false;
@@ -522,7 +521,7 @@ class repository_owncloud2 extends repository {
                         $endpoinuserinfo = true;
                 }
             }
-            if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth){
+            if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth) {
                 $validissuers .= $issuer->get('name') . ' ';
             }
         }
@@ -532,17 +531,17 @@ class repository_owncloud2 extends repository {
         }
         $text = '';
         $strrequired = get_string('required');
-        if(!empty($issuerid)) {
+        if (!empty($issuerid)) {
             $bool = strpos($validissuers, $types[$issuerid]);
-            if(!is_int($bool)){
-                $text .= get_string('invalid_issuer','repository_owncloud2', $types[$issuerid]);
+            if (!is_int($bool)) {
+                $text .= get_string('invalid_issuer', 'repository_owncloud2', $types[$issuerid]);
                 $urgency = 'error';
             } else {
                 $text .= get_string('settings_withissuer', 'repository_owncloud2', $types[$issuerid]);
                 $urgency = 'info';
             }
         } else {
-            $text .= get_string('settings_withoutissuer','repository_owncloud2');
+            $text .= get_string('settings_withoutissuer', 'repository_owncloud2');
             $urgency = 'warning';
         }
         $html = $OUTPUT->notification($text , $urgency);
@@ -551,8 +550,8 @@ class repository_owncloud2 extends repository {
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud2');
         $mform->setType('issuerid', PARAM_RAW_TRIMMED);
-        $mform->addElement('html', get_string('right_issuers','repository_owncloud2', $validissuers));
-        if(!empty($issuerid)) {
+        $mform->addElement('html', get_string('right_issuers', 'repository_owncloud2', $validissuers));
+        if (!empty($issuerid)) {
             $select->setSelected($issuerid);
         }
     }
