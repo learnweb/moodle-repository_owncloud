@@ -418,7 +418,7 @@ class repository_owncloud2 extends repository {
      * @param string $classname repository class name
      */
     public static function type_config_form($mform, $classname = 'repository') {
-        global $CFG, $OUTPUT, $DB;
+        global $CFG, $OUTPUT;
         parent::type_config_form($mform);
 
         $issuers = core\oauth2\api::get_all_issuers();
@@ -426,43 +426,69 @@ class repository_owncloud2 extends repository {
 
         $issuerid = get_config('owncloud2', 'issuerid');
 
-        // All issuers are saved with the corresponding id.
-        foreach ($issuers as $value) {
-            $types[$value->get('id')] = $value->get('name');
+        // Validates which issuers implement the right endpoints.
+        $validissuers = '';
+        foreach ($issuers as $issuer){
+            $endpoinwebdav = false;
+            $endpointoken = false;
+            $endpoinuserinfo = false;
+            $endpoinauth = false;
+            $endpoints = \core\oauth2\api::get_endpoints($issuer);
+            foreach ($endpoints as $endpoint) {
+                $name = $endpoint->get('name');
+                switch($name) {
+                    case 'webdav_endpoint':
+                        $endpoinwebdav = true;
+                    case 'token_endpoint':
+                        $endpointoken = true;
+                    case 'authorization_endpoint':
+                        $endpoinauth = true;
+                    case 'userinfo_endpoint':
+                        $endpoinuserinfo = true;
+                }
+            }
+            if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth){
+                $validissuers .= $issuer->get('name') . ' ';
+            }
         }
 
+        foreach ($issuers as $issuer) {
+                $types[$issuer->get('id')] = $issuer->get('name');
+        }
+        $text = '';
         $strrequired = get_string('required');
         if(!empty($issuerid)) {
-            $text = get_string('settings_withissuer','repository_owncloud2', $types[$issuerid]);
-            $urgency = 'info';
+            $bool = strpos($validissuers, $types[$issuerid]);
+            if(!is_int($bool)){
+                $text .= get_string('invalid_issuer','repository_owncloud2', $types[$issuerid]);
+                $urgency = 'error';
+            } else {
+                $text .= get_string('settings_withissuer', 'repository_owncloud2', $types[$issuerid]);
+                $urgency = 'info';
+            }
         } else {
-            $text = get_string('settings_withoutissuer','repository_owncloud2');
+            $text .= get_string('settings_withoutissuer','repository_owncloud2');
             $urgency = 'warning';
-
         }
-        $linkadminpage = new moodle_url($CFG->wwwroot.'/'.$CFG->admin.'/tool/oauth2/issuers.php');
-        $linkmoodlepage = html_writer::link(new moodle_url('https://docs.moodle.org/dev/OAuth_2_API'),'Moodle Dokumentation on OAuth2.');
-
-        $text .= get_string('settings_addissuer', 'repository_owncloud2') .
-            html_writer::link($linkadminpage,' OAuth2 Administration page' . '.' ) .
-            get_string('visit_oauth2doku', 'repository_owncloud2') . $linkmoodlepage;
         $html = $OUTPUT->notification($text , $urgency);
         $mform->addElement('html', $html);
         $select = $mform->addElement('select', 'issuerid', 'Issuer', $types);
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
+        $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud2');
         $mform->setType('issuerid', PARAM_RAW_TRIMMED);
-
+        $mform->addElement('html', get_string('right_issuers','repository_owncloud2', $validissuers));
         if(!empty($issuerid)) {
             $select->setSelected($issuerid);
         }
     }
+
     /**
      * Names of the plugin settings
      *
      * @return array
      */
     public static function get_type_option_names() {
-        return array('issuerid', 'pluginname');
+        return array('issuerid', 'pluginname', 'validissuers');
     }
     /**
      * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
