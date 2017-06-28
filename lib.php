@@ -431,13 +431,16 @@ class repository_owncloud2 extends repository {
                     'Moodle Dokumentation on OAuth2.'), 'warning');
 
         $mform->addElement('html', $html);
-        $issuers = $DB->get_records('oauth2_issuer', array(), '', 'id, name');
+        $issuers = core\oauth2\api::get_all_issuers();
         $types = array();
+
+        // All issuers are saved with the corresponding id.
         foreach ($issuers as $value) {
-            $types[$value->name] = $value->name;
+            $types[$value->get('id')] = $value->get('name');
         }
         // TODO Where is issuer saved?
         $config = get_config('owncloud2', 'issuer');
+        $config2 = get_config('owncloud2');
         $isissuerselected = empty(get_config('owncloud2', 'issuer'));
         // Different text in case no plugin was selected beforehand.
         if ($isissuerselected) {
