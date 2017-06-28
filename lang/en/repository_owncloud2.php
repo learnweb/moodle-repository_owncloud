@@ -31,8 +31,12 @@ $string['configplugin'] = 'ownCloud2 configuration';
 $string['pluginname_help'] = 'ownCloud2 repository';
 
 // Settings reminder.
-$string['settings'] = 'If you have not done it yet, you should add a {$a}. It is crucial in order to be able to connect 
-to ownCloud. For additional help visit the ';
+$string['settings_withoutissuer'] = 'You have not added an OAuth2 issuer yet. <br>
+Please submit the form to ensure that the plugin is working.';
+$string['settings_addissuer'] = '<br>To add a new issuer visit';
+$string['visit_oauth2doku'] = '<br>For additional help visit the ';
+$string['settings_withissuer'] = 'Currently the {$a} issuer is active. <br>
+To change the issuer submit the form with a suitable issuer.';
 $string['oauth2'] = 'OAuth2 issuer';
 
 // Exceptions.
