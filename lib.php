@@ -293,8 +293,81 @@ class repository_owncloud2 extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-    //    $response = $this->owncloud->get_link($url);
-     //   return $response['link'];
+        $query = http_build_query(array('path' => $url,
+            'shareType' => 3,
+            'publicUpload' => false,
+            'permissions' => 31
+        ), null, "&");
+
+        $baseurl = $this->issuer->get('baseurl');
+        $posturl = $baseurl . ':' . $this->dav->port . '/ocs/v1.php/apps/files_sharing/api/v1/shares';
+        $response = $this->post($posturl, $query, array(), true);
+
+        $ret = array();
+
+        $xml = simplexml_load_string($response);
+        $ret['code'] = $xml->meta->statuscode;
+        $ret['status'] = $xml->meta->status;
+
+        // The link is generated.
+
+        $fields = explode("/s/", $xml->data[0]->url[0]);
+        $fileid = $fields[1];
+
+        $ret['link'] = $this->get_path('public', $fileid);
+
+        return $ret['link'];
+    }
+    /**
+     * This method is used to generate file and folder paths to ownCloud after a successful share.
+     * Depending on the share type (public or private share), it returns the path to the shared
+     * file or folder.
+     *
+     * @param $type string either personal or private. Depending on share type.
+     * @param $id string file or folder id of the concerning content.
+     * @return bool|string returns the generated path, if $type it personal or private. Otherwise, false.
+     */
+    public function get_path($type, $id) {
+        $baseurl = $this->issuer->get('baseurl');
+        $pathurl = $baseurl . ':' . $this->dav->port ;
+        switch ($type) {
+            case 'public':
+                return $pathurl . '/public.php?service=files&t=' . $id . '&download';
+            case 'private':
+                return $pathurl . '/index.php/apps/files/?dir=' . $id;
+            default:
+                return false;
+        }
+    }
+    /**
+     * Due to the fact, that the user credentials for client authentication in ownCloud need to be provided
+     * by an Basic Authorization Header instead of POST parameters, the cURL function post is extended by
+     * an option to set such header.
+     * This header is needed for Access Token requests with an Authorization Code or Refresh Token.
+     *
+     * @param string $url URL which the request has to be sent to.
+     * @param string|array $params POST parameters.
+     * @param array $options cURL options for the request.
+     * @param bool $auth indicates whether a Basic Authentication Header has to be added to the request.
+     * @return mixed response from ownCloud server or error message.
+     */
+    public function post($url, $params = '', $options = array(), $auth = false) {
+        $client = $this->get_user_oauth_client();
+
+        if ($auth == false) {
+            // A basic auth header has to be added to the request for client authentication in ownCloud.
+
+            $client->setHeader(array(
+                'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
+            ));
+
+            // If an Access Token is stored within the Client, it has to be deleted to prevent the addition
+            // of an Bearer Authorization Header in the request method.
+            $client->log_out();
+
+        }
+
+        return $client->post($url, $params, $options);
     }
 
     /**
@@ -514,8 +587,7 @@ class repository_owncloud2 extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        // | FILE_EXTERNAL | FILE_REFERENCE
-        return FILE_INTERNAL ;
+        return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
     }
 
     /**
