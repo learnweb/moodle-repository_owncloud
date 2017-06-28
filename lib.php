@@ -455,7 +455,6 @@ class repository_owncloud2 extends repository {
         if(!empty($issuerid)) {
             $select->setSelected($issuerid);
         }
-        
     }
     /**
      * Names of the plugin settings
