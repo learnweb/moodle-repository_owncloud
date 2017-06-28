@@ -30,6 +30,3 @@ $plugin->requires  = 2016052300;        // Requires Moodle 3.1 version.
 $plugin->component = 'repository_owncloud2'; // Full name of the plugin (used for diagnostics).
 $plugin->release = 'v0.1.0';
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->dependencies = array(
-    'tool_oauth2owncloud' => 2017032700
-);
