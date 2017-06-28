@@ -60,23 +60,26 @@ class repository_owncloud2 extends repository {
      */
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
-        global $DB, $OUTPUT;
-        // A Repository is marked as disabled when no issuer is present
         try {
-            // Needs the issuer id
-            // When more than one issuer exist merely the first issuer is returned.
-            $issuer = $DB->get_record('oauth2_issuer', array('name' => 'owncloud'));
-            $this->issuer = \core\oauth2\api::get_issuer($issuer->id);
+            // Issuer from config table
+            $issuerid =  get_config('owncloud2', 'issuerid');
+            $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
+            // A Repository is marked as disabled when no issuer is present.
+
             $this->disabled = true;
         } try {
-            // Check the webdavendpoint
+            // Check the webdavendpoint.
             $this->get_parsedurl('webdav');
         } catch (Exception $e) {
+            // A Repository is marked as disabled when no webdav_endpoint is present.
+
             $this->disabled = true;
         }
-
-        $this->initiate_webdavclient($issuer->id);
+        // In case no issuer is present the webdavclient will not be initiated.
+        if(!empty($issuerid)) {
+            $this->initiate_webdavclient($issuerid);
+        }
 
         if ($this->issuer && !$this->issuer->get('enabled')) {
             $this->disabled = true;
@@ -90,11 +93,10 @@ class repository_owncloud2 extends repository {
      * @throws \repository_owncloud2\configuration_exception
      */
     public function initiate_webdavclient($issuerid) {
-        global $DB;
         try {
-            $record = $DB->get_record('oauth2_issuer', array('id' => $issuerid), 'baseurl');
-            $baseurl = $record->baseurl;
-        } catch (dml_missing_record_exception $e){
+            $issuer = \core\oauth2\api::get_issuer($issuerid);
+            $baseurl = $issuer->get('baseurl');
+        } catch (Exception $e){
             $newexception = new \repository_owncloud2\configuration_exception();
             throw $newexception;
         }
