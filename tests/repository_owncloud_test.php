@@ -19,6 +19,7 @@
  *
  * @package     repository_owncloud
  * @group       repository_owncloud
+ * @category    test
  * @copyright   2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author      Projektseminar Uni Münster
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

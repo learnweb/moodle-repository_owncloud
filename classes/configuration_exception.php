@@ -17,7 +17,7 @@
 /**
  * Exception for when a client configuration data is missing.
  *
- * @package    tool_oauth2owncloud
+ * @package    repository_owncloud
  * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

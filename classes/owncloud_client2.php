@@ -21,6 +21,8 @@ use core_php_time_limit;
  * Basically the same functionality as the webdav_client v0.1.5, a php based webdav client class.
  * A php based nearly RFC 2518 conforming client.
  *
+ * All changes that were necessary for handling the oauth2 authentication are visible in the Differenz file.
+ *
  * This class implements methods to get access to an webdav server.
  * Most of the methods are returning boolean false on error, an integer status (http response status) on success
  * or an array in case of a multistatus response (207) from the webdav server. Look at the code which keys are used in arrays.
