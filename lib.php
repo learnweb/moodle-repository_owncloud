@@ -20,7 +20,7 @@
  * @package    repository_owncloud
  * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
  * @author     Projektseminar Uni Münster
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or
  */
 
 // @codeCoverageIgnoreStart
@@ -36,7 +36,7 @@ require_once($CFG->dirroot . '/repository/lib.php');
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_owncloud2 extends repository {
+class repository_owncloud extends repository {
 
     /**
      * OAuth 2 client
@@ -53,7 +53,7 @@ class repository_owncloud2 extends repository {
     private $dav = null;
 
     /**
-     * repository_owncloud2 constructor.
+     * repository_owncloud constructor.
      * @param int $repositoryid
      * @param bool|int|stdClass $context
      * @param array $options
@@ -62,7 +62,7 @@ class repository_owncloud2 extends repository {
         parent::__construct($repositoryid, $context, $options);
         try {
             // Issuer from config table
-            $issuerid = get_config('owncloud2', 'issuerid');
+            $issuerid = get_config('owncloud', 'issuerid');
             $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
             // A Repository is marked as disabled when no issuer is present.
@@ -90,14 +90,14 @@ class repository_owncloud2 extends repository {
     /**
      * Initiates the webdav client.
      * @param $issuerid
-     * @throws \repository_owncloud2\configuration_exception
+     * @throws \repository_owncloud\configuration_exception
      */
     public function initiate_webdavclient($issuerid) {
         try {
             $issuer = \core\oauth2\api::get_issuer($issuerid);
             $baseurl = $issuer->get('baseurl');
         } catch (Exception $e) {
-            $newexception = new \repository_owncloud2\configuration_exception();
+            $newexception = new \repository_owncloud\configuration_exception();
             throw $newexception;
         }
         $https = 'https://';
@@ -114,16 +114,16 @@ class repository_owncloud2 extends repository {
                 $server = substr($baseurl, 7);
             }
             if (empty($webdavport)) {
-                $newexception = new \repository_owncloud2\configuration_exception();
+                $newexception = new \repository_owncloud\configuration_exception();
                 throw $newexception;
             }
         } else {
-            $newexception = new \repository_owncloud2\configuration_exception();
+            $newexception = new \repository_owncloud\configuration_exception();
             throw $newexception;
         }
         // Authentication method is set to Bearer, since we use OAuth 2.0.
         // repository_googledocs\rest
-        $this->dav = new repository_owncloud2\owncloud_client2($server, '', '', 'bearer', $webdavtype);
+        $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype);
         $this->dav->port = $webdavport;
         $this->dav->debug = false;
     }
@@ -498,7 +498,7 @@ class repository_owncloud2 extends repository {
         $issuers = core\oauth2\api::get_all_issuers();
         $types = array();
 
-        $issuerid = get_config('owncloud2', 'issuerid');
+        $issuerid = get_config('owncloud', 'issuerid');
 
         // Validates which issuers implement the right endpoints.
         $validissuers = '';
@@ -534,23 +534,23 @@ class repository_owncloud2 extends repository {
         if (!empty($issuerid)) {
             $bool = strpos($validissuers, $types[$issuerid]);
             if (!is_int($bool)) {
-                $text .= get_string('invalid_issuer', 'repository_owncloud2', $types[$issuerid]);
+                $text .= get_string('invalid_issuer', 'repository_owncloud', $types[$issuerid]);
                 $urgency = 'error';
             } else {
-                $text .= get_string('settings_withissuer', 'repository_owncloud2', $types[$issuerid]);
+                $text .= get_string('settings_withissuer', 'repository_owncloud', $types[$issuerid]);
                 $urgency = 'info';
             }
         } else {
-            $text .= get_string('settings_withoutissuer', 'repository_owncloud2');
+            $text .= get_string('settings_withoutissuer', 'repository_owncloud');
             $urgency = 'warning';
         }
         $html = $OUTPUT->notification($text , $urgency);
         $mform->addElement('html', $html);
         $select = $mform->addElement('select', 'issuerid', 'Issuer', $types);
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
-        $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud2');
+        $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
         $mform->setType('issuerid', PARAM_RAW_TRIMMED);
-        $mform->addElement('html', get_string('right_issuers', 'repository_owncloud2', $validissuers));
+        $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', $validissuers));
         if (!empty($issuerid)) {
             $select->setSelected($issuerid);
         }
@@ -609,7 +609,7 @@ class repository_owncloud2 extends repository {
 
         $webdavurl = $this->issuer->get_endpoint_url($endpointname);
         if (empty($webdavurl)) {
-            $exception = new \repository_owncloud2\configuration_exception();
+            $exception = new \repository_owncloud\configuration_exception();
             throw $exception;
         }
         // $parseurl = scheme https host sns-testing.sciebo.de port 443 path /remote.php/webdav

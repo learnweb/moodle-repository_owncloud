@@ -28,22 +28,22 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 
-class repository_owncloud2_testcase extends advanced_testcase {
+class repository_owncloud_testcase extends advanced_testcase {
 
     /** @var null|repository_owncloud the repository_owncloud object, which the tests are run on. */
     private $repo = null;
 
     /**
-     * Sets up the tested repository_owncloud object and all data records which are
+     * Sets up the tested minor repository_owncloud object and all data records which are
      * needed to initialize the repository.
      */
     protected function setUp() {
         global $DB;
         $this->resetAfterTest(true);
 
-        $typeparams = array('type' => 'owncloud2', 'visible' => 0, 'issuerid' => 1, 'validissuers' => '');
+        $typeparams = array('type' => 'owncloud', 'visible' => 0, 'issuerid' => 1, 'validissuers' => '');
         // First, create a owncloud repository type and instance.
-        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud2');
+        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
         $reptype = $generator->create_type($typeparams);
 
         // Then insert a name for the instance into the database.
@@ -51,7 +51,7 @@ class repository_owncloud2_testcase extends advanced_testcase {
         $DB->update_record('repository_instances', (object) array('id' => $instance->id, 'name' => 'ownCloud'));
 
         // At last, create a repository_owncloud object from the instance id.
-        $this->repo = new repository_owncloud2($instance->id);
+        $this->repo = new repository_owncloud($instance->id);
         $this->repo->options['typeid'] = $reptype->id;
     }
 

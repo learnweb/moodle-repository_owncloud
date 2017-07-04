@@ -23,12 +23,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 // General.
-$string['pluginname'] = 'ownCloud2';
+$string['pluginname'] = 'ownCloud';
 $string['configplugin'] = 'ownCloud repository configuration';
-$string['owncloud2'] = 'ownCloud2';
-$string['owncloud2:view'] = 'View ownCloud2';
-$string['configplugin'] = 'ownCloud2 configuration';
-$string['pluginname_help'] = 'ownCloud2 repository';
+$string['owncloud'] = 'ownCloud';
+$string['owncloud:view'] = 'View ownCloud';
+$string['configplugin'] = 'ownCloud configuration';
+$string['pluginname_help'] = 'ownCloud repository';
 
 // Settings reminder.
 $string['settings_withoutissuer'] = 'You have not added an OAuth2 issuer yet.';

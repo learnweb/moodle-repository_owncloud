@@ -36,5 +36,5 @@ defined('MOODLE_INTERNAL') || die();
  * @author     Projektseminar Uni Münster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_owncloud2_generator extends testing_repository_generator {
+class repository_owncloud_generator extends testing_repository_generator {
 }

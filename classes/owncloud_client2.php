@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace repository_owncloud2;
+namespace repository_owncloud;
 use core_php_time_limit;
 
 /**
@@ -35,7 +35,7 @@ use core_php_time_limit;
  * @version 0.1.5
  */
 
-class owncloud_client2 {
+class owncloud_client {
 
     /**#@+
      * @access private
