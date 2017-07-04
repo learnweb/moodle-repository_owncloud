@@ -141,9 +141,6 @@ class repository_owncloud extends repository {
     public function is_visible() {
         if (!parent::is_visible()) {
             return false;
-        } else {
-            // If any settings data is missing, return false.
-            return $this->options['success'];
         }
         return true;
     }
@@ -631,7 +628,8 @@ class repository_owncloud extends repository {
 
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
             // the settings page of the oauth2owncloud admin tool.
-            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
+            $settingsurl = new moodle_url('/admin/repository.php');
+            $ret['manage'] = $settingsurl->out();
         }
         return $ret;
     }
