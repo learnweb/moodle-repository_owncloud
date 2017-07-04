@@ -1,5 +1,8 @@
 # Do not use in production
-Please be aware that this Plugin is WIP. It is a conduction of the result of the project seminar sciebo@Learnweb of the University of Münster. ** Do not use in production! ** Plugins and their structure **will** be subject to change. We will **NOT** support any upgrade paths from this release.
+Please be aware that this Plugin is WIP. 
+It is a conduction of the result of the project seminar sciebo@Learnweb of the University of Münster. 
+** Do not use in production! ** Plugins and their structure **will** be subject to change. 
+We will **NOT** support any upgrade paths from this release.
 
 Nevertheless, we are actively working on a release. We would be extremely happy for (non-production) test users and developer contributions!
 
@@ -11,15 +14,16 @@ Nevertheless, we are actively working on a release. We would be extremely happy 
 # English
 
 This plugin enables moodle users to have direct access to their files from ownCloud in the *Moodle File Picker* and the *Url-Activity*. 
-Hitherto it **was** depending on the [`oauth2owncloud` plugin](https://github.com/pssl16/moodle-tool_oauth2owncloud). 
-Since ther Moodle3.3 release Moodle offers an additional API for registering OAuth2 Clients. 
+**Hitherto** it **was** depending on the [`oauth2owncloud` plugin](https://github.com/pssl16/moodle-tool_oauth2owncloud). 
+Since the Moodle3.3 Release Moodle offers an additional API for registering OAuth2 Clients. 
 Therefore, the plugin is customized to the new API. 
 
 Created by the project seminar sciebo@Learnweb of the University of Münster.
 
 ## Installation
 
-Copy the content of this repository to `repository/owncloud`.
+Copy the content of this repository to `repository/owncloud`. No additional settings are displayed to the admin when installing the plugin. 
+However, when enabling the plugin the admin has to chose an issuer for authentication.
 
 ## Admin Settings
 
@@ -29,13 +33,25 @@ The ownCloud oauth2 Client has to be registered in the admin menu `Dashboard ►
 When adding the Client the ClientID, Secret and baseurl are necessary. 
 Additionally, Moodle has a second interface for adding endpoints.
 At least four endpoints have to be registered(this is ownCloud specific): 
-1. **token_endpoint** *baseurl* + *port* + '/index.php/apps/oauth2/api/v1/token'
- e.g. the owncloud instance is available at *https://someinstance.owncloud.de* then the baseurl is *https://someinstance.owncloud.de*
- and since it is https the port is *443* therefore the **token_endpoint-url** is **https://someinstance.owncloud.de:443/index.php/apps/oauth2/api/v1/token**
-2. **authorization_endpoint** *baseurl* + *port* + '/index.php/apps/oauth2/authorize'
-3. **webdav_endpoint** 	*baseurl* + *port* + '/remote.php/webdav'
-4. **userinfo_endpoint** However Moodle additionally requires a userinfo_endpoint that is not provided by ownCloud. 
-Since this endpoint will not be used in the repository it has no effect what url is entered.
+1. **token_endpoint** 
+   
+   ```baseurl``` + ```port``` + '/index.php/apps/oauth2/api/v1/token'
+
+    e.g. the owncloud instance is available at ```https://someinstance.owncloud.de``` then the baseurl is ```https://someinstance.owncloud.de```
+    
+    since it is https the port is ```443``` 
+    
+    therefore the **token_endpoint-url** is ```https://someinstance.owncloud.de:443/index.php/apps/oauth2/api/v1/token```
+2. **authorization_endpoint** 
+
+   ```baseurl``` + ```port``` + '/index.php/apps/oauth2/authorize'
+3. **webdav_endpoint** 	
+
+   ```baseurl``` + ```port``` + '/remote.php/webdav'
+4. **userinfo_endpoint** 
+
+   However Moodle additionally requires a userinfo_endpoint that is not provided by ownCloud. 
+   Since this endpoint will not be used in the repository it has no effect what url is entered.
 
 The issuer can be chosen in the repository settings.
 For further information on OAuth2 Clients visit the [Moodle Dokumentation on OAuth2](https://docs.moodle.org/dev/OAuth_2_API).
