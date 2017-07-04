@@ -49,7 +49,10 @@ class repository_owncloud extends repository {
      */
     private $issuer = null;
 
-    /** @var null|owncloud_client webdav client which is used for webdav operations. */
+    /**
+     * owncloud_client webdav client which is used for webdav operations.
+     * @var \repository_owncloud\owncloud_client
+     */
     private $dav = null;
 
     /**
@@ -61,7 +64,7 @@ class repository_owncloud extends repository {
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
         try {
-            // Issuer from config table
+            // Issuer from config table, in the type_config_form a select form is defined to choose an issuer.
             $issuerid = get_config('owncloud', 'issuerid');
             $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
@@ -72,15 +75,15 @@ class repository_owncloud extends repository {
             // Check the webdavendpoint.
             $this->get_parsedurl('webdav');
         } catch (Exception $e) {
-            // A Repository is marked as disabled when no webdav_endpoint is present.
-
+            // A Repository is marked as disabled when no webdav_endpoint is present since
+            // all operations concerning files are executed with webdav.
             $this->disabled = true;
         }
         // In case no issuer is present the webdavclient will not be initiated.
         if (!empty($issuerid)) {
             $this->initiate_webdavclient($issuerid);
         }
-
+        // In case the Issuer is not enabled, the repository is disabled.
         if ($this->issuer && !$this->issuer->get('enabled')) {
             $this->disabled = true;
         }
@@ -93,6 +96,7 @@ class repository_owncloud extends repository {
      * @throws \repository_owncloud\configuration_exception
      */
     public function initiate_webdavclient($issuerid) {
+        // In case the issuer is not longer available, or has no baseurl an exception is thrown.
         try {
             $issuer = \core\oauth2\api::get_issuer($issuerid);
             $baseurl = $issuer->get('baseurl');
@@ -100,6 +104,7 @@ class repository_owncloud extends repository {
             $newexception = new \repository_owncloud\configuration_exception();
             throw $newexception;
         }
+        // Selects the necessary information (port, type, server) from the path to build the webdavclient.
         $https = 'https://';
         $http = 'http://';
         if (is_string($baseurl) || strlen($http) < strlen($baseurl)) {
@@ -122,33 +127,9 @@ class repository_owncloud extends repository {
             throw $newexception;
         }
         // Authentication method is set to Bearer, since we use OAuth 2.0.
-        // repository_googledocs\rest
         $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype);
         $this->dav->port = $webdavport;
         $this->dav->debug = false;
-    }
-    /**
-     * Output method, which prints a warning inside an activity, which uses the ownCloud repository.
-     *
-     * @codeCoverageIgnore
-     */
-    private function print_warning() {
-        global $CFG, $OUTPUT;
-        $sitecontext = context_system::instance();
-
-        if (has_capability('moodle/site:config', $sitecontext)) {
-
-            $link = $CFG->wwwroot . '/' . $CFG->admin . '/settings.php?section=oauth2owncloud';
-
-            // Generates a link to the admin setting page.
-            echo $OUTPUT->notification('<a href="' . $link . '" target="_blank" rel="noopener noreferrer">
-                                ' . get_string('missing_settings_admin', 'tool_oauth2owncloud') . '</a>', 'warning');
-        } else {
-
-            // Otherwise, just print a notification, bacause the current user cannot configure admin
-            // settings himself.
-            echo $OUTPUT->notification(get_string('missing_settings_user', 'tool_oauth2owncloud'));
-        }
     }
 
     /**
@@ -158,12 +139,12 @@ class repository_owncloud extends repository {
      * @return bool false, if set to hidden or settings data is missing.
      */
     public function is_visible() {
-        /*if (!parent::is_visible()) {
+        if (!parent::is_visible()) {
             return false;
         } else {
             // If any settings data is missing, return false.
             return $this->options['success'];
-        }*/
+        }
         return true;
     }
 
@@ -300,6 +281,8 @@ class repository_owncloud extends repository {
         ), null, "&");
 
         $baseurl = $this->issuer->get('baseurl');
+        // This is ownCloud specific.
+        // IMPROVE: could be an additional setting in the Oauth2 issuer.
         $posturl = $baseurl . ':' . $this->dav->port . '/ocs/v1.php/apps/files_sharing/api/v1/shares';
         $response = $this->post($posturl, $query, array(), true);
 
@@ -314,7 +297,7 @@ class repository_owncloud extends repository {
         $fields = explode("/s/", $xml->data[0]->url[0]);
         $fileid = $fields[1];
 
-        $ret['link'] = $this->get_path('public', $fileid);
+        $ret['link'] = $this->get_path($fileid);
 
         return $ret['link'];
     }
@@ -327,17 +310,10 @@ class repository_owncloud extends repository {
      * @param $id string file or folder id of the concerning content.
      * @return bool|string returns the generated path, if $type it personal or private. Otherwise, false.
      */
-    public function get_path($type, $id) {
+    public function get_path($id) {
         $baseurl = $this->issuer->get('baseurl');
         $pathurl = $baseurl . ':' . $this->dav->port;
-        switch ($type) {
-            case 'public':
-                return $pathurl . '/public.php?service=files&t=' . $id . '&download';
-            case 'private':
-                return $pathurl . '/index.php/apps/files/?dir=' . $id;
-            default:
-                return false;
-        }
+        return $pathurl . '/public.php?service=files&t=' . $id . '&download';
     }
     /**
      * Due to the fact, that the user credentials for client authentication in ownCloud need to be provided
@@ -477,15 +453,15 @@ class repository_owncloud extends repository {
         $client->setHeader(array(
             'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
         ));
-            // If an Access Token is stored within the Client, it has to be deleted to prevent the addidion
-            // of an Bearer Authorization Header in the request method.
+        // If an Access Token is stored within the Client, it has to be deleted to prevent the addition
+        // of an Bearer Authorization Header in the request method.
         $client->log_out();
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
     }
 
     /**
-     * This method adds a notification to the settings form, which redirects to the OAuth 2.0 client.
+     * This method adds a select form and additional information to the settings form..
      *
      * @codeCoverageIgnore
      * @param moodleform $mform Moodle form (passed by reference)
@@ -495,12 +471,13 @@ class repository_owncloud extends repository {
         global $CFG, $OUTPUT;
         parent::type_config_form($mform);
 
+        // Firstly all issuers are considered.
         $issuers = core\oauth2\api::get_all_issuers();
         $types = array();
 
         $issuerid = get_config('owncloud', 'issuerid');
 
-        // Validates which issuers implement the right endpoints.
+        // Validates which issuers implement the right endpoints. WebDav is necessary for ownCloud.
         $validissuers = '';
         foreach ($issuers as $issuer) {
             $endpoinwebdav = false;
@@ -529,6 +506,10 @@ class repository_owncloud extends repository {
         foreach ($issuers as $issuer) {
                 $types[$issuer->get('id')] = $issuer->get('name');
         }
+
+        // Depending on the hitherto settings the user is which issuer is chosen.
+        // In case no issuer is chosen there appears a warning.
+        // Additionally when the chosen issuer is invalid there appears a strong warning.
         $text = '';
         $strrequired = get_string('required');
         if (!empty($issuerid)) {
@@ -544,13 +525,17 @@ class repository_owncloud extends repository {
             $text .= get_string('settings_withoutissuer', 'repository_owncloud');
             $urgency = 'warning';
         }
-        $html = $OUTPUT->notification($text , $urgency);
+
+        // The up-to-date form is displayed.
+        $html = $OUTPUT->notification($text, $urgency);
         $mform->addElement('html', $html);
         $select = $mform->addElement('select', 'issuerid', 'Issuer', $types);
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
         $mform->setType('issuerid', PARAM_RAW_TRIMMED);
+        // All issuers that are valid are displayed seperately.
         $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', $validissuers));
+        // The default is set to the issuer chosen.
         if (!empty($issuerid)) {
             $select->setSelected($issuerid);
         }
@@ -604,15 +589,14 @@ class repository_owncloud extends repository {
      * Returns the parsed url of the choosen endpoint.
      * @param string $endpointname
      * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
+     * @throws \repository_owncloud\configuration_exception
      */
     private function get_parsedurl($endpointname) {
-
         $webdavurl = $this->issuer->get_endpoint_url($endpointname);
         if (empty($webdavurl)) {
             $exception = new \repository_owncloud\configuration_exception();
             throw $exception;
         }
-        // $parseurl = scheme https host sns-testing.sciebo.de port 443 path /remote.php/webdav
         return parse_url($webdavurl);
     }
 
