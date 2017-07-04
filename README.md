@@ -23,23 +23,26 @@ Created by the project seminar sciebo@Learnweb of the University of Münster.
 ## Installation
 
 Copy the content of this repository to `repository/owncloud`. No additional settings are displayed to the admin when installing the plugin. 
-However, when enabling the plugin the admin has to chose an issuer for authentication.
+However, when enabling the plugin the admin has to choose an issuer for authentication.
 
 ## Admin Settings
 
 Repository Plugins are activated under `Site Administration ► Plugins ► Repositories`.
+The following text describes how the necessary issuer is created with the Moodle API and secondly 
+how the issuer can be chosen.
 
-The ownCloud oauth2 Client has to be registered in the admin menu `Dashboard ► Site administration ► Server ► OAuth 2 services`.
-When adding the Client the ClientID, Secret and baseurl are necessary. 
-Additionally, Moodle has a second interface for adding endpoints.
-At least four endpoints have to be registered(this is ownCloud specific): 
+### Create Oauth2 Issuer
+The ownCloud oauth2 issuer has to be registered in the admin menu `Dashboard ► Site administration ► Server ► OAuth 2 services`.
+When adding the issuer the ClientID, Secret and baseurl are necessary. ClientID and Secret are generated in the ownCloud instance.
+Additionally, Moodle has a second interface for adding endpoints. 
+For the ownCloud Repository plugin four endpoints have to be registered (this is ownCloud specific): 
 1. **token_endpoint** 
    
    ```baseurl``` + ```port``` + '/index.php/apps/oauth2/api/v1/token'
 
-    e.g. the owncloud instance is available at ```https://someinstance.owncloud.de``` then the baseurl is ```https://someinstance.owncloud.de```
+    e.g. the baseurl is ```https://someinstance.owncloud.de```
     
-    since it is https the port is ```443``` 
+    then the port is ```443``` since it is https
     
     therefore the **token_endpoint-url** is ```https://someinstance.owncloud.de:443/index.php/apps/oauth2/api/v1/token```
 2. **authorization_endpoint** 
@@ -50,11 +53,20 @@ At least four endpoints have to be registered(this is ownCloud specific):
    ```baseurl``` + ```port``` + '/remote.php/webdav'
 4. **userinfo_endpoint** 
 
-   However Moodle additionally requires a userinfo_endpoint that is not provided by ownCloud. 
-   Since this endpoint will not be used in the repository it has no effect what url is entered.
+   However Moodle additionally requires a userinfo_endpoint that has no effect in the ownCloud repository. 
 
-The issuer can be chosen in the repository settings.
 For further information on OAuth2 Clients visit the [Moodle Dokumentation on OAuth2](https://docs.moodle.org/dev/OAuth_2_API).
+
+### Choose Oauth2 Issuer
+The issuer can be chosen in the repository settings (```Site administration ► Plugins ► Repositories ► Manage repositories```) .
+
+![Select Form](pix/owncloudissuer.png)
+
+The choice of issuer can trigger three different kinds of notifications :
+1. Information (Blue Box) which states which issuer is currently chosen
+2. Warning (Yellow Box) in case no issuer is chosen
+3. Error (Red Box) in case the issuer is not valid for the plugin
+
 ## User View
 
 This plugin is available in all Activities where the file picker is used. However, course admins can disable it under `Course Administration ► Repositories`. The usage of this plugin cannot be limited to specific user groups.
