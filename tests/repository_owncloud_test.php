@@ -33,13 +33,62 @@ class repository_owncloud_testcase extends advanced_testcase {
     /** @var null|repository_owncloud the repository_owncloud object, which the tests are run on. */
     private $repo = null;
 
-    /**
-     * Sets up the tested minor repository_owncloud object and all data records which are
-     * needed to initialize the repository.
-     */
+    private $issuer = null;
+
     protected function setUp() {
         global $DB;
         $this->resetAfterTest(true);
+
+        // Params for the config form.
+        $typeparams = array('type' => 'owncloud', 'visible' => 0, 'issuerid' => 1, 'validissuers' => '');
+
+        // First, create a owncloud repository type and instance.
+        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
+
+        $this->setAdminUser();
+        $api = new \core\oauth2\api();
+        $data = new stdClass();
+        $data->name = "Service";
+        $data->clientid = "Clientid";
+        $data->clientsecret = "Secret";
+        $data->loginscopes = "openid profile email";
+        $data->loginscopesoffline = "openid profile email";
+        $data->baseurl = "www.baseurl.de";
+        $data->image = "";
+        $issuer = $api->create_issuer($data);
+
+        $endpoint = new stdClass();
+        $endpoint->name = "token";
+        $endpoint->url = "https://www.someurl.de";
+        $endpoint->issuerid = $issuer->get('id');
+        $endpoint = $api->create_endpoint($endpoint);
+        $generator->test_create_preparation();
+        $reptype = $generator->create_type($typeparams);
+
+        // Then insert a name for the instance into the database.
+        /*$instance = $DB->get_record('repository_instances', array('typeid' => $reptype->id));
+        $DB->update_record('repository_instances', (object) array('id' => $instance->id, 'name' => 'ownCloud'));
+
+        // At last, create a repository_owncloud object from the instance id.
+        // TODO: Function is called on null, for some reason the repo is not created.
+        $this->repo = new repository_owncloud($instance->id);
+        $this->repo->options['typeid'] = $reptype->id;*/
     }
 
+    /**
+     * Dummy test for mock.
+     */
+
+    public function testReturnSelf()
+    {
+        // Create a stub for the SomeClass class.
+        $stub = $this->createMock(\core\oauth2\issuer::class);
+
+        // Configure the stub.
+        $stub->method('get_endpoint_url')
+            ->willReturn('www.filepath.de');
+
+        // $stub->doSomething() returns $stub
+        $this->assertSame('www.filepath.de', $stub->get_endpoint_url("what"));
+    }
 }
