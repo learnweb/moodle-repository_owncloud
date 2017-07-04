@@ -79,8 +79,8 @@ class repository_owncloud extends repository {
             // all operations concerning files are executed with webdav.
             $this->disabled = true;
         }
-        // In case no issuer is present the webdavclient will not be initiated.
-        if (!empty($issuerid)) {
+        // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
+        if (!empty($issuerid) && $this->disabled === false) {
             $this->initiate_webdavclient($issuerid);
         }
         // In case the Issuer is not enabled, the repository is disabled.
