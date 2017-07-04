@@ -58,7 +58,7 @@ For the ownCloud Repository plugin four endpoints have to be registered (this is
 For further information on OAuth2 Clients visit the [Moodle Dokumentation on OAuth2](https://docs.moodle.org/dev/OAuth_2_API).
 
 ### Choose Oauth2 Issuer
-The issuer can be chosen in the repository settings (```Site administration ► Plugins ► Repositories ► Manage repositories```) .
+The issuer can be chosen in the repository settings ```Site administration ► Plugins ► Repositories ► Manage repositories```.
 
 ![Select Form](pix/owncloudissuer.png)
 
@@ -69,7 +69,7 @@ The choice of issuer can trigger three different kinds of notifications :
 
 ## User View
 
-This plugin is available in all Activities where the file picker is used. However, course admins can disable it under `Course Administration ► Repositories`. The usage of this plugin cannot be limited to specific user groups.
+This plugin is available in all activities where the file picker is used. However, course admins can disable it in the `Course Administration ► Repositories` menu.
 
 In the file picker a login button is displayed (assuming that the user is not authenticated yet):
 
@@ -101,7 +101,7 @@ Kopieren Sie den Inhalt dieses Repositorys nach `repository/owncloud`.
 ## Admin Einstellungen
 
 Repository Plugins werden unter `Site Administration ► Plugins ► Repositories` aktiviert.
-Bitte benutzen sie die englische Anweisung zu genaueren Information zur Registrierung von OAuth2 Clients in der Moodle Schnittstelle.
+Bitte benutzen sie den [englischen Teil der README](#create-oauth2-issuer) für genaueren Information zur Registrierung von OAuth2 Clients in der Moodle Schnittstelle.
 ## Sicht des Nutzers
 
 Dieses Plugin ist in allen Aktivitäten verfügbar, die die Dateiauswahl nutzen. Kurs Administratoren können es jedoch unter `Course Administration ► Repositories` deaktivieren. Die Benutzung dieses Plugins kann nicht auf bestimmte Nutzergruppen begrenzt werden.
