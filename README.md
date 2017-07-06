@@ -8,17 +8,15 @@ Nevertheless, we are actively working on a release. We would be extremely happy 
 
 # Moodle Repository Plugin `owncloud`
 
-[![Build Status](https://travis-ci.org/pssl16/moodle-repository_owncloud.svg?branch=master)](https://travis-ci.org/pssl16/moodle-repository_owncloud)
-[![codecov](https://codecov.io/gh/pssl16/moodle-repository_owncloud/branch/master/graph/badge.svg)](https://codecov.io/gh/pssl16/moodle-repository_owncloud)
+[![Build Status](https://travis-ci.org/learnweb/moodle-repository_owncloud.svg?branch=master)](https://travis-ci.org/learnweb/moodle-repository_owncloud)
+[![codecov](https://codecov.io/gh/learnweb/moodle-repository_owncloud/branch/master/graph/badge.svg)](https://codecov.io/gh/learnweb/moodle-repository_owncloud)
 
 # English
 
 This plugin enables moodle users to have direct access to their files from ownCloud in the *Moodle File Picker* and the *Url-Activity*. 
-**Hitherto** it **was** depending on the [`oauth2owncloud` plugin](https://github.com/pssl16/moodle-tool_oauth2owncloud). 
-Since the Moodle3.3 Release Moodle offers an additional API for registering OAuth2 Clients. 
-Therefore, the plugin is customized to the new API. 
+The plugin uses Moodle's OAuth 2 API that was added in Moodle 3.3. 
 
-Created by the project seminar sciebo@Learnweb of the University of Münster.
+Originally created by the project seminar sciebo@Learnweb of the University of Münster; see https://github.com/pssl16 for an archive of their great work.
 
 ## Installation
 
@@ -55,12 +53,12 @@ For the ownCloud Repository plugin four endpoints have to be registered (this is
 
    However Moodle additionally requires a userinfo_endpoint that has no effect in the ownCloud repository. 
 
-For further information on OAuth2 Clients visit the [Moodle Dokumentation on OAuth2](https://docs.moodle.org/dev/OAuth_2_API).
+For further information on OAuth 2 Clients visit the [Moodle Documentation on OAuth 2](https://docs.moodle.org/dev/OAuth_2_API).
 
 ### Choose Oauth2 Issuer
 The issuer can be chosen in the repository settings ```Site administration ► Plugins ► Repositories ► Manage repositories```.
 
-![Select Form](pix/owncloudissuer.png)
+![Select Form](https://user-images.githubusercontent.com/432117/27905346-f42d55d0-623f-11e7-9e1b-ad4782e989d7.png)
 
 The choice of issuer can trigger three different kinds of notifications :
 1. Information (Blue Box) which states which issuer is currently chosen
@@ -73,47 +71,13 @@ This plugin is available in all activities where the file picker is used. Howeve
 
 In the file picker a login button is displayed (assuming that the user is not authenticated yet):
 
-![File picker login](pix/file_picker_login.png)
+![File picker login](https://user-images.githubusercontent.com/432117/27905348-f4305ca8-623f-11e7-91c6-5bef1340bcd9.png)
 
 When the button is clicked a pop-up window or a new tab is opened and the user will be requested to login and authorize Moodle. If authorization is granted, the user sees a tabular listing of the files available:
 
-![File picker](pix/file_picker_files.png)
+![File picker](https://user-images.githubusercontent.com/432117/27905344-f40e4a78-623f-11e7-9332-4859f8666eff.png)
 
 Here the user can select files, reload the content and logout. For the settings the admin is redirected to the `oauth2owncloud` plugin.
 
-Additional information can be found in our [documentation](https://pssl16.github.io).
-# Current Status
-TODOs:
-* Writhe php unit test
+Additional information can be found in our [original documentation (in German)](https://pssl16.github.io).
 
-# Deutsch
-
-Dieses Plugin ermöglicht Nutzern direkten Dateien Zugriff ihrer ownCloud Dateien im *Moodle File Picker* und der *Link-Aktivität* mittels des OAuth2 Verfahrens.
-Zur Authentifizierung wurde **bisher** das [`oauth2owncloud` plugin](https://github.com/pssl16/moodle-tool_oauth2owncloud) benutzt.
-In der Version Moodle3.3 wurde eine zusätzliche Schnittstelle zum oauth2 Protokoll eingeführt. An diese wird das Plugin nun angepasst.
-
-Erstellt vom Projektseminar sciebo@Learnweb der Westfälischen Wilhelms-Universität Münster.
-
-## Installation
-
-Kopieren Sie den Inhalt dieses Repositorys nach `repository/owncloud`.
-
-## Admin Einstellungen
-
-Repository Plugins werden unter `Site Administration ► Plugins ► Repositories` aktiviert.
-Bitte benutzen sie den [englischen Teil der README](#create-oauth2-issuer) für genaueren Information zur Registrierung von OAuth2 Clients in der Moodle Schnittstelle.
-## Sicht des Nutzers
-
-Dieses Plugin ist in allen Aktivitäten verfügbar, die die Dateiauswahl nutzen. Kurs Administratoren können es jedoch unter `Course Administration ► Repositories` deaktivieren. Die Benutzung dieses Plugins kann nicht auf bestimmte Nutzergruppen begrenzt werden.
-
-In der Dateiauswahl wird ein Login-Button angezeigt (angenommen der Nutzer hat sich noch nicht authentifiziert):
-
-![Dateiauswahl Login](pix/file_picker_login.png)
-
-Beim Klicken auf den Button wird ein Pop-up Fenster oder ein neuer Tab geöffnet und der Nutzer wird darum gebeten, Moodle zu autorisieren. Wenn die Autorisierung gewährt wurde, sieht der Nutzer eine tabellarische Auflistung der verfügbaren Dateien:
-
-![Dateiauswahl](pix/file_picker_files.png)
-
-Hier kann der Nutzer Dateien auswählen, die Inhalte neu laden und sich abmelden. Für die Einstellungen wird der Administrator zum `oauth2owncloud` Plugin weitergeleitet.
-
-Nähere Informationen finden Sie in unserer [Dokumentation](https://pssl16.github.io).
