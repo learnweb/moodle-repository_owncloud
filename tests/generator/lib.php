@@ -26,7 +26,6 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  *
- * @codeCoverageIgnore
  * @package    repository_sciebo
  * @category   test
  * @copyright  2017 Project seminar (Learnweb, University of Münster)

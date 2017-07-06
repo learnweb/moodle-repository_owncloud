@@ -32,7 +32,8 @@ $string['pluginname_help'] = 'ownCloud repository';
 // Settings reminder.
 $string['settings_withoutissuer'] = 'You have not added an OAuth2 issuer yet.';
 $string['settings_withissuer'] = 'Currently the {$a} issuer is active.';
-$string['right_issuers'] = 'The following issuers implement the suitable endpoints: <br> {$a}';
+$string['right_issuers'] = 'The following issuers implement the required endpoints: <br> {$a}';
+$string['no_right_issuers'] = 'None of the existing issuers implement all required endpoints. Please register an appropriate issuer.';
 $string['chooseissuer'] = 'Choice of issuer';
 $string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 services page. <br>
 For additional help with the OAuth2 API visit the Moodle Dokumentation.';

@@ -468,7 +468,7 @@ class repository_owncloud extends repository {
         $issuerid = get_config('owncloud', 'issuerid');
 
         // Validates which issuers implement the right endpoints. WebDav is necessary for ownCloud.
-        $validissuers = '';
+        $validissuers = [];
         foreach ($issuers as $issuer) {
             $endpoinwebdav = false;
             $endpointoken = false;
@@ -489,7 +489,7 @@ class repository_owncloud extends repository {
                 }
             }
             if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth) {
-                $validissuers .= $issuer->get('name') . ' ';
+                $validissuers[] = $issuer->get('name');
             }
         }
 
@@ -503,8 +503,7 @@ class repository_owncloud extends repository {
         $text = '';
         $strrequired = get_string('required');
         if (!empty($issuerid)) {
-            $bool = strpos($validissuers, $types[$issuerid]);
-            if (!is_int($bool)) {
+            if (!in_array($types[$issuerid], $validissuers)) {
                 $text .= get_string('invalid_issuer', 'repository_owncloud', $types[$issuerid]);
                 $urgency = 'error';
             } else {
@@ -523,8 +522,13 @@ class repository_owncloud extends repository {
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
         $mform->setType('issuerid', PARAM_RAW_TRIMMED);
-        // All issuers that are valid are displayed seperately.
-        $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', $validissuers));
+
+        // All issuers that are valid are displayed seperately (if any).
+        if (count($validissuers) === 0) {
+            $mform->addElement('html', get_string('no_right_issuers', 'repository_owncloud'));
+        } else {
+            $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
+        }
         // The default is set to the issuer chosen.
         if (!empty($issuerid)) {
             $select->setSelected($issuerid);
