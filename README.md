@@ -13,8 +13,9 @@ Nevertheless, we are actively working on a release. We would be extremely happy 
 
 # English
 
-This plugin enables moodle users to have direct access to their files from ownCloud in the *Moodle File Picker* and the *Url-Activity*. 
+This plugin enables Moodle users to have direct access to their private files from ownCloud in the *Moodle file picker* and the *URL resource module*. 
 The plugin uses Moodle's OAuth 2 API that was added in Moodle 3.3. 
+
 
 Originally created by the project seminar sciebo@Learnweb of the University of Münster; see https://github.com/pssl16 for an archive of their great work.
 
