@@ -516,8 +516,7 @@ class repository_owncloud extends repository {
         }
 
         // The up-to-date form is displayed.
-        $html = $OUTPUT->notification($text, $urgency);
-        $mform->addElement('html', $html);
+        $mform->addElement('html', $OUTPUT->notification($text, $urgency));
         $select = $mform->addElement('select', 'issuerid', 'Issuer', $types);
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
