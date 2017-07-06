@@ -480,12 +480,16 @@ class repository_owncloud extends repository {
                 switch($name) {
                     case 'webdav_endpoint':
                         $endpoinwebdav = true;
+                        break;
                     case 'token_endpoint':
                         $endpointoken = true;
+                        break;
                     case 'authorization_endpoint':
                         $endpoinauth = true;
+                        break;
                     case 'userinfo_endpoint':
                         $endpoinuserinfo = true;
+                        break;
                 }
             }
             if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth) {
