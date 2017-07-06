@@ -30,8 +30,9 @@ Repository Plugins are activated under `Site Administration ► Plugins ► Repo
 The following text describes how the necessary issuer is created with the Moodle API and secondly 
 how the issuer can be chosen.
 
-### Create Oauth2 Issuer
-The ownCloud oauth2 issuer has to be registered in the admin menu `Dashboard ► Site administration ► Server ► OAuth 2 services`.
+### Create OAuth 2 Issuer
+You need to configure Moodle so that it knows how to talk to your ownCloud server.
+For this, a so-called OAuth 2 issuer has to be registered in the admin menu `Dashboard ► Site administration ► Server ► OAuth 2 services`.
 When adding the issuer the ClientID, Secret and baseurl are necessary. ClientID and Secret are generated in the ownCloud instance.
 Additionally, Moodle has a second interface for adding endpoints. 
 For the ownCloud Repository plugin four endpoints have to be registered (this is ownCloud specific): 
