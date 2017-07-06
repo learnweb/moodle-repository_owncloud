@@ -1,2 +1,6 @@
 fixes:
   - "moodle/repository/owncloud/::"
+
+ignore:
+  - "tests/"
+  - "db/"

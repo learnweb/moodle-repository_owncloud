@@ -18,22 +18,18 @@
  * ownCloud repository plugin library.
  *
  * @package    repository_owncloud
- * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
- * @author     Projektseminar Uni Münster
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or
  */
 
-// @codeCoverageIgnoreStart
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-// @codeCoverageIgnoreEnd
 /**
  * ownCloud repository class.
  *
  * @package    repository_owncloud
- * @copyright  2017 Westfälische Universität Münster (WWU Münster)
- * @author     Projektseminar Uni Münster
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud extends repository {
@@ -367,8 +363,6 @@ class repository_owncloud extends repository {
 
     /**
      * Method that generates a reference link to the chosen file.
-     *
-     * @codeCoverageIgnore
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         // Delivers a download link to the concerning file.
@@ -460,7 +454,6 @@ class repository_owncloud extends repository {
     /**
      * This method adds a select form and additional information to the settings form..
      *
-     * @codeCoverageIgnore
      * @param moodleform $mform Moodle form (passed by reference)
      * @param string $classname repository class name
      */
@@ -627,7 +620,7 @@ class repository_owncloud extends repository {
         if (has_capability('moodle/site:config', $sitecontext)) {
 
             // URL to manage a external repository. It is displayed in the file picker and in this case directs
-            // the settings page of the oauth2owncloud admin tool.
+            // the settings page of repositories.
             $settingsurl = new moodle_url('/admin/repository.php');
             $ret['manage'] = $settingsurl->out();
         }
