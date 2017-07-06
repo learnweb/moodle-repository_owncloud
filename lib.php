@@ -97,7 +97,7 @@ class repository_owncloud extends repository {
             $issuer = \core\oauth2\api::get_issuer($issuerid);
             $baseurl = $issuer->get('baseurl');
         } catch (Exception $e) {
-            $newexception = new \repository_owncloud\configuration_exception();
+            $newexception = new \repository_owncloud\configuration_exception('Endpoint baseurl not defined.');
             throw $newexception;
         }
         // Selects the necessary information (port, type, server) from the path to build the webdavclient.
@@ -115,11 +115,11 @@ class repository_owncloud extends repository {
                 $server = substr($baseurl, 7);
             }
             if (empty($webdavport)) {
-                $newexception = new \repository_owncloud\configuration_exception();
+                $newexception = new \repository_owncloud\configuration_exception('Port not defined.');
                 throw $newexception;
             }
         } else {
-            $newexception = new \repository_owncloud\configuration_exception();
+            $newexception = new \repository_owncloud\configuration_exception('Endpoint baseurl defined, but problematic.');
             throw $newexception;
         }
         // Authentication method is set to Bearer, since we use OAuth 2.0.
@@ -591,7 +591,7 @@ class repository_owncloud extends repository {
     private function get_parsedurl($endpointname) {
         $webdavurl = $this->issuer->get_endpoint_url($endpointname);
         if (empty($webdavurl)) {
-            $exception = new \repository_owncloud\configuration_exception();
+            $exception = new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
             throw $exception;
         }
         return parse_url($webdavurl);
