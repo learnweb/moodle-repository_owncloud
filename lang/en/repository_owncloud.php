@@ -30,18 +30,17 @@ $string['configplugin'] = 'ownCloud configuration';
 $string['pluginname_help'] = 'ownCloud repository';
 
 // Settings reminder.
-$string['settings_withoutissuer'] = 'You have not added an OAuth2 issuer yet.';
+$string['settings_withoutissuer'] = 'You have not selected an ownCloud server as the OAuth 2 issuer yet.';
 $string['settings_withissuer'] = 'Currently the {$a} issuer is active.';
 $string['right_issuers'] = 'The following issuers implement the required endpoints: <br> {$a}';
 $string['no_right_issuers'] = 'None of the existing issuers implement all required endpoints. Please register an appropriate issuer.';
-$string['chooseissuer'] = 'Choice of issuer';
+$string['chooseissuer'] = 'Issuer';
 $string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 services page. <br>
-For additional help with the OAuth2 API visit the Moodle Dokumentation.';
+For additional help with the OAuth 2 API please refer to the Moodle documentation.';
 $string['chooseissuer_link'] = 'OAuth_2_services';
 $string['invalid_issuer'] = 'Currently the {$a} is active, however it does not implement all necessary endpoints. The repository will not work.';
 
 
 // Exceptions.
-$string['exception_config'] = 'A Mistake in the configuration of the OAuth2 Client occurred{$a}';
-$string['web_endpoint_missing'] = 'The webdav endpoint for the owncloud oauth2 issuer is not working.
-Therefore the owncloud repository is disabled';
+$string['exception_config'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
+$string['web_endpoint_missing'] = 'The WebDAV endpoint for the owncloud oauth2 issuer is not working. Therefore, the ownCloud repository is disabled.';
