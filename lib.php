@@ -427,13 +427,14 @@ class repository_owncloud extends repository {
      * @param string $classname repository class name
      */
     public static function type_config_form($mform, $classname = 'repository') {
-        global $CFG, $OUTPUT;
+        global $OUTPUT;
         parent::type_config_form($mform);
 
         // Firstly all issuers are considered.
         $issuers = core\oauth2\api::get_all_issuers();
         $types = array();
 
+        // Fetch selected issuer.
         $issuerid = get_config('owncloud', 'issuerid');
 
         // Validates which issuers implement the right endpoints. WebDav is necessary for ownCloud.
@@ -464,10 +465,7 @@ class repository_owncloud extends repository {
             if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth) {
                 $validissuers[] = $issuer->get('name');
             }
-        }
-
-        foreach ($issuers as $issuer) {
-                $types[$issuer->get('id')] = $issuer->get('name');
+            $types[$issuer->get('id')] = $issuer->get('name');
         }
 
         // Depending on the hitherto settings the user is which issuer is chosen.
@@ -488,7 +486,10 @@ class repository_owncloud extends repository {
             $urgency = 'warning';
         }
 
-        // The up-to-date form is displayed.
+        // Render the form.
+        $url = new \moodle_url('/admin/tool/oauth2/issuers.php');
+        $mform->addElement('static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $url->out()));
+
         $mform->addElement('html', $OUTPUT->notification($text, $urgency));
         $select = $mform->addElement('select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $types);
         $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
