@@ -333,6 +333,7 @@ class repository_owncloud extends repository {
     public function get_path($id) {
         $baseurl = $this->issuer->get('baseurl');
         $pathurl = $baseurl . ':' . $this->dav->port;
+        // TODO will not work if owncloud is in subfolder.
         return $pathurl . '/public.php?service=files&t=' . $id . '&download';
     }
 
