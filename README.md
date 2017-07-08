@@ -33,27 +33,27 @@ how the issuer can be chosen.
 ### Create OAuth 2 Issuer
 You need to configure Moodle so that it knows how to talk to your ownCloud server.
 For this, a so-called OAuth 2 issuer has to be registered in the admin menu `Dashboard ► Site administration ► Server ► OAuth 2 services`.
-When adding the issuer the ClientID, Secret and baseurl are necessary. ClientID and Secret are generated in the ownCloud instance.
+When adding the issuer the ClientID, Secret and baseurl are necessary. ClientID and Secret are generated in the ownCloud instance. The base URL is the full URL to your ownCloud installation, including a custom port (if any).
 Additionally, Moodle has a second interface for adding endpoints. 
 For the ownCloud Repository plugin four endpoints have to be registered (this is ownCloud specific): 
 1. **token_endpoint** 
    
-   ```baseurl``` + ```port``` + '/index.php/apps/oauth2/api/v1/token'
+   ```baseurl``` + `/index.php/apps/oauth2/api/v1/token`
 
-    e.g. the baseurl is ```https://someinstance.owncloud.de```
+    e.g. the baseurl is ```https://someinstance.owncloud.de:443/```
     
-    then the port is ```443``` since it is https
+    then the port is ```443``` (which can be omitted, as it is the standard port)
     
     therefore the **token_endpoint-url** is ```https://someinstance.owncloud.de:443/index.php/apps/oauth2/api/v1/token```
 2. **authorization_endpoint** 
 
-   ```baseurl``` + ```port``` + '/index.php/apps/oauth2/authorize'
+   ```baseurl``` + `/index.php/apps/oauth2/authorize`
 3. **webdav_endpoint** 	
 
-   ```baseurl``` + ```port``` + '/remote.php/webdav'
+   ```baseurl``` + `/remote.php/webdav`
 4. **userinfo_endpoint** 
 
-   However Moodle additionally requires a userinfo_endpoint that has no effect in the ownCloud repository. 
+   Moodle additionally requires a userinfo_endpoint, however it has no effect in the ownCloud repository. Maybe it can be omitted. We'll investigate that.
 
 For further information on OAuth 2 Clients visit the [Moodle Documentation on OAuth 2](https://docs.moodle.org/dev/OAuth_2_API).
 

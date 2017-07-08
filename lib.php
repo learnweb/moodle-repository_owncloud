@@ -301,7 +301,7 @@ class repository_owncloud extends repository {
         $baseurl = $this->issuer->get('baseurl');
         // This is ownCloud specific.
         // IMPROVE: could be an additional setting in the Oauth2 issuer.
-        $posturl = $baseurl . ':' . $this->dav->port . '/ocs/v1.php/apps/files_sharing/api/v1/shares';
+        $posturl = $baseurl . '/ocs/v1.php/apps/files_sharing/api/v1/shares';
         $client = $this->get_user_oauth_client();
 
         $response = $client->post($posturl, $query, []);
@@ -332,9 +332,8 @@ class repository_owncloud extends repository {
      */
     public function get_path($id) {
         $baseurl = $this->issuer->get('baseurl');
-        $pathurl = $baseurl . ':' . $this->dav->port;
         // TODO will not work if owncloud is in subfolder.
-        return $pathurl . '/public.php?service=files&t=' . $id . '&download';
+        return $baseurl . '/public.php?service=files&t=' . $id . '&download';
     }
 
     /**
