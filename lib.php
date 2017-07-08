@@ -565,12 +565,11 @@ class repository_owncloud extends repository {
      * @throws \repository_owncloud\configuration_exception
      */
     private function get_parsedurl($endpointname) {
-        $webdavurl = $this->issuer->get_endpoint_url($endpointname);
-        if (empty($webdavurl)) {
-            $exception = new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
-            throw $exception;
+        $url = $this->issuer->get_endpoint_url($endpointname);
+        if (empty($url)) {
+            throw new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
         }
-        return parse_url($webdavurl);
+        return parse_url($url);
     }
 
     /**
