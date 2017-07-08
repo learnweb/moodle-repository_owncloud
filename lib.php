@@ -65,64 +65,92 @@ class repository_owncloud extends repository {
             $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
             // A Repository is marked as disabled when no issuer is present.
-
             $this->disabled = true;
         } try {
             // Check the webdavendpoint.
             $this->get_parsedurl('webdav');
         } catch (Exception $e) {
-            // A Repository is marked as disabled when no webdav_endpoint is present since
-            // all operations concerning files are executed with webdav.
+            // A Repository is marked as disabled when no webdav_endpoint is present
+            // or it fails to parse, because all operations concerning files
+            // rely on the webdav endpoint.
             $this->disabled = true;
         }
+        if (!$this->issuer) {
+            $this->disabled = true;
+        } else if (!$this->issuer->get('enabled')) {
+            // In case the Issuer is not enabled, the repository is disabled.
+            $this->disabled = true;
+        } else if (!self::is_valid_issuer($this->issuer)) {
+            // Check if necessary endpoints are present.
+            $this->disabled = true;
+        }
+        if ($this->disabled) {
+            return;
+        }
+
         // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
-        if (!empty($issuerid) && $this->disabled === false) {
-            $this->initiate_webdavclient($issuerid);
-        }
-        // In case the Issuer is not enabled, the repository is disabled.
-        if ($this->issuer && !$this->issuer->get('enabled')) {
-            $this->disabled = true;
-        }
+        $this->initiate_webdavclient();
     }
 
 
     /**
      * Initiates the webdav client.
-     * @param $issuerid
      * @throws \repository_owncloud\configuration_exception
      */
-    public function initiate_webdavclient($issuerid) {
-        // In case the issuer is not longer available, or has no baseurl an exception is thrown.
-        try {
-            $issuer = \core\oauth2\api::get_issuer($issuerid);
-            $baseurl = $issuer->get('baseurl');
-        } catch (Exception $e) {
-            throw new \repository_owncloud\configuration_exception('Endpoint baseurl not defined.');
-        }
+    public function initiate_webdavclient() {
+        $webdavendpoint = $this->get_parsedurl('webdav');
+
         // Selects the necessary information (port, type, server) from the path to build the webdavclient.
-        $https = 'https://';
-        $http = 'http://';
-        if (is_string($baseurl) || strlen($http) < strlen($baseurl)) {
-            if (substr($baseurl, 0, 8) === $https) {
-                $webdavtype = 'ssl://';
-                $webdavport = 443;
-                $server = substr($baseurl, 8);
-            }
-            if (substr($baseurl, 0, 7) === $http) {
-                $webdavtype = '';
-                $webdavport = 80;
-                $server = substr($baseurl, 7);
-            }
-            if (empty($webdavport)) {
-                throw new \repository_owncloud\configuration_exception('Port not defined.');
-            }
-        } else {
-            throw new \repository_owncloud\configuration_exception('Endpoint baseurl defined, but problematic.');
+        $server = $webdavendpoint['host'];
+        if ($webdavendpoint['scheme'] === 'https') {
+            $webdavtype = 'ssl://';
+            $webdavport = 443;
+        } else if ($webdavendpoint['scheme'] === 'http') {
+            $webdavtype = '';
+            $webdavport = 80;
         }
+
+        // Override default port, if a specific one is set.
+        if (isset($webdavendpoint['port'])) {
+            $webdavport = $webdavendpoint['port'];
+        }
+
         // Authentication method is set to Bearer, since we use OAuth 2.0.
         $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype);
+        // TODO set path inside owncloud_client!! We should not need to take care of it here...
         $this->dav->port = $webdavport;
         $this->dav->debug = false;
+    }
+
+    /**
+     * Check if an issuer provides all endpoints that we require.
+     * @param $issuer An issuer.
+     * @return bool True, if all endpoints exist; false otherwise.
+     */
+    private static function is_valid_issuer($issuer) {
+        $endpoinwebdav = false;
+        $endpointoken = false;
+        $endpoinuserinfo = false;
+        $endpoinauth = false;
+        $endpoints = \core\oauth2\api::get_endpoints($issuer);
+        foreach ($endpoints as $endpoint) {
+            $name = $endpoint->get('name');
+            switch ($name) {
+                case 'webdav_endpoint':
+                    $endpoinwebdav = true;
+                    break;
+                case 'token_endpoint':
+                    $endpointoken = true;
+                    break;
+                case 'authorization_endpoint':
+                    $endpoinauth = true;
+                    break;
+                case 'userinfo_endpoint':
+                    $endpoinuserinfo = true;
+                    break;
+            }
+        }
+        return $endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth;
     }
 
     /**
@@ -440,29 +468,7 @@ class repository_owncloud extends repository {
         // Validates which issuers implement the right endpoints. WebDav is necessary for ownCloud.
         $validissuers = [];
         foreach ($issuers as $issuer) {
-            $endpoinwebdav = false;
-            $endpointoken = false;
-            $endpoinuserinfo = false;
-            $endpoinauth = false;
-            $endpoints = \core\oauth2\api::get_endpoints($issuer);
-            foreach ($endpoints as $endpoint) {
-                $name = $endpoint->get('name');
-                switch($name) {
-                    case 'webdav_endpoint':
-                        $endpoinwebdav = true;
-                        break;
-                    case 'token_endpoint':
-                        $endpointoken = true;
-                        break;
-                    case 'authorization_endpoint':
-                        $endpoinauth = true;
-                        break;
-                    case 'userinfo_endpoint':
-                        $endpoinuserinfo = true;
-                        break;
-                }
-            }
-            if ($endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth) {
+            if (self::is_valid_issuer($issuer)) {
                 $validissuers[] = $issuer->get('name');
             }
             $types[$issuer->get('id')] = $issuer->get('name');
