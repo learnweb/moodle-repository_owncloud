@@ -312,27 +312,10 @@ class repository_owncloud extends repository {
         $ret['code'] = $xml->meta->statuscode;
         $ret['status'] = $xml->meta->status;
 
-        // The link is generated.
-
-        $fields = explode("/s/", $xml->data[0]->url[0]);
-        $fileid = $fields[count($fields)-1];
-
-        $ret['link'] = $this->get_public_link_url($fileid);
+        // Take the link and convert it into a download link.
+        $ret['link'] = $xml->data[0]->url[0] . "/download";
 
         return $ret['link'];
-    }
-    /**
-     * This method is used to generate file and folder paths to ownCloud after a successful share.
-     * Depending on the share type (public or private share), it returns the path to the shared
-     * file or folder.
-     *
-     * @param $type string either personal or private. Depending on share type.
-     * @param $ocsid string file or folder id of the concerning content.
-     * @return bool|string returns the generated path, if $type it personal or private. Otherwise, false.
-     */
-    public function get_public_link_url($ocsid) {
-        $baseurl = $this->issuer->get('baseurl');
-        return $baseurl . '/public.php?service=files&t=' . $ocsid . '&download';
     }
 
     /**
