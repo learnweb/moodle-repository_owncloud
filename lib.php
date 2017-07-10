@@ -136,29 +136,29 @@ class repository_owncloud extends repository {
      * @return bool True, if all endpoints exist; false otherwise.
      */
     private static function is_valid_issuer($issuer) {
-        $endpoinwebdav = false;
-        $endpointoken = false;
-        $endpoinuserinfo = false;
-        $endpoinauth = false;
+        $endpointwebdav = false;
+        $endpointtoken = false;
+        $endpointuserinfo = false;
+        $endpointauth = false;
         $endpoints = \core\oauth2\api::get_endpoints($issuer);
         foreach ($endpoints as $endpoint) {
             $name = $endpoint->get('name');
             switch ($name) {
                 case 'webdav_endpoint':
-                    $endpoinwebdav = true;
+                    $endpointwebdav = true;
                     break;
                 case 'token_endpoint':
-                    $endpointoken = true;
+                    $endpointtoken = true;
                     break;
                 case 'authorization_endpoint':
-                    $endpoinauth = true;
+                    $endpointauth = true;
                     break;
                 case 'userinfo_endpoint':
-                    $endpoinuserinfo = true;
+                    $endpointuserinfo = true;
                     break;
             }
         }
-        return $endpoinwebdav && $endpoinuserinfo && $endpointoken && $endpoinauth;
+        return $endpointwebdav && $endpointuserinfo && $endpointtoken && $endpointauth;
     }
 
     /**
