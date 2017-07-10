@@ -95,7 +95,7 @@ class repository_owncloud extends repository {
         }
 
         // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
-        $this->initiate_webdavclient();
+        $this->dav = $this->initiate_webdavclient();
     }
 
 
@@ -123,11 +123,12 @@ class repository_owncloud extends repository {
 
         $oauthclient = $this->get_user_oauth_client();
 
-        // Authentication method is set to Bearer, since we use OAuth 2.0.
-        $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
-        // TODO (#6) set (base)path inside owncloud_client!! We should not need to take care of it here...
-        $this->dav->port = $webdavport;
-        $this->dav->debug = false;
+        // Authentication method is `bearer` for OAuth 2. Pass oauth client, so that the WebDAV client can obtain the token when needed.
+        $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
+
+        $dav->port = $webdavport;
+        $dav->debug = false;
+        return $dav;
     }
 
     /**
