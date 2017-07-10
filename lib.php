@@ -18,94 +18,148 @@
  * ownCloud repository plugin library.
  *
  * @package    repository_owncloud
- * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
- * @author     Projektseminar Uni Münster
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or
  */
 
-// @codeCoverageIgnoreStart
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
-// @codeCoverageIgnoreEnd
-use tool_oauth2owncloud\owncloud;
-
 /**
  * ownCloud repository class.
  *
  * @package    repository_owncloud
- * @copyright  2017 Westfälische Universität Münster (WWU Münster)
- * @author     Projektseminar Uni Münster
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud extends repository {
 
-    /** @var null|owncloud the ownCloud client. */
-    private $owncloud = null;
+    /**
+     * OAuth 2 client
+     * @var \core\oauth2\client
+     */
+    private $client = null;
+    /**
+     * OAuth 2 Issuer
+     * @var \core\oauth2\issuer
+     */
+    private $issuer = null;
 
+    /**
+     * Additional scopes needed for the repository. Currently, ownCloud does not actually support/use scopes, so
+     * this is intended as a hint at required functionality and will help declare future scopes.
+     */
+    const SCOPES = 'files ocs';
+
+    /**
+     * owncloud_client webdav client which is used for webdav operations.
+     * @var \repository_owncloud\owncloud_client
+     */
+    private $dav = null;
+
+    /**
+     * repository_owncloud constructor.
+     * @param int $repositoryid
+     * @param bool|int|stdClass $context
+     * @param array $options
+     */
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
+        try {
+            // Issuer from config table, in the type_config_form a select form is defined to choose an issuer.
+            $issuerid = get_config('owncloud', 'issuerid');
+            $this->issuer = \core\oauth2\api::get_issuer($issuerid);
+        } catch (dml_missing_record_exception $e) {
+            // A Repository is marked as disabled when no issuer is present.
+            $this->disabled = true;
+        } try {
+            // Check the webdavendpoint.
+            $this->parse_endpoint_url('webdav');
+        } catch (Exception $e) {
+            // A Repository is marked as disabled when no webdav_endpoint is present
+            // or it fails to parse, because all operations concerning files
+            // rely on the webdav endpoint.
+            $this->disabled = true;
+        }
+        if (!$this->issuer) {
+            $this->disabled = true;
+        } else if (!$this->issuer->get('enabled')) {
+            // In case the Issuer is not enabled, the repository is disabled.
+            $this->disabled = true;
+        } else if (!self::is_valid_issuer($this->issuer)) {
+            // Check if necessary endpoints are present.
+            $this->disabled = true;
+        }
+        if ($this->disabled) {
+            return;
+        }
 
-        // The WebDav client is no longer handled in here.
-        $returnurl = new moodle_url('/repository/repository_callback.php', [
-                'callback'  => 'yes',
-                'repo_id'   => $repositoryid,
-                'sesskey'   => sesskey(),
-        ]);
+        // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
+        $this->dav = $this->initiate_webdavclient();
+    }
 
-        // The owncloud Object, which is described in the Admin Tool oauth2owncloud
-        // is created. From now on is will handle all interactions with the owncloud OAuth2 Client.
-        $this->owncloud = new owncloud($returnurl);
 
-        // Checks, whether all the required data is available. $this->options['checked'] is set to true, if the
-        // data was checked once to prevent multiple printings of the warning.
-        if (empty($this->options['checked'])) {
-            $this->options['checked'] = true;
-            $this->options['success'] = $this->owncloud->check_data();
+    /**
+     * Initiates the webdav client.
+     * @throws \repository_owncloud\configuration_exception If configuration is missing (endpoints).
+     */
+    public function initiate_webdavclient() {
+        $webdavendpoint = $this->parse_endpoint_url('webdav');
 
-            if (!$this->options['success']) {
-                $this->print_warning();
+        // Selects the necessary information (port, type, server) from the path to build the webdavclient.
+        $server = $webdavendpoint['host'];
+        if ($webdavendpoint['scheme'] === 'https') {
+            $webdavtype = 'ssl://';
+            $webdavport = 443;
+        } else if ($webdavendpoint['scheme'] === 'http') {
+            $webdavtype = '';
+            $webdavport = 80;
+        }
+
+        // Override default port, if a specific one is set.
+        if (isset($webdavendpoint['port'])) {
+            $webdavport = $webdavendpoint['port'];
+        }
+
+        $oauthclient = $this->get_user_oauth_client();
+
+        // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
+        $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
+
+        $dav->port = $webdavport;
+        $dav->debug = false;
+        return $dav;
+    }
+
+    /**
+     * Check if an issuer provides all endpoints that we require.
+     * @param $issuer An issuer.
+     * @return bool True, if all endpoints exist; false otherwise.
+     */
+    private static function is_valid_issuer($issuer) {
+        $endpointwebdav = false;
+        $endpointocs = false;
+        $endpointtoken = false;
+        $endpointauth = false;
+        $endpoints = \core\oauth2\api::get_endpoints($issuer);
+        foreach ($endpoints as $endpoint) {
+            $name = $endpoint->get('name');
+            switch ($name) {
+                case 'webdav_endpoint':
+                    $endpointwebdav = true;
+                    break;
+                case 'ocs_endpoint':
+                    $endpointocs = true;
+                    break;
+                case 'token_endpoint':
+                    $endpointtoken = true;
+                    break;
+                case 'authorization_endpoint':
+                    $endpointauth = true;
+                    break;
             }
         }
-    }
-
-    /**
-     * Output method, which prints a warning inside an activity, which uses the ownCloud repository.
-     *
-     * @codeCoverageIgnore
-     */
-    private function print_warning() {
-        global $CFG, $OUTPUT;
-        $sitecontext = context_system::instance();
-
-        if (has_capability('moodle/site:config', $sitecontext)) {
-
-            $link = $CFG->wwwroot . '/' . $CFG->admin . '/settings.php?section=oauth2owncloud';
-
-            // Generates a link to the admin setting page.
-            echo $OUTPUT->notification('<a href="' . $link . '" target="_blank" rel="noopener noreferrer">
-                                ' . get_string('missing_settings_admin', 'tool_oauth2owncloud') . '</a>', 'warning');
-        } else {
-
-            // Otherwise, just print a notification, bacause the current user cannot configure admin
-            // settings himself.
-            echo $OUTPUT->notification(get_string('missing_settings_user', 'tool_oauth2owncloud'));
-        }
-    }
-
-    /**
-     * If the plugin is set to hidden in the settings or any client settings date is missing,
-     * the plugin is set to invisible and thus, not shown in the file picker.
-     *
-     * @return bool false, if set to hidden or settings data is missing.
-     */
-    public function is_visible() {
-        if (!parent::is_visible()) {
-            return false;
-        } else {
-            // If any settings data is missing, return false.
-            return $this->options['success'];
-        }
+        return $endpointwebdav && $endpointocs && $endpointtoken && $endpointauth;
     }
 
     /**
@@ -118,14 +172,23 @@ class repository_owncloud extends repository {
      */
     public function get_file($url, $title = '') {
         $url = urldecode($url);
-        $path = $this->prepare_file($title);
-        if (!$this->owncloud->open()) {
+        // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
+        $path = $this->prepare_file(uniqid());
+        if (!$this->dav->open()) {
             return false;
         }
-
-        $this->owncloud->get_file($url, $path);
+        $parsedurl = $this->parse_endpoint_url('webdav');
+        // TODO (#6) handle (base)path in client, not here.
+        $this->dav->get_file($parsedurl['path'] . $url, $path);
 
         return array('path' => $path);
+    }
+
+    /**
+     * @return bool Always false, as global search is unsupported.
+     */
+    public function global_search() {
+        return false;
     }
 
     /**
@@ -137,39 +200,13 @@ class repository_owncloud extends repository {
      * @return array directory properties.
      */
     public function get_listing($path='', $page = '') {
-        global $CFG, $OUTPUT;
+        global $OUTPUT;
 
-        // Array, which will have to be returned by this function.
-        $ret  = array();
-
-        // Tells the file picker to fetch the list dynamically. An AJAX request is send to the server,
-        // as soon as the user opens a folder.
-        $ret['dynload'] = true;
-
-        // Search is disabled in this plugin.
-        $ret['nosearch'] = true;
-
-        // We need to provide a login link, because the user needs login himself with his own ownCloud
-        // user account.
-        $ret['nologin'] = false;
-
-        // Contains all parent paths to the current path.
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
-
-        // Contains all file/folder information and is required to build the file/folder tree.
-        $ret['list'] = array();
-
-        $sitecontext = context_system::instance();
-        if (has_capability('moodle/site:config', $sitecontext)) {
-
-            // URL to manage a external repository. It is displayed in the file picker and in this case directs
-            // the settings page of the oauth2owncloud admin tool.
-            $ret['manage'] = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
-        }
+        $ret = $this->prepare_get_listing();
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
-        if (!$this->owncloud->open()) {
+        if (!$this->dav->open()) {
             return $ret;
         }
 
@@ -182,17 +219,19 @@ class repository_owncloud extends repository {
             // Every sub-path to the last part of the current path, is a parent path.
             for ($i = 0; $i < count($chunks); $i++) {
                 $ret['path'][] = array(
-                        'name' => urldecode($chunks[$i]),
-                        'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
+                    'name' => urldecode($chunks[$i]),
+                    'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
                 );
             }
         }
+        // Get basepath from endpoint
+        // TODO (#6) handle (base)path in client, not here.
+        $parsedurl = $this->parse_endpoint_url('webdav');
 
-        // The WebDav methods are getting outsourced and encapsulated to the owncloud class.
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        $dir = $this->owncloud->get_listing(urldecode($path));
+        $dir = $this->dav->ls($parsedurl['path'] . '/' . urldecode($path));
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
@@ -201,16 +240,16 @@ class repository_owncloud extends repository {
         }
         $folders = array();
         $files = array();
-        $webdavpath = rtrim('/'.ltrim(get_config('tool_oauth2owncloud', 'path'), '/ '), '/ ');
+        $webdavpath = rtrim('/'.ltrim($parsedurl['path'], '/ '), '/ ');
         foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
                 $v['lastmodified'] = strtotime($v['lastmodified']);
             } else {
                 $v['lastmodified'] = null;
             }
-
+            // TODO there must be a better way... hostname is not present; /remote.php/webdav/ is.
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
-            $server = preg_quote(get_config('tool_oauth2owncloud', 'server'));
+            $server = preg_quote($parsedurl['path']);
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
             // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
@@ -220,22 +259,22 @@ class repository_owncloud extends repository {
                 // A folder.
                 if ($path != $v['href']) {
                     $folders[strtoupper($title)] = array(
-                            'title' => rtrim($title, '/'),
-                            'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
-                            'children' => array(),
-                            'datemodified' => $v['lastmodified'],
-                            'path' => $v['href']
+                        'title' => rtrim($title, '/'),
+                        'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
+                        'children' => array(),
+                        'datemodified' => $v['lastmodified'],
+                        'path' => $v['href']
                     );
                 }
             } else {
                 // A file.
                 $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
                 $files[strtoupper($title)] = array(
-                        'title' => $title,
-                        'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
-                        'size' => $size,
-                        'datemodified' => $v['lastmodified'],
-                        'source' => $v['href']
+                    'title' => $title,
+                    'thumbnail' => $OUTPUT->image_url(file_extension_icon($title, 90))->out(false),
+                    'size' => $size,
+                    'datemodified' => $v['lastmodified'],
+                    'source' => $v['href']
                 );
             }
         }
@@ -243,6 +282,7 @@ class repository_owncloud extends repository {
         ksort($folders);
         $ret['list'] = array_merge($folders, $files);
         return $ret;
+
     }
 
     /**
@@ -255,8 +295,27 @@ class repository_owncloud extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        $response = $this->owncloud->get_link($url);
-        return $response['link'];
+        // Use OCS to generate a public share to the requested file.
+        $ocsquery = http_build_query(array('path' => $url,
+            'shareType' => 3,
+            'publicUpload' => false,
+            'permissions' => 31
+        ), null, "&");
+        $posturl = $this->issuer->get_endpoint_url('ocs');
+
+        $client = $this->get_user_oauth_client();
+        $response = $client->post($posturl, $ocsquery, []);
+
+        $ret = array();
+
+        $xml = simplexml_load_string($response);
+        $ret['code'] = $xml->meta->statuscode;
+        $ret['status'] = $xml->meta->status;
+
+        // Take the link and convert it into a download link.
+        $ret['link'] = $xml->data[0]->url[0] . "/download";
+
+        return $ret['link'];
     }
 
     /**
@@ -283,8 +342,6 @@ class repository_owncloud extends repository {
 
     /**
      * Method that generates a reference link to the chosen file.
-     *
-     * @codeCoverageIgnore
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         // Delivers a download link to the concerning file.
@@ -297,7 +354,30 @@ class repository_owncloud extends repository {
      * @return bool false, if no Access Token is set or can be requested.
      */
     public function check_login() {
-        return $this->owncloud->check_login();
+        $client = $this->get_user_oauth_client();
+        return $client->is_logged_in();
+    }
+
+    /**
+     * Get a cached user authenticated oauth client.
+     * @param bool|moodle_url $overrideurl Use this url instead of the repo callback.
+     * @return \core\oauth2\client
+     */
+    protected function get_user_oauth_client($overrideurl = false) {
+        if ($this->client) {
+            return $this->client;
+        }
+        // TODO $overrideurl is not used currently. GDocs uses it in send_file. Evaluate whether we need it.
+        if ($overrideurl) {
+            $returnurl = $overrideurl;
+        } else {
+            $returnurl = new moodle_url('/repository/repository_callback.php');
+            $returnurl->param('callback', 'yes');
+            $returnurl->param('repo_id', $this->id);
+            $returnurl->param('sesskey', sesskey());
+        }
+        $this->client = \core\oauth2\api::get_user_oauth_client($this->issuer, $returnurl, self::SCOPES);
+        return $this->client;
     }
 
     /**
@@ -306,16 +386,17 @@ class repository_owncloud extends repository {
      * @return mixed login window properties.
      */
     public function print_login() {
-        $url = $this->owncloud->get_login_url();
+        $client = $this->get_user_oauth_client();
+        $loginurl = $client->get_login_url();
         if ($this->options['ajax']) {
             $ret = array();
             $btn = new \stdClass();
             $btn->type = 'popup';
-            $btn->url = $url->out(false);
+            $btn->url = $loginurl->out(false);
             $ret['login'] = array($btn);
             return $ret;
         } else {
-            echo html_writer::link($url, get_string('login', 'repository'),
+            echo html_writer::link($loginurl, get_string('login', 'repository'),
                     array('target' => '_blank',  'rel' => 'noopener noreferrer'));
         }
     }
@@ -326,40 +407,103 @@ class repository_owncloud extends repository {
      * @return array login window properties.
      */
     public function logout() {
-        $this->owncloud->log_out();
-        set_user_preference('oC_token', null);
-        return $this->print_login();
+        $client = $this->get_user_oauth_client();
+        $client->log_out();
+        return parent::logout();
     }
 
     /**
      * Sets up access token after the redirection from ownCloud.
+     * The Moodle OAuth 2 API transfers Client ID and secret as params in the request.
+     * However, the ownCloud OAuth 2 App expects Client ID and secret to be in the request header.
+     * Therefore, the header is set beforehand, and ClientID and Secret are passed twice.
      */
     public function callback() {
-        $this->owncloud->check_login();
+        $client = $this->get_user_oauth_client();
+        // If an Access Token is stored within the client, it has to be deleted to prevent the addition
+        // of an Bearer authorization header in the request method.
+        $client->log_out();
+        $client->setHeader(array(
+            'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
+        ));
+        // This will upgrade to an access token if we have an authorization code and save the access token in the session.
+        $client->is_logged_in();
     }
 
     /**
-     * This method adds a notification to the settings form, which redirects to the OAuth 2.0 client.
+     * This method adds a select form and additional information to the settings form..
      *
-     * @codeCoverageIgnore
      * @param moodleform $mform Moodle form (passed by reference)
      * @param string $classname repository class name
      */
     public static function type_config_form($mform, $classname = 'repository') {
-        global $CFG, $OUTPUT;
-
-        $link = $CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section=oauth2owncloud';
-
-        // A notification is added to the settings page in form of a notification.
-        $html = $OUTPUT->notification(get_string('settings', 'repository_owncloud',
-                '<a href="'.$link.'" target="_blank" rel="noopener noreferrer">'.
-                get_string('oauth2', 'repository_owncloud') .'</a>'), 'warning');
-
-        $mform->addElement('html', $html);
-
+        global $OUTPUT;
         parent::type_config_form($mform);
+
+        // Firstly all issuers are considered.
+        $issuers = core\oauth2\api::get_all_issuers();
+        $types = array();
+
+        // Fetch selected issuer.
+        $issuerid = get_config('owncloud', 'issuerid');
+
+        // Validates which issuers implement the right endpoints. WebDav is necessary for ownCloud.
+        $validissuers = [];
+        foreach ($issuers as $issuer) {
+            if (self::is_valid_issuer($issuer)) {
+                $validissuers[] = $issuer->get('name');
+            }
+            $types[$issuer->get('id')] = $issuer->get('name');
+        }
+
+        // Depending on the hitherto settings the user is which issuer is chosen.
+        // In case no issuer is chosen there appears a warning.
+        // Additionally when the chosen issuer is invalid there appears a strong warning.
+        $text = '';
+        $strrequired = get_string('required');
+        if (!empty($issuerid)) {
+            if (!in_array($types[$issuerid], $validissuers)) {
+                $text .= get_string('invalid_issuer', 'repository_owncloud', $types[$issuerid]);
+                $urgency = 'error';
+            } else {
+                $text .= get_string('settings_withissuer', 'repository_owncloud', $types[$issuerid]);
+                $urgency = 'info';
+            }
+        } else {
+            $text .= get_string('settings_withoutissuer', 'repository_owncloud');
+            $urgency = 'warning';
+        }
+
+        // Render the form.
+        $url = new \moodle_url('/admin/tool/oauth2/issuers.php');
+        $mform->addElement('static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $url->out()));
+
+        $mform->addElement('html', $OUTPUT->notification($text, $urgency));
+        $select = $mform->addElement('select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $types);
+        $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
+        $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
+        $mform->setType('issuerid', PARAM_RAW_TRIMMED);
+
+        // All issuers that are valid are displayed seperately (if any).
+        if (count($validissuers) === 0) {
+            $mform->addElement('html', get_string('no_right_issuers', 'repository_owncloud'));
+        } else {
+            $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
+        }
+        // The default is set to the issuer chosen.
+        if (!empty($issuerid)) {
+            $select->setSelected($issuerid);
+        }
     }
 
+    /**
+     * Names of the plugin settings
+     *
+     * @return array
+     */
+    public static function get_type_option_names() {
+        return ['issuerid', 'pluginname'];
+    }
     /**
      * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
      *
@@ -373,7 +517,7 @@ class repository_owncloud extends repository {
 
     /**
      * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
-     *
+     * Now only FILE_INTERNAL since get_link and get_file_reference is not implemented.
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
      * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
@@ -383,5 +527,52 @@ class repository_owncloud extends repository {
      */
     public function supported_returntypes() {
         return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
+    }
+
+    /**
+     * Returns the parsed url of the choosen endpoint.
+     * @param string $endpointname
+     * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
+     * @throws \repository_owncloud\configuration_exception if an endpoint is undefined
+     */
+    private function parse_endpoint_url($endpointname) {
+        $url = $this->issuer->get_endpoint_url($endpointname);
+        if (empty($url)) {
+            throw new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
+        }
+        return parse_url($url);
+    }
+
+    /**
+     * Prepares the params for the get_listing method, defining filepicker settings.
+     * @return array
+     */
+    private function prepare_get_listing() {
+        $ret  = array();
+
+        // Tell the file picker to fetch the list dynamically. An AJAX request is send to the server,
+        // as soon as the user opens a folder.
+        $ret['dynload'] = true;
+
+        // Search is disabled in this plugin.
+        $ret['nosearch'] = true;
+
+        // We need to provide a login link, because the user needs login himself with his own ownCloud
+        // user account.
+        $ret['nologin'] = false;
+
+        // Contains all parent paths to the current path.
+        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
+
+        // Contains all file/folder information and is required to build the file/folder tree.
+        $ret['list'] = array();
+
+        // If admin, add reference to repository settings.
+        $sitecontext = context_system::instance();
+        if (has_capability('moodle/site:config', $sitecontext)) {
+            $settingsurl = new moodle_url('/admin/repository.php');
+            $ret['manage'] = $settingsurl->out();
+        }
+        return $ret;
     }
 }

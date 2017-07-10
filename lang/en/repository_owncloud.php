@@ -18,8 +18,7 @@
  * Language strings' definition for ownCloud repository.
  *
  * @package    repository_owncloud
- * @copyright  2017 Westfälische Wilhelms-Universität Münster (WWU Münster)
- * @author     Projektseminar Uni Münster
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 // General.
@@ -27,7 +26,22 @@ $string['pluginname'] = 'ownCloud';
 $string['configplugin'] = 'ownCloud repository configuration';
 $string['owncloud'] = 'ownCloud';
 $string['owncloud:view'] = 'View ownCloud';
+$string['configplugin'] = 'ownCloud configuration';
+$string['pluginname_help'] = 'ownCloud repository';
 
-// Settings reminder.
-$string['settings'] = 'If you have not done it yet, you should edit your {$a}. It is crucial in order to be able to connect to ownCloud.';
-$string['oauth2'] = 'OAuth 2.0 client configuration';
+// Settings.
+$string['settings_withoutissuer'] = 'You have not selected an ownCloud server as the OAuth 2 issuer yet.';
+$string['settings_withissuer'] = 'Currently the {$a} issuer is active.';
+$string['right_issuers'] = 'The following issuers implement the required endpoints: <br> {$a}';
+$string['no_right_issuers'] = 'None of the existing issuers implement all required endpoints. Please register an appropriate issuer.';
+$string['chooseissuer'] = 'Issuer';
+$string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 services page. <br>
+For additional help with the OAuth 2 API please refer to the Moodle documentation.';
+$string['chooseissuer_link'] = 'OAuth_2_services';
+$string['invalid_issuer'] = 'Currently the {$a} issuer is active, however it does not implement all necessary endpoints. The repository will not work.';
+$string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
+
+
+// Exceptions.
+$string['exception_config'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
+$string['web_endpoint_missing'] = 'The WebDAV endpoint for the owncloud oauth2 issuer is not working. Therefore, the ownCloud repository is disabled.';

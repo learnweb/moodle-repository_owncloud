@@ -15,31 +15,27 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file contains tests for the repository_owncloud class.
+ * Exception for when a client configuration data is missing.
  *
- * @package     repository_owncloud
- * @group       repository_owncloud
- * @category    test
+ * @package    repository_owncloud
  * @copyright  2017 Project seminar (Learnweb, University of Münster)
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace repository_owncloud;
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
-
-class repository_owncloud_testcase extends advanced_testcase {
-
-    /** @var null|repository_owncloud the repository_owncloud object, which the tests are run on. */
-    private $repo = null;
+class configuration_exception extends \moodle_exception {
 
     /**
-     * Sets up the tested minor repository_owncloud object and all data records which are
-     * needed to initialize the repository.
+     * Constructor
+     * This exception is used when the configuration of the plugin can not be processed or database entries are
+     * missing.
+     * @param string $hint optional param for additional information of the problem
+     * @param string $debuginfo detailed information how to fix problem
      */
-    protected function setUp() {
-        global $DB;
-        $this->resetAfterTest(true);
+    public function __construct($hint = '', $debuginfo = null) {
+        parent::__construct('exception_config', 'repository_owncloud', '', $hint, $debuginfo);
     }
-
 }
