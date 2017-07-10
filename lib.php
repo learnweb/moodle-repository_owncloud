@@ -74,7 +74,7 @@ class repository_owncloud extends repository {
             $this->disabled = true;
         } try {
             // Check the webdavendpoint.
-            $this->get_parsedurl('webdav');
+            $this->parse_endpoint_url('webdav');
         } catch (Exception $e) {
             // A Repository is marked as disabled when no webdav_endpoint is present
             // or it fails to parse, because all operations concerning files
@@ -104,7 +104,7 @@ class repository_owncloud extends repository {
      * @throws \repository_owncloud\configuration_exception If configuration is missing (endpoints).
      */
     public function initiate_webdavclient() {
-        $webdavendpoint = $this->get_parsedurl('webdav');
+        $webdavendpoint = $this->parse_endpoint_url('webdav');
 
         // Selects the necessary information (port, type, server) from the path to build the webdavclient.
         $server = $webdavendpoint['host'];
@@ -172,15 +172,23 @@ class repository_owncloud extends repository {
      */
     public function get_file($url, $title = '') {
         $url = urldecode($url);
-        $path = $this->prepare_file($title);
+        // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
+        $path = $this->prepare_file(uniqid());
         if (!$this->dav->open()) {
             return false;
         }
-        $parsedurl = $this->get_parsedurl('webdav');
+        $parsedurl = $this->parse_endpoint_url('webdav');
         // TODO (#6) handle (base)path in client, not here.
         $this->dav->get_file($parsedurl['path'] . $url, $path);
 
         return array('path' => $path);
+    }
+
+    /**
+     * @return bool Always false, as global search is unsupported.
+     */
+    public function global_search() {
+        return false;
     }
 
     /**
@@ -218,7 +226,7 @@ class repository_owncloud extends repository {
         }
         // Get basepath from endpoint
         // TODO (#6) handle (base)path in client, not here.
-        $parsedurl = $this->get_parsedurl('webdav');
+        $parsedurl = $this->parse_endpoint_url('webdav');
 
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
@@ -239,7 +247,7 @@ class repository_owncloud extends repository {
             } else {
                 $v['lastmodified'] = null;
             }
-
+            // TODO there must be a better way... hostname is not present; /remote.php/webdav/ is.
             // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
             $server = preg_quote($parsedurl['path']);
             $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
@@ -252,7 +260,7 @@ class repository_owncloud extends repository {
                 if ($path != $v['href']) {
                     $folders[strtoupper($title)] = array(
                         'title' => rtrim($title, '/'),
-                        'thumbnail' => $OUTPUT->pix_url(file_folder_icon(90))->out(false),
+                        'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
                         'children' => array(),
                         'datemodified' => $v['lastmodified'],
                         'path' => $v['href']
@@ -263,7 +271,7 @@ class repository_owncloud extends repository {
                 $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
                 $files[strtoupper($title)] = array(
                     'title' => $title,
-                    'thumbnail' => $OUTPUT->pix_url(file_extension_icon($title, 90))->out(false),
+                    'thumbnail' => $OUTPUT->image_url(file_extension_icon($title, 90))->out(false),
                     'size' => $size,
                     'datemodified' => $v['lastmodified'],
                     'source' => $v['href']
@@ -307,9 +315,9 @@ class repository_owncloud extends repository {
         // The link is generated.
 
         $fields = explode("/s/", $xml->data[0]->url[0]);
-        $fileid = $fields[1];
+        $fileid = $fields[count($fields)-1];
 
-        $ret['link'] = $this->get_path($fileid);
+        $ret['link'] = $this->get_public_link_url($fileid);
 
         return $ret['link'];
     }
@@ -319,12 +327,12 @@ class repository_owncloud extends repository {
      * file or folder.
      *
      * @param $type string either personal or private. Depending on share type.
-     * @param $id string file or folder id of the concerning content.
+     * @param $ocsid string file or folder id of the concerning content.
      * @return bool|string returns the generated path, if $type it personal or private. Otherwise, false.
      */
-    public function get_path($id) {
+    public function get_public_link_url($ocsid) {
         $baseurl = $this->issuer->get('baseurl');
-        return $baseurl . '/public.php?service=files&t=' . $id . '&download';
+        return $baseurl . '/public.php?service=files&t=' . $ocsid . '&download';
     }
 
     /**
@@ -396,16 +404,16 @@ class repository_owncloud extends repository {
      */
     public function print_login() {
         $client = $this->get_user_oauth_client();
-        $url = $client->get_login_url();
+        $loginurl = $client->get_login_url();
         if ($this->options['ajax']) {
             $ret = array();
             $btn = new \stdClass();
             $btn->type = 'popup';
-            $btn->url = $url->out(false);
+            $btn->url = $loginurl->out(false);
             $ret['login'] = array($btn);
             return $ret;
         } else {
-            echo html_writer::link($url, get_string('login', 'repository'),
+            echo html_writer::link($loginurl, get_string('login', 'repository'),
                     array('target' => '_blank',  'rel' => 'noopener noreferrer'));
         }
     }
@@ -511,7 +519,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_type_option_names() {
-        return array('issuerid', 'pluginname', 'validissuers');
+        return ['issuerid', 'pluginname'];
     }
     /**
      * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
@@ -526,7 +534,7 @@ class repository_owncloud extends repository {
 
     /**
      * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
-     * Now only FILE_INTERNAL since get_line and get_file_reference is not implemented.
+     * Now only FILE_INTERNAL since get_link and get_file_reference is not implemented.
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
      * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
@@ -544,7 +552,7 @@ class repository_owncloud extends repository {
      * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
      * @throws \repository_owncloud\configuration_exception if an endpoint is undefined
      */
-    private function get_parsedurl($endpointname) {
+    private function parse_endpoint_url($endpointname) {
         $url = $this->issuer->get_endpoint_url($endpointname);
         if (empty($url)) {
             throw new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
@@ -553,15 +561,13 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Prepares the Params for the get_listing method.
+     * Prepares the params for the get_listing method, defining filepicker settings.
      * @return array
      */
     private function prepare_get_listing() {
-        global $CFG;
-        // Array, which will have to be returned by this function.
         $ret  = array();
 
-        // Tells the file picker to fetch the list dynamically. An AJAX request is send to the server,
+        // Tell the file picker to fetch the list dynamically. An AJAX request is send to the server,
         // as soon as the user opens a folder.
         $ret['dynload'] = true;
 
@@ -578,11 +584,9 @@ class repository_owncloud extends repository {
         // Contains all file/folder information and is required to build the file/folder tree.
         $ret['list'] = array();
 
+        // If admin, add reference to repository settings.
         $sitecontext = context_system::instance();
         if (has_capability('moodle/site:config', $sitecontext)) {
-
-            // URL to manage a external repository. It is displayed in the file picker and in this case directs
-            // the settings page of repositories.
             $settingsurl = new moodle_url('/admin/repository.php');
             $ret['manage'] = $settingsurl->out();
         }
