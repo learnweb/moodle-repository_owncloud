@@ -83,15 +83,18 @@ class owncloud_client {
     private $_cnonce = '';
     private $_nc = 0;
 
-    /** @var null The access token for OAuth2 is stored within the WebDav client. */
-    private $_token = null;
+    /**
+     * OAuth 2 client; is expected to hold the token for authenticated accesses.
+     * @var \core\oauth2\client
+     */
+    private $oauthclient;
 
     /**#@-*/
 
     /**
      * Constructor - Initialise class variables
      */
-    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '') {
+    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthclient = null) {
         if (!empty($server)) {
             $this->_server = $server;
         }
@@ -101,6 +104,7 @@ class owncloud_client {
         }
         $this->_auth = $auth;
         $this->_socket = $socket;
+        $this->oauthclient = $oauthclient;
     }
     public function __set($key, $value) {
         $property = '_' . $key;
@@ -1318,16 +1322,8 @@ EOD;
             }
             // Our local WebDav client is adjusted to enable it to send Bearer Authorization headers.
         } else if ($this->_auth == 'bearer') {
-            $this->header_add(sprintf('Authorization: Bearer %s', $this->_token));
+            $this->header_add(sprintf('Authorization: Bearer %s', $this->oauthclient->get_accesstoken()->token));
         }
-    }
-
-    /**
-     * Setter method for the Access Token, which is stored within the client.
-     * @param $token Access Token, which has to be stored.
-     */
-    public function set_token($token) {
-        $this->_token = $token;
     }
 
     /**

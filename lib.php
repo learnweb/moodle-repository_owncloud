@@ -101,7 +101,7 @@ class repository_owncloud extends repository {
 
     /**
      * Initiates the webdav client.
-     * @throws \repository_owncloud\configuration_exception
+     * @throws \repository_owncloud\configuration_exception If configuration is missing (endpoints).
      */
     public function initiate_webdavclient() {
         $webdavendpoint = $this->get_parsedurl('webdav');
@@ -121,9 +121,11 @@ class repository_owncloud extends repository {
             $webdavport = $webdavendpoint['port'];
         }
 
+        $oauthclient = $this->get_user_oauth_client();
+
         // Authentication method is set to Bearer, since we use OAuth 2.0.
-        $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype);
-        // TODO set path inside owncloud_client!! We should not need to take care of it here...
+        $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
+        // TODO set (base)path inside owncloud_client!! We should not need to take care of it here...
         $this->dav->port = $webdavport;
         $this->dav->debug = false;
     }
@@ -186,8 +188,8 @@ class repository_owncloud extends repository {
         if (!$this->dav->open()) {
             return false;
         }
-        $this->set_accesstoken();
         $parsedurl = $this->get_parsedurl('webdav');
+        // TODO handle (base)path in client, not here.
         $this->dav->get_file($parsedurl['path'] . $url, $path);
 
         return array('path' => $path);
@@ -226,9 +228,8 @@ class repository_owncloud extends repository {
                 );
             }
         }
-        // Firstly the accesstoken is set ...
-        $this->set_accesstoken();
-        // Then the endpoint for webdav access is generated from the registered endpoints and parsed.
+        // Get basepath from endpoint
+        // TODO handle (base)path in client, not here.
         $parsedurl = $this->get_parsedurl('webdav');
 
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
@@ -437,18 +438,18 @@ class repository_owncloud extends repository {
 
     /**
      * Sets up access token after the redirection from ownCloud.
-     * The Moodle API transfers the Client ID and the token as Params in the Request.
-     * However the OwnCLoud Plugin excepts the Client ID and Secret to be in the Request Header.
-     * Therefore the Header is set beforehand, and ClientID and Secret are passed twice.
+     * The Moodle OAuth 2 API transfers Client ID and secret as params in the request.
+     * However, the ownCloud OAuth 2 App expects Client ID and secret to be in the request header.
+     * Therefore, the header is set beforehand, and ClientID and Secret are passed twice.
      */
     public function callback() {
         $client = $this->get_user_oauth_client();
+        // If an Access Token is stored within the client, it has to be deleted to prevent the addition
+        // of an Bearer authorization header in the request method.
+        $client->log_out();
         $client->setHeader(array(
             'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
         ));
-        // If an Access Token is stored within the Client, it has to be deleted to prevent the addition
-        // of an Bearer Authorization Header in the request method.
-        $client->log_out();
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
     }
@@ -553,21 +554,10 @@ class repository_owncloud extends repository {
     }
 
     /**
-     *  Sets the accesstoken for the current instance.
-     */
-    private function set_accesstoken() {
-        // Sets the Access token.
-        $client = $this->get_user_oauth_client();
-        $token = $client->get_accesstoken();
-        // Merely the token code is transfered, expirationdate is not neccessary.
-        $this->dav->set_token($token->token);
-    }
-
-    /**
      * Returns the parsed url of the choosen endpoint.
      * @param string $endpointname
      * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
-     * @throws \repository_owncloud\configuration_exception
+     * @throws \repository_owncloud\configuration_exception if an endpoint is undefined
      */
     private function get_parsedurl($endpointname) {
         $url = $this->issuer->get_endpoint_url($endpointname);
