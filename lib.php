@@ -125,7 +125,7 @@ class repository_owncloud extends repository {
 
         // Authentication method is set to Bearer, since we use OAuth 2.0.
         $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
-        // TODO set (base)path inside owncloud_client!! We should not need to take care of it here...
+        // TODO (#6) set (base)path inside owncloud_client!! We should not need to take care of it here...
         $this->dav->port = $webdavport;
         $this->dav->debug = false;
     }
@@ -189,7 +189,7 @@ class repository_owncloud extends repository {
             return false;
         }
         $parsedurl = $this->get_parsedurl('webdav');
-        // TODO handle (base)path in client, not here.
+        // TODO (#6) handle (base)path in client, not here.
         $this->dav->get_file($parsedurl['path'] . $url, $path);
 
         return array('path' => $path);
@@ -229,7 +229,7 @@ class repository_owncloud extends repository {
             }
         }
         // Get basepath from endpoint
-        // TODO handle (base)path in client, not here.
+        // TODO (#6) handle (base)path in client, not here.
         $parsedurl = $this->get_parsedurl('webdav');
 
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
