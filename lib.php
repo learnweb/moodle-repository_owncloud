@@ -163,19 +163,6 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * If the plugin is set to hidden in the settings or any client settings date is missing,
-     * the plugin is set to invisible and thus, not shown in the file picker.
-     *
-     * @return bool false, if set to hidden or settings data is missing.
-     */
-    public function is_visible() {
-        if (!parent::is_visible()) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
