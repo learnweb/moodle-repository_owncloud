@@ -46,6 +46,12 @@ class repository_owncloud extends repository {
     private $issuer = null;
 
     /**
+     * Additional scopes needed for the repository. Currently, ownCloud does not actually support/use scopes, so
+     * this is intended as a hint at required functionality and will help declare future scopes.
+     */
+    const SCOPES = 'files ocs';
+
+    /**
      * owncloud_client webdav client which is used for webdav operations.
      * @var \repository_owncloud\owncloud_client
      */
@@ -300,7 +306,7 @@ class repository_owncloud extends repository {
 
         $baseurl = $this->issuer->get('baseurl');
         // This is ownCloud specific.
-        // IMPROVE: could be an additional setting in the Oauth2 issuer.
+        // TODO IMPROVE: could be an additional setting in the Oauth2 issuer.
         $posturl = $baseurl . '/ocs/v1.php/apps/files_sharing/api/v1/shares';
         $client = $this->get_user_oauth_client();
 
@@ -332,7 +338,6 @@ class repository_owncloud extends repository {
      */
     public function get_path($id) {
         $baseurl = $this->issuer->get('baseurl');
-        // TODO will not work if owncloud is in subfolder.
         return $baseurl . '/public.php?service=files&t=' . $id . '&download';
     }
 
@@ -377,13 +382,15 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * @param bool $overrideurl
-     * @return \core\oauth2\client|\core\oauth2\core\oauth2\client
+     * Get a cached user authenticated oauth client.
+     * @param bool|moodle_url $overrideurl Use this url instead of the repo callback.
+     * @return \core\oauth2\client
      */
     protected function get_user_oauth_client($overrideurl = false) {
         if ($this->client) {
             return $this->client;
         }
+        // TODO $overrideurl is not used currently. GDocs uses it in send_file. Evaluate whether we need it.
         if ($overrideurl) {
             $returnurl = $overrideurl;
         } else {
@@ -392,11 +399,9 @@ class repository_owncloud extends repository {
             $returnurl->param('repo_id', $this->id);
             $returnurl->param('sesskey', sesskey());
         }
-        $this->client = \core\oauth2\api::get_user_oauth_client($this->issuer, $returnurl);
+        $this->client = \core\oauth2\api::get_user_oauth_client($this->issuer, $returnurl, self::SCOPES);
         return $this->client;
     }
-
-
 
     /**
      * Prints a simple Login Button which redirects to an authorization window from ownCloud.
