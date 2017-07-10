@@ -33,29 +33,25 @@ how the issuer can be chosen.
 ### Create OAuth 2 Issuer
 You need to configure Moodle so that it knows how to talk to your ownCloud server.
 For this, a so-called OAuth 2 issuer has to be registered in the admin menu `Dashboard ► Site administration ► Server ► OAuth 2 services`.
-When adding the issuer the ClientID, Secret and baseurl are necessary. ClientID and Secret are generated in the ownCloud instance. The base URL is the full URL to your ownCloud installation, including a custom port (if any).
+When adding the issuer the ClientID, Secret and baseurl are necessary.
+ClientID and secret are generated in the ownCloud instance by an ownCloud administrator.
+The base URL is the full URL to your ownCloud installation, including a custom port (if any).
 Additionally, Moodle has a second interface for adding endpoints. 
-For the ownCloud Repository plugin four endpoints have to be registered (this is ownCloud specific): 
-1. **token_endpoint** 
+
+For the ownCloud Repository plugin four endpoints have to be registered that are ownCloud-specific (for an example, see below): 
    
-   ```baseurl``` + `/index.php/apps/oauth2/api/v1/token`
+| Endpoint name           | Endpoint URL                                              |
+| ----------------------- | --------------------------------------------------------- |
+| token_endpoint          | Base URL + `/index.php/apps/oauth2/api/v1/token`          |
+| authorization_endpoint  | Base URL + `/index.php/apps/oauth2/authorize`             |
+| webdav_endpoint         | Base URL + `/remote.php/webdav/`                          |
+| ocs_endpoint            | Base URL + `/ocs/v1.php/apps/files_sharing/api/v1/shares` |
 
-    e.g. the baseurl is ```https://someinstance.owncloud.de:443/```
-    
-    then the port is ```443``` (which can be omitted, as it is the standard port)
-    
-    therefore the **token_endpoint-url** is ```https://someinstance.owncloud.de:443/index.php/apps/oauth2/api/v1/token```
-2. **authorization_endpoint** 
+   
+For example, if your installation is at `https://someinstance.owncloud.de:8000/oc/`, then this is the base URL.
+Therefore, the `token_endpoint` URL is `https://someinstance.owncloud.de:8000/oc/index.php/apps/oauth2/api/v1/token`
 
-   ```baseurl``` + `/index.php/apps/oauth2/authorize`
-3. **webdav_endpoint** 	
-
-   ```baseurl``` + `/remote.php/webdav`
-4. **userinfo_endpoint** 
-
-   Moodle additionally requires a userinfo_endpoint, however it has no effect in the ownCloud repository. Maybe it can be omitted. We'll investigate that.
-
-For further information on OAuth 2 Clients visit the [Moodle Documentation on OAuth 2](https://docs.moodle.org/dev/OAuth_2_API).
+For further information on OAuth 2 clients visit the [Moodle documentation on OAuth 2](https://docs.moodle.org/dev/OAuth_2_API).
 
 ### Choose OAuth 2 Issuer
 After the ownCloud issuer was created, it has to be associated with the repository, 

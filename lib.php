@@ -148,7 +148,7 @@ class repository_owncloud extends repository {
                 case 'webdav_endpoint':
                     $endpointwebdav = true;
                     break;
-                case 'webdav_ocs':
+                case 'ocs_endpoint':
                     $endpointocs = true;
                     break;
                 case 'token_endpoint':
