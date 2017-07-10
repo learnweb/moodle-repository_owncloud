@@ -57,7 +57,7 @@ class owncloud_client {
     private $_socket_timeout = 5;
     private $_errno;
     private $_errstr;
-    private $_user_agent = 'Moodle WebDav Client';
+    private $_user_agent = 'Moodle WebDav Client for ownCloud';
     private $_crlf = "\r\n";
     private $_req;
     private $_resp_status;
@@ -89,12 +89,18 @@ class owncloud_client {
      */
     private $oauthclient;
 
+    /**
+     * Prefix to the WebDAV server on host, e.g. /remote.php/webdav/ on most ownCloud installations.
+     * @var string
+     */
+    private $pathprefix;
+
     /**#@-*/
 
     /**
      * Constructor - Initialise class variables
      */
-    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthclient = null) {
+    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthclient = null, $pathprefix = '/') {
         if (!empty($server)) {
             $this->_server = $server;
         }
@@ -105,6 +111,11 @@ class owncloud_client {
         $this->_auth = $auth;
         $this->_socket = $socket;
         $this->oauthclient = $oauthclient;
+        // Remove trailing slash, because future uses will come with a leading slash.
+        if (strlen($pathprefix) > 0 && substr($pathprefix, -1) === '/') {
+            $pathprefix = substr($pathprefix, 0, -1);
+        }
+        $this->pathprefix = $pathprefix;
     }
     public function __set($key, $value) {
         $property = '_' . $key;
@@ -407,6 +418,8 @@ class owncloud_client {
      * @return bool true on success. false on error.
      */
     public function get_file($srcpath, $localpath) {
+        // Prepend with WebDAV root.
+        $srcpath = $this->pathprefix . $srcpath;
 
         $localpath = $this->utf_decode_path($localpath);
 
@@ -779,6 +792,10 @@ class owncloud_client {
             $this->_error_log('Missing a path in method ls');
             return false;
         }
+
+        // Prepend with WebDAV root.
+        $path = $this->pathprefix . $path;
+
         $this->_path = $this->translate_uri($path);
 
         $this->header_unset();

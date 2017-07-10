@@ -121,10 +121,9 @@ class repository_owncloud extends repository {
             $webdavport = $webdavendpoint['port'];
         }
 
-        $oauthclient = $this->get_user_oauth_client();
-
         // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
-        $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
+        $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype,
+            $this->get_user_oauth_client(), $webdavendpoint['path']);
 
         $dav->port = $webdavport;
         $dav->debug = false;
@@ -177,9 +176,7 @@ class repository_owncloud extends repository {
         if (!$this->dav->open()) {
             return false;
         }
-        $parsedurl = $this->parse_endpoint_url('webdav');
-        // TODO (#6) handle (base)path in client, not here.
-        $this->dav->get_file($parsedurl['path'] . $url, $path);
+        $this->dav->get_file($url, $path);
 
         return array('path' => $path);
     }
@@ -224,14 +221,11 @@ class repository_owncloud extends repository {
                 );
             }
         }
-        // Get basepath from endpoint
-        // TODO (#6) handle (base)path in client, not here.
-        $parsedurl = $this->parse_endpoint_url('webdav');
 
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        $dir = $this->dav->ls($parsedurl['path'] . '/' . urldecode($path));
+        $dir = $this->dav->ls(urldecode($path));
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
@@ -240,6 +234,8 @@ class repository_owncloud extends repository {
         }
         $folders = array();
         $files = array();
+        // TODO (#6) handle (base)path in client, not here.
+        $parsedurl = $this->parse_endpoint_url('webdav');
         $webdavpath = rtrim('/'.ltrim($parsedurl['path'], '/ '), '/ ');
         foreach ($dir as $v) {
             if (!empty($v['lastmodified'])) {
@@ -247,10 +243,7 @@ class repository_owncloud extends repository {
             } else {
                 $v['lastmodified'] = null;
             }
-            // TODO there must be a better way... hostname is not present; /remote.php/webdav/ is.
-            // Remove the server URL from the path (if present), otherwise links will not work - MDL-37014.
-            $server = preg_quote($parsedurl['path']);
-            $v['href'] = preg_replace("#https?://{$server}#", '', $v['href']);
+            // TODO there must be a better way... /remote.php/webdav/ is always present.
             // Extracting object title from absolute path.
             $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
             $title = substr($v['href'], strlen($path));
