@@ -138,8 +138,8 @@ class repository_owncloud extends repository {
      */
     private static function is_valid_issuer($issuer) {
         $endpointwebdav = false;
+        $endpointocs = false;
         $endpointtoken = false;
-        $endpointuserinfo = false;
         $endpointauth = false;
         $endpoints = \core\oauth2\api::get_endpoints($issuer);
         foreach ($endpoints as $endpoint) {
@@ -148,18 +148,18 @@ class repository_owncloud extends repository {
                 case 'webdav_endpoint':
                     $endpointwebdav = true;
                     break;
+                case 'webdav_ocs':
+                    $endpointocs = true;
+                    break;
                 case 'token_endpoint':
                     $endpointtoken = true;
                     break;
                 case 'authorization_endpoint':
                     $endpointauth = true;
                     break;
-                case 'userinfo_endpoint':
-                    $endpointuserinfo = true;
-                    break;
             }
         }
-        return $endpointwebdav && $endpointuserinfo && $endpointtoken && $endpointauth;
+        return $endpointwebdav && $endpointocs && $endpointtoken && $endpointauth;
     }
 
     /**
@@ -300,19 +300,16 @@ class repository_owncloud extends repository {
      * @throws repository_exception if $url is empty an exception is thrown.
      */
     public function get_link($url) {
-        $query = http_build_query(array('path' => $url,
+        // Use OCS to generate a public share to the requested file.
+        $ocsquery = http_build_query(array('path' => $url,
             'shareType' => 3,
             'publicUpload' => false,
             'permissions' => 31
         ), null, "&");
+        $posturl = $this->issuer->get_endpoint_url('ocs');
 
-        $baseurl = $this->issuer->get('baseurl');
-        // This is ownCloud specific.
-        // TODO IMPROVE: could be an additional setting in the Oauth2 issuer.
-        $posturl = $baseurl . '/ocs/v1.php/apps/files_sharing/api/v1/shares';
         $client = $this->get_user_oauth_client();
-
-        $response = $client->post($posturl, $query, []);
+        $response = $client->post($posturl, $ocsquery, []);
 
         $ret = array();
 
