@@ -123,7 +123,7 @@ class repository_owncloud extends repository {
 
         $oauthclient = $this->get_user_oauth_client();
 
-        // Authentication method is `bearer` for OAuth 2. Pass oauth client, so that the WebDAV client can obtain the token when needed.
+        // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
         $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype, $oauthclient);
 
         $dav->port = $webdavport;
