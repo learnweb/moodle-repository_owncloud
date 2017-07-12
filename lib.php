@@ -426,7 +426,7 @@ class repository_owncloud extends repository {
     /**
      * This method adds a select form and additional information to the settings form..
      *
-     * @param moodleform $mform Moodle form (passed by reference)
+     * @param \moodleform $mform Moodle form (passed by reference)
      * @param string $classname repository class name
      */
     public static function type_config_form($mform, $classname = 'repository') {
@@ -452,30 +452,26 @@ class repository_owncloud extends repository {
         // Depending on the hitherto settings the user is which issuer is chosen.
         // In case no issuer is chosen there appears a warning.
         // Additionally when the chosen issuer is invalid there appears a strong warning.
-        $text = '';
-        $strrequired = get_string('required');
-        if (!empty($issuerid)) {
-            if (!in_array($types[$issuerid], $validissuers)) {
-                $text .= get_string('invalid_issuer', 'repository_owncloud', $types[$issuerid]);
-                $urgency = 'error';
-            } else {
-                $text .= get_string('settings_withissuer', 'repository_owncloud', $types[$issuerid]);
-                $urgency = 'info';
-            }
-        } else {
-            $text .= get_string('settings_withoutissuer', 'repository_owncloud');
+        if (empty($issuerid)) {
+            $issuervalidation = get_string('issuervalidation_without', 'repository_owncloud');
             $urgency = 'warning';
+        } else if (!in_array($types[$issuerid], $validissuers)) {
+            $issuervalidation = get_string('issuervalidation_invalid', 'repository_owncloud', $types[$issuerid]);
+            $urgency = 'error';
+        } else {
+            $issuervalidation = get_string('issuervalidation_valid', 'repository_owncloud', $types[$issuerid]);
+            $urgency = 'info';
         }
 
         // Render the form.
         $url = new \moodle_url('/admin/tool/oauth2/issuers.php');
         $mform->addElement('static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $url->out()));
 
-        $mform->addElement('html', $OUTPUT->notification($text, $urgency));
+        $mform->addElement('html', $OUTPUT->notification($issuervalidation, $urgency));
         $select = $mform->addElement('select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $types);
-        $mform->addRule('issuerid', $strrequired, 'required', null, 'issuer');
+        $mform->addRule('issuerid', get_string('required'), 'required', null, 'issuer');
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
-        $mform->setType('issuerid', PARAM_RAW_TRIMMED);
+        $mform->setType('issuerid', PARAM_RAW_TRIMMED); // TODO ÄH?
 
         // All issuers that are valid are displayed seperately (if any).
         if (count($validissuers) === 0) {
