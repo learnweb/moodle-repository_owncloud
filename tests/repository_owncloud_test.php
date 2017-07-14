@@ -64,12 +64,14 @@ class repository_owncloud_testcase extends advanced_testcase {
         $data->image = "aswdf";
         $issuer = $api->create_issuer($data);
         $this->issuer = $issuer;
-        $this->api = $api;
 
+
+        // Create Endpoints for issuer.
         $this->create_endpoint_test("ocs_endpoint");
         $this->create_endpoint_test("authorization_endpoint");
         $this->create_endpoint_test("webdav_endpoint", "https://www.default.de/webdav/index.php");
         $this->create_endpoint_test("token_endpoint");
+
         // Params for the config form.
         $typeparams = array('type' => 'owncloud', 'visible' => 1, 'issuerid' => $issuer->get('id'), 'validissuers' => '');
 
@@ -176,7 +178,7 @@ class repository_owncloud_testcase extends advanced_testcase {
             }
         }
         if (!empty($idwebdav)) {
-            $this->api->delete_endpoint($idwebdav);
+            \core\oauth2\api::delete_endpoint($idwebdav);
         }
         $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
         $this->assertFalse($boolean);
@@ -187,7 +189,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertTrue($boolean);
 
         if (!empty($idocs)) {
-            $this->api->delete_endpoint($idocs);
+            \core\oauth2\api::delete_endpoint($idocs);
         }
         $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
         $this->assertFalse($boolean);
@@ -197,7 +199,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertTrue($boolean);
 
         if (!empty($idauth)) {
-            $this->api->delete_endpoint($idauth);
+            \core\oauth2\api::delete_endpoint($idauth);
         }
         $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
         $this->assertFalse($boolean);
@@ -207,7 +209,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertTrue($boolean);
 
         if (!empty($idtoken)) {
-            $this->api->delete_endpoint($idtoken);
+            \core\oauth2\api::delete_endpoint($idtoken);
         }
         $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
         $this->assertFalse($boolean);
@@ -227,7 +229,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $endpoint->name = $endpointtype;
         $endpoint->url = $url;
         $endpoint->issuerid = $this->issuer->get('id');
-        $return = $this->api->create_endpoint($endpoint);
+        $return = \core\oauth2\api::create_endpoint($endpoint);
         return $return;
     }
 
