@@ -28,6 +28,10 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 
+/**
+ * Class repository_owncloud_testcase
+ * @group repository_owncloud
+ */
 class repository_owncloud_testcase extends advanced_testcase {
 
     /** @var null|repository_owncloud the repository_owncloud object, which the tests are run on. */
@@ -62,7 +66,10 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->issuer = $issuer;
         $this->api = $api;
 
-        $this->create_endpoint_test('token_endpoint');
+        $this->create_endpoint_test("ocs_endpoint");
+        $this->create_endpoint_test("authorization_endpoint");
+        $this->create_endpoint_test("webdav_endpoint", "https://www.default.de/webdav/index.php");
+        $this->create_endpoint_test("token_endpoint");
         // Params for the config form.
         $typeparams = array('type' => 'owncloud', 'visible' => 1, 'issuerid' => $issuer->get('id'), 'validissuers' => '');
 
@@ -111,10 +118,6 @@ class repository_owncloud_testcase extends advanced_testcase {
      * Test weather the repo is disabled, however always returns true.
      */
     public function test_repo_creation() {
-        $this->create_endpoint_test("ocs_endpoint");
-        $this->create_endpoint_test("authorization_endpoint");
-        $this->create_endpoint_test("webdav_endpoint");
-        $this->create_endpoint_test("token_endpoint");
 
         $issuerid = get_config('owncloud', 'issuerid');
 
@@ -128,9 +131,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $issuerenabled = $constructissuer->get('enabled');
         
         $this->assertEquals(true, $issuerenabled);
-        //TODO Repo should be enabled however disabled = true
         $this->assertFalse($this->repo->disabled);
-
     }
 
     /**
@@ -145,10 +146,6 @@ class repository_owncloud_testcase extends advanced_testcase {
         // Function that is used in construct method returns the right id.
         $constructissuer = \core\oauth2\api::get_issuer($issuerid);
         // Creating endpoints
-        $this->create_endpoint_test("ocs_endpoint");
-        $this->create_endpoint_test("authorization_endpoint");
-        $this->create_endpoint_test("webdav_endpoint");
-        $this->create_endpoint_test("token_endpoint");
 
         // Executes the is valid_issuer function does return True.
         $endpointwebdav = false;
