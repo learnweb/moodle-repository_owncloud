@@ -115,7 +115,7 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
-     * Test weather the repo is disabled, however always returns true.
+     * Test weather the repo is disabled.
      */
     public function test_repo_creation() {
 
@@ -134,43 +134,86 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertFalse($this->repo->disabled);
     }
 
+
     /**
-     * Comparable to is_valid issuer()
+     * Way to test private methods.
+     * @param $object
+     * @param $methodName
+     * @param array $parameters
+     * @return mixed
      */
-    public function test_endpoints(){
-        $issuerid = get_config('owncloud', 'issuerid');
+    public function invokeMethod(&$object, $methodName, array $parameters = array())
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
 
-        // Config saves the right id
-        $this->assertEquals($this->issuer->get('id'), $issuerid);
+        return $method->invokeArgs($object, $parameters);
+    }
 
-        // Function that is used in construct method returns the right id.
-        $constructissuer = \core\oauth2\api::get_issuer($issuerid);
-        // Creating endpoints
-
-        // Executes the is valid_issuer function does return True.
-        $endpointwebdav = false;
-        $endpointocs = false;
-        $endpointtoken = false;
-        $endpointauth = false;
-        $endpoints = \core\oauth2\api::get_endpoints($constructissuer);
+    /**
+     * Test whether issuer is valid.
+     */
+    public function test_valid_issuer(){
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertTrue($boolean);
+        $endpoints = \core\oauth2\api::get_endpoints($this->issuer);
         foreach ($endpoints as $endpoint) {
             $name = $endpoint->get('name');
             switch ($name) {
                 case 'webdav_endpoint':
-                    $endpointwebdav = true;
+                    $idwebdav = $endpoint->get('id');
                     break;
                 case 'ocs_endpoint':
-                    $endpointocs = true;
+                    $idocs= $endpoint->get('id');
                     break;
                 case 'token_endpoint':
-                    $endpointtoken = true;
+                    $idtoken = $endpoint->get('id');
                     break;
                 case 'authorization_endpoint':
-                    $endpointauth = true;
+                    $idauth = $endpoint->get('id');
                     break;
             }
         }
-        $boolean = $endpointwebdav && $endpointocs && $endpointtoken && $endpointauth;
+        if (!empty($idwebdav)) {
+            $this->api->delete_endpoint($idwebdav);
+        }
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertFalse($boolean);
+
+        $this->create_endpoint_test("webdav_endpoint", "https://www.default.de/webdav/index.php");
+
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertTrue($boolean);
+
+        if (!empty($idocs)) {
+            $this->api->delete_endpoint($idocs);
+        }
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertFalse($boolean);
+
+        $this->create_endpoint_test("ocs_endpoint");
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertTrue($boolean);
+
+        if (!empty($idauth)) {
+            $this->api->delete_endpoint($idauth);
+        }
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertFalse($boolean);
+
+        $this->create_endpoint_test("authorization_endpoint");
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertTrue($boolean);
+
+        if (!empty($idtoken)) {
+            $this->api->delete_endpoint($idtoken);
+        }
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $this->assertFalse($boolean);
+
+        $this->create_endpoint_test("token_endpoint");
+        $boolean = $this->invokeMethod($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
         $this->assertTrue($boolean);
     }
 
