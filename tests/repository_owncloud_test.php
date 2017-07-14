@@ -37,32 +37,25 @@ class repository_owncloud_testcase extends advanced_testcase {
     /** @var null|repository_owncloud the repository_owncloud object, which the tests are run on. */
     private $repo = null;
 
+    /** @var null|core\oauth2\issuer which belongs to the repository_owncloud object.*/
     private $issuer = null;
 
-    private $api = null;
-
-    /*
-    * @expectedException PHPUnit_Framework_Error_Warning
-    */
+    /**
+     * SetUp to create an repository instance.
+     */
     protected function setUp() {
         global $DB;
         $this->resetAfterTest(true);
 
-        // First, create a owncloud repository type and instance.
-        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
-
+        // Admin is neccessary to create api and issuer objects.
         $this->setAdminUser();
-        $api = new \core\oauth2\api();
 
-        $data = new stdClass();
-        $data->name = "Service";
-        $data->clientid = "Clientid";
-        $data->clientsecret = "Secret";
-        $data->loginscopes = "openid profile email";
-        $data->loginscopesoffline = "openid profile email";
-        $data->baseurl = "";
-        $data->image = "aswdf";
-        $issuer = $api->create_issuer($data);
+        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
+        $data = $generator->test_create_preparation();
+        //TODO: Auslagern in Generator
+        // Create the issuer.
+        
+        $issuer = \core\oauth2\api::create_issuer($data['issuerdata']);
         $this->issuer = $issuer;
 
 

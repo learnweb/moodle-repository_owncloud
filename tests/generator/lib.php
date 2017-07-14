@@ -32,4 +32,26 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud_generator extends testing_repository_generator {
+
+    /**
+     * Creates an issuer and a user.
+     * @return array
+     */
+    public function test_create_preparation () {
+        $generator = advanced_testcase::getDataGenerator();
+        $data = array();
+        $issuerdata = new stdClass();
+        $issuerdata->name = "Service";
+        $issuerdata->clientid = "Clientid";
+        $issuerdata->clientsecret = "Secret";
+        $issuerdata->loginscopes = "openid profile email";
+        $issuerdata->loginscopesoffline = "openid profile email";
+        $issuerdata->baseurl = "";
+        $issuerdata->image = "aswdf";
+        
+        $data['issuerdata'] = $issuerdata;
+        $user = $generator->create_user();
+        $data['user'] = $user;
+        return $data;
+    }
 }
