@@ -41,7 +41,5 @@ For additional help with the OAuth 2 API please refer to the Moodle documentatio
 $string['chooseissuer_link'] = 'OAuth_2_services';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
 
-
 // Exceptions.
-$string['exception_config'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
-$string['web_endpoint_missing'] = 'The WebDAV endpoint for the owncloud oauth2 issuer is not working. Therefore, the ownCloud repository is disabled.';
+$string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';

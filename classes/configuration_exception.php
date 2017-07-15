@@ -36,6 +36,6 @@ class configuration_exception extends \moodle_exception {
      * @param string $debuginfo detailed information how to fix problem
      */
     public function __construct($hint = '', $debuginfo = null) {
-        parent::__construct('exception_config', 'repository_owncloud', '', $hint, $debuginfo);
+        parent::__construct('configuration_exception', 'repository_owncloud', '', $hint, $debuginfo);
     }
 }

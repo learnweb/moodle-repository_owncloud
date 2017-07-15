@@ -70,13 +70,13 @@ class repository_owncloud extends repository {
             $issuerid = get_config('owncloud', 'issuerid');
             $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
-            // A Repository is marked as disabled when no issuer is present.
+            // A repository is marked as disabled when no issuer is present.
             $this->disabled = true;
         } try {
             // Check the webdavendpoint.
             $this->parse_endpoint_url('webdav');
-        } catch (Exception $e) {
-            // A Repository is marked as disabled when no webdav_endpoint is present
+        } catch (\repository_owncloud\configuration_exception $e) {
+            // A repository is marked as disabled when no webdav_endpoint is present
             // or it fails to parse, because all operations concerning files
             // rely on the webdav endpoint.
             $this->disabled = true;
@@ -177,6 +177,7 @@ class repository_owncloud extends repository {
             return false;
         }
         $this->dav->get_file($url, $path);
+        $this->dav->close();
 
         return array('path' => $path);
     }
@@ -226,6 +227,7 @@ class repository_owncloud extends repository {
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
         $dir = $this->dav->ls(urldecode($path));
+        $this->dav->close();
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
