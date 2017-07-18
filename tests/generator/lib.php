@@ -48,7 +48,7 @@ class repository_owncloud_generator extends testing_repository_generator {
         $issuerdata->loginscopesoffline = "openid profile email";
         $issuerdata->baseurl = "";
         $issuerdata->image = "aswdf";
-        
+
         $data['issuerdata'] = $issuerdata;
         $user = $generator->create_user();
         $data['user'] = $user;
