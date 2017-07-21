@@ -268,6 +268,16 @@ class repository_owncloud_testcase extends advanced_testcase {
 
         $this->repo->callback();
     }
+    /**
+     * Test check_login.
+     */
+    public function test_check_login() {
+        $mock = $this->createMock(\core\oauth2\client::class);
+        $mock->expects($this->once())->method('is_logged_in')->will($this->returnValue(true));
+        $this->set_private_repository($mock, 'client');
+
+        $this->assertTrue($this->repo->check_login());
+    }
 
     /**
      * Test supported_filetypes.
