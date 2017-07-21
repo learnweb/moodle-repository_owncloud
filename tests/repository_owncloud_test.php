@@ -214,7 +214,13 @@ class repository_owncloud_testcase extends advanced_testcase {
         $boolean = $this->invoke_private_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
         $this->assertFalse($boolean);
     }
-
+    /**
+     * Test if repository throws an error when endpoint does not exist.
+     */
+    public function test_parse_endpoint_url_error() {
+        $this->expectException(\repository_owncloud\configuration_exception::class);
+        $this->invoke_private_method($this->repo, "parse_endpoint_url", array('notexisting' => "notexisting"));
+    }
     /**
      * Test get_listing method with an example directory. Tests error cases.
      */
