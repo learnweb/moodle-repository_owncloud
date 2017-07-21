@@ -237,6 +237,69 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertEquals($ret, $this->repo->get_listing('/'));
     }
     /**
+     * Test get_listing method with an example directory. Tests the root directory.
+     */
+    public function test_get_listing_root() {
+        $this->setUser();
+        $ret = $this->get_ret();
+
+        // This is the expected response from the ls method.
+        $response = array(
+            array(
+                'href' => 'remote.php/webdav/',
+                'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                'resourcetype' => 'collection',
+                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'getcontentlength' => ''
+            ),
+            array(
+                'href' => 'remote.php/webdav/Documents/',
+                'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                'resourcetype' => 'collection',
+                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'getcontentlength' => ''
+            ),
+            array(
+                'href' => 'remote.php/webdav/welcome.txt',
+                'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'getcontentlength' => '163'
+            )
+        );
+
+        // The expected result from the get_listing method in the repository_owncloud class.
+        $ret['list'] = array(
+            'DOCUMENTS/' => array(
+                'title' => 'Documents',
+                'thumbnail' => null,
+                'children' => array(),
+                'datemodified' => 1481213186,
+                'path' => '/Documents/'
+            ),
+            'WELCOME.TXT' => array(
+                'title' => 'welcome.txt',
+                'thumbnail' => null,
+                'size' => '163',
+                'datemodified' => 1481213186,
+                'source' => '/welcome.txt'
+            )
+        );
+
+        // Valid response from the client.
+        $mock = $this->createMock(repository_owncloud\owncloud_client::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
+        $mock->expects($this->once())->method('ls')->will($this->returnValue($response));
+        $this->set_private_repository($mock, 'dav');
+
+        $ls = $this->repo->get_listing('/');
+
+        // Those attributes can not be tested properly.
+        $ls['list']['DOCUMENTS/']['thumbnail'] = null;
+        $ls['list']['WELCOME.TXT']['thumbnail'] = null;
+
+        $this->assertEquals($ret, $ls);
+    }
+    /**
      * Test logout.
      */
     public function test_logout() {
