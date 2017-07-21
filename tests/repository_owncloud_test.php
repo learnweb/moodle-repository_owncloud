@@ -306,6 +306,76 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertEquals($ret, $ls);
     }
     /**
+     * Test get_listing method with an example directory. Tests a different directory than the root
+     * directory.
+     */
+    public function test_get_listing_directory() {
+        $ret = $this->get_ret();
+        $this->setUser();
+
+        // An additional directory path has to be added to the 'path' field within the returned array.
+        $ret['path'][1] = array(
+            'name' => 'dir',
+            'path' => '/dir/'
+        );
+
+        // This is the expected response from the get_listing method in the owncloud client.
+        $response = array(
+            array(
+                'href' => 'remote.php/webdav/dir/',
+                'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                'resourcetype' => 'collection',
+                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'getcontentlength' => ''
+            ),
+            array(
+                'href' => 'remote.php/webdav/dir/Documents/',
+                'lastmodified' => null,
+                'resourcetype' => 'collection',
+                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'getcontentlength' => ''
+            ),
+            array(
+                'href' => 'remote.php/webdav/dir/welcome.txt',
+                'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
+                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'getcontentlength' => '163'
+            )
+        );
+
+        // The expected result from the get_listing method in the repository_owncloud class.
+        $ret['list'] = array(
+            'DOCUMENTS/' => array(
+                'title' => 'Documents',
+                'thumbnail' => null,
+                'children' => array(),
+                'datemodified' => null,
+                'path' => '/dir/Documents/'
+            ),
+            'WELCOME.TXT' => array(
+                'title' => 'welcome.txt',
+                'thumbnail' => null,
+                'size' => '163',
+                'datemodified' => 1481213186,
+                'source' => '/dir/welcome.txt'
+            )
+        );
+
+        // Valid response from the client.
+        $mock = $this->createMock(repository_owncloud\owncloud_client::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
+        $mock->expects($this->once())->method('ls')->will($this->returnValue($response));
+        $this->set_private_repository($mock, 'dav');
+
+        $ls = $this->repo->get_listing('/dir/');
+
+        // Can not be tested properly.
+        $ls['list']['DOCUMENTS/']['thumbnail'] = null;
+        $ls['list']['WELCOME.TXT']['thumbnail'] = null;
+
+        $this->assertEquals($ret, $ls);
+    }
+    /**
      * Test logout.
      */
     public function test_logout() {
@@ -318,8 +388,29 @@ class repository_owncloud_testcase extends advanced_testcase {
 
         $this->assertEquals($this->repo->print_login(), $this->repo->logout());
 
-        // TODO: TEst for ajax = true.
+        $this->repo->options['ajax'] = true;
 
+    }
+    /**
+     * Test for the get_file method from the repository_owncloud class.
+     */
+    public function test_get_file() {
+        // WebDAV socket is not open.
+        $mock = $this->createMock(repository_owncloud\owncloud_client::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(false));
+        $private = $this->set_private_repository($mock, 'dav');
+
+        $this->assertFalse($this->repo->get_file('path'));
+
+        // WebDAV socket is open and the request successful.
+        $mock = $this->createMock(repository_owncloud\owncloud_client::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
+        $mock->expects($this->once())->method('get_file')->will($this->returnValue(true));
+        $private->setValue($this->repo, $mock);
+
+        $result = $this->repo->get_file('path', 'file');
+
+        $this->assertNotNull($result['path']);
     }
 
     /**
@@ -327,8 +418,6 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_callback() {
         $mock = $this->createMock(\core\oauth2\client::class);
-
-        $mock2 = $this->createMock(oauth2_client::class);
         // Should call check_login exactly once.
         $mock->expects($this->once())->method('log_out');
         $mock->expects($this->once())->method('is_logged_in');
@@ -375,6 +464,18 @@ class repository_owncloud_testcase extends advanced_testcase {
 
         $this->expectOutputString($output);
         $this->repo->print_login();
+    }
+    public function test_initiate_webdavclient() {
+        $idwebdav = $this->get_endpoint_id('webdav_endpoint');
+        if (!empty($idwebdav)) {
+            foreach ($idwebdav as $id) {
+                \core\oauth2\api::delete_endpoint($id);
+            }
+        }
+        // TODO:throws error for security reasons only https connections are allowed.
+        $this->expectException(core\invalid_persistent_exception::class);
+        $this->create_endpoint_test("webdav_endpoint", "http://www.default.de/webdav/index.php");
+        $this->repo->initiate_webdavclient();
     }
     /**
      * Test supported_filetypes.
