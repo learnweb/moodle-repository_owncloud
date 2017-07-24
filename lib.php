@@ -111,9 +111,14 @@ class repository_owncloud extends repository {
         if ($webdavendpoint['scheme'] === 'https') {
             $webdavtype = 'ssl://';
             $webdavport = 443;
-        } else {
-            // This should not happen since moodle merely allows https endpoints.
-            print_error('sslonlyaccess', 'error');
+        } else if ($webdavendpoint['scheme'] === 'http') {
+            $webdavtype = '';
+            $webdavport = 80;
+        }
+
+        // Override default port, if a specific one is set.
+        if (isset($webdavendpoint['port'])) {
+            $webdavport = $webdavendpoint['port'];
         }
 
         // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
