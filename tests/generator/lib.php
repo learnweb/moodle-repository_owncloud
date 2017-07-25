@@ -54,7 +54,7 @@ class repository_owncloud_generator extends testing_repository_generator {
         return $issuer;
     }
     /**
-     * Creates an issuer and a user.
+     * Creates four endpoints.
      * @param int $issuerid
      * @return \core\oauth2\core\oauth2\issuer
      */

@@ -392,15 +392,17 @@ XML;
      */
     public function test_logout() {
         $mock = $this->createMock(\core\oauth2\client::class);
-        $mockhelper = $this->createMock(oauth2_client::class);
 
-        $mock->expects($this->once())->method('log_out');
+        $mock->expects($this->exactly(2))->method('log_out');
         $this->set_private_repository($mock, 'client');
         $this->repo->options['ajax'] = false;
 
         $this->assertEquals($this->repo->print_login(), $this->repo->logout());
 
+        $mock->expects($this->exactly(2))->method('get_login_url')->will($this->returnValue(new moodle_url('url')));
+
         $this->repo->options['ajax'] = true;
+        $this->assertEquals($this->repo->print_login(), $this->repo->logout());
 
     }
     /**
@@ -484,7 +486,6 @@ XML;
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        // TODO:throws error for security reasons only https connections are allowed.
         $this->expectException(core\invalid_persistent_exception::class);
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
 
