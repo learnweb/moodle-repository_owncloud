@@ -357,6 +357,37 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertEquals($ret, $ls);
     }
     /**
+     * Test the get_link method.
+     */
+    public function test_get_link() {
+        $mock = $this->createMock(\core\oauth2\client::class);
+        $url = '/datei';
+        // Set up the expectation for the update() method
+        // to be called only once and with the string 'something'
+        // as its parameter.
+        $somexml = <<<XML
+<?xml version='1.0'?>
+<document>
+ <title>sometitle</title>
+ <data>
+ <url>https://www.default.de</url>
+ </data>
+ <meta>
+ <statuscode>HTTP/1.1 200</statuscode>
+ <status>
+   OK
+ </status>
+ </meta>
+</document>
+XML;
+        $mock->expects($this->once())->method('post')->will($this->returnValue($somexml));
+        $this->set_private_repository($mock, 'client');
+        $getlink = $this->repo->get_link('/datei');
+
+        $this->assertNotEmpty($getlink);
+        $this->assertEquals('https://www.default.de/download', $getlink);
+    }
+    /**
      * Test logout.
      */
     public function test_logout() {
