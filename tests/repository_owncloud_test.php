@@ -360,11 +360,8 @@ class repository_owncloud_testcase extends advanced_testcase {
      * Test the get_link method.
      */
     public function test_get_link() {
-        $mock = $this->createMock(\core\oauth2\client::class);
+        $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $url = '/datei';
-        // Set up the expectation for the update() method
-        // to be called only once and with the string 'something'
-        // as its parameter.
         $somexml = <<<XML
 <?xml version='1.0'?>
 <document>
@@ -380,10 +377,20 @@ class repository_owncloud_testcase extends advanced_testcase {
  </meta>
 </document>
 XML;
-        $mock->expects($this->once())->method('post')->will($this->returnValue($somexml));
+        // Expected Parameters.
+        $ocsquery = http_build_query(array('path' => $url,
+            'shareType' => 3,
+            'publicUpload' => false,
+            'permissions' => 31
+        ), null, "&");
+        $posturl = $this->issuer->get_endpoint_url('ocs');
+
+        // With test whether mock is called with right parameters.
+        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($somexml));
         $this->set_private_repository($mock, 'client');
         $getlink = $this->repo->get_link('/datei');
 
+        // Methode does extract the link from the xml format.
         $this->assertNotEmpty($getlink);
         $this->assertEquals('https://www.default.de/download', $getlink);
     }
