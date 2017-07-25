@@ -79,18 +79,6 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
 
     /**
-     * Dummy test for mock.
-     */
-    public function test_return_self() {
-        // Create a stub for the SomeClass class.
-        $stub = $this->createMock(\core\oauth2\issuer::class);
-
-        // Configure the stub.
-        $stub->method('get_endpoint_url')->willReturn('www.filepath.de');
-
-        $this->assertSame('www.filepath.de', $stub->get_endpoint_url("test"));
-    }
-    /**
      * Checks the is_visible method in case the repository is set to hidden in the database.
      */
     public function test_is_visible_parent_false() {
