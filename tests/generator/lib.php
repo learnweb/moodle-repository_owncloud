@@ -35,9 +35,9 @@ class repository_owncloud_generator extends testing_repository_generator {
 
     /**
      * Creates an issuer and a user.
-     * @return array
+     * @return \core\oauth2\core\oauth2\issuer
      */
-    public function test_create_preparation () {
+    public function test_create_issuer () {
         $generator = advanced_testcase::getDataGenerator();
         $data = array();
         $issuerdata = new stdClass();
@@ -49,9 +49,8 @@ class repository_owncloud_generator extends testing_repository_generator {
         $issuerdata->baseurl = "";
         $issuerdata->image = "aswdf";
 
-        $data['issuerdata'] = $issuerdata;
-        $user = $generator->create_user();
-        $data['user'] = $user;
-        return $data;
+        // Create the issuer.
+        $issuer = \core\oauth2\api::create_issuer($issuerdata);
+        return $issuer;
     }
 }

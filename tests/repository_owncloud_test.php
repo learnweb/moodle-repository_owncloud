@@ -51,11 +51,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->setAdminUser();
 
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
-        $data = $generator->test_create_preparation();
-
-        // Create the issuer.
-        $issuer = \core\oauth2\api::create_issuer($data['issuerdata']);
-        $this->issuer = $issuer;
+        $this->issuer = $generator->test_create_issuer();
 
         // Create Endpoints for issuer.
         $this->create_endpoint_test("ocs_endpoint");
@@ -64,7 +60,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->create_endpoint_test("token_endpoint");
 
         // Params for the config form.
-        $typeparams = array('type' => 'owncloud', 'visible' => 1, 'issuerid' => $issuer->get('id'), 'validissuers' => '');
+        $typeparams = array('type' => 'owncloud', 'visible' => 1, 'issuerid' => $this->issuer->get('id'), 'validissuers' => '');
 
         $reptype = $generator->create_type($typeparams);
 
