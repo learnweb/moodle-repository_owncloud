@@ -236,20 +236,20 @@ class repository_owncloud_testcase extends advanced_testcase {
                 'href' => 'remote.php/webdav/',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'resourcetype' => 'collection',
-                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
                 'href' => 'remote.php/webdav/Documents/',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'resourcetype' => 'collection',
-                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
                 'href' => 'remote.php/webdav/welcome.txt',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
-                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => '163'
             )
         );
@@ -306,20 +306,20 @@ class repository_owncloud_testcase extends advanced_testcase {
                 'href' => 'remote.php/webdav/dir/',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'resourcetype' => 'collection',
-                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
                 'href' => 'remote.php/webdav/dir/Documents/',
                 'lastmodified' => null,
                 'resourcetype' => 'collection',
-                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
                 'href' => 'remote.php/webdav/dir/welcome.txt',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
-                'status' => 'HTTP/1.1 200 OKHTTP/1.1 404 Not Found',
+                'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => '163'
             )
         );
