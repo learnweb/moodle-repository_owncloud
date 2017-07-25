@@ -54,10 +54,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->issuer = $generator->test_create_issuer();
 
         // Create Endpoints for issuer.
-        $this->create_endpoint_test("ocs_endpoint");
-        $this->create_endpoint_test("authorization_endpoint");
-        $this->create_endpoint_test("webdav_endpoint", "https://www.default.de/webdav/index.php");
-        $this->create_endpoint_test("token_endpoint");
+        $generator->test_create_endpoints($this->issuer->get('id'));
 
         // Params for the config form.
         $typeparams = array('type' => 'owncloud', 'visible' => 1, 'issuerid' => $this->issuer->get('id'), 'validissuers' => '');
@@ -458,7 +455,9 @@ class repository_owncloud_testcase extends advanced_testcase {
         }
         // TODO:throws error for security reasons only https connections are allowed.
         $this->expectException(core\invalid_persistent_exception::class);
-        $this->create_endpoint_test("webdav_endpoint", "http://www.default.de/webdav/index.php");
+        $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
+
+        $generator->test_create_single_endpoint("webdav_endpoint", "http://www.default.de/webdav/index.php");
         $this->repo->initiate_webdavclient();
     }
     /**
@@ -503,18 +502,4 @@ class repository_owncloud_testcase extends advanced_testcase {
 
         return $ret;
     }
-    /**
-     * @param $endpointtype
-     * @param string $url
-     * @return mixed
-     */
-    protected function create_endpoint_test($endpointtype, $url="https://www.default.de") {
-        $endpoint = new stdClass();
-        $endpoint->name = $endpointtype;
-        $endpoint->url = $url;
-        $endpoint->issuerid = $this->issuer->get('id');
-        $return = \core\oauth2\api::create_endpoint($endpoint);
-        return $return;
-    }
-
 }

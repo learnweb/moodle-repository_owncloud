@@ -53,4 +53,29 @@ class repository_owncloud_generator extends testing_repository_generator {
         $issuer = \core\oauth2\api::create_issuer($issuerdata);
         return $issuer;
     }
+    /**
+     * Creates an issuer and a user.
+     * @param int $issuerid
+     * @return \core\oauth2\core\oauth2\issuer
+     */
+    public function test_create_endpoints ($issuerid) {
+        $this->test_create_single_endpoint("ocs_endpoint", $issuerid);
+        $this->test_create_single_endpoint("authorization_endpoint", $issuerid);
+        $this->test_create_single_endpoint("webdav_endpoint", $issuerid, "https://www.default.de/webdav/index.php");
+        $this->test_create_single_endpoint("token_endpoint", $issuerid);
+    }
+    /**
+     * @param $endpointtype
+     * @param int $issuerid
+     * @param string $url
+     * @return mixed
+     */
+    public function test_create_single_endpoint($endpointtype, $issuerid, $url="https://www.default.de") {
+        $endpoint = new stdClass();
+        $endpoint->name = $endpointtype;
+        $endpoint->url = $url;
+        $endpoint->issuerid = $issuerid;
+        $return = \core\oauth2\api::create_endpoint($endpoint);
+        return $return;
+    }
 }
