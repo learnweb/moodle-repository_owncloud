@@ -540,6 +540,7 @@ XML;
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
+
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
@@ -550,6 +551,8 @@ XML;
 
         $this->assertEquals('8080', $value->getValue($dav));
 
+        // Throws error for security reasons because Moodle only allows to create https connections.
+        // The exception is raised by a Moodle lib, though.
         $this->expectException(core\invalid_persistent_exception::class);
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
