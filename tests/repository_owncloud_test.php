@@ -392,6 +392,67 @@ XML;
         // Method does extract the link from the xml format.
         $this->assertEquals('https://www.default.de/download', $this->repo->get_link('/datei'));
     }
+
+    /**
+     * Test get_file reference, merely returns the input if no optional_param is set.
+     */
+    public function test_get_file_reference_withoutoptionalparam() {
+        $this->repo->get_file_reference('/somefile');
+        $this->assertEquals('/somefile', $this->repo->get_file_reference('/somefile'));
+    }
+
+    /**
+     * Test get_file reference in case the optional param is set. Therefore has to simulate the get_link method.
+     */
+    public function test_get_file_reference_withoptionalparam() {
+        $_GET['usefilereference'] = true;
+        // Calls for get link(). Therefore, mocks for get_link are build.
+        $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $expectedresponse = <<<XML
+<?xml version='1.0'?>
+<document>
+ <title>sometitle</title>
+ <data>
+ <url>https://www.default.de/somefile</url>
+ </data>
+ <meta>
+ <statuscode>HTTP/1.1 200</statuscode>
+ <status>
+   OK
+ </status>
+ </meta>
+</document>
+XML;
+        // Expected Parameters.
+        $ocsquery = http_build_query(array('path' => '/somefile',
+            'shareType' => 3,
+            'publicUpload' => false,
+            'permissions' => 31
+        ), null, "&");
+        $posturl = $this->issuer->get_endpoint_url('ocs');
+
+        // With test whether mock is called with right parameters.
+        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
+        $this->set_private_repository($mock, 'client');
+
+        // Method redirects to get_link() and return the suitable value.
+        $this->assertEquals('https://www.default.de/somefile/download', $this->repo->get_file_reference('/somefile'));
+    }
+
+    /**
+     * Test the send_file function.
+     */
+    public function test_send_file() {
+        $storedfilemock = $this->createMock(stored_file::class);
+
+        // When executing send file the get_refernce methode of the stored_file object is called.
+        $storedfilemock->expects($this->exactly(1))->method('get_reference')->willReturn('/reference');
+        // Since the redirect function does not belong to a class it can not be simulated with a mock.
+        // However, since moodle throws specific exceptionsthis can be caught.
+        $this->expectException(moodle_exception::class);
+        $this->expectExceptionMessage('Unsupported redirect detected, script execution terminated');
+        $this->repo->send_file($storedfilemock);
+    }
     /**
      * Test logout.
      */
@@ -484,6 +545,9 @@ XML;
         $this->repo->print_login();
     }
 
+    /**
+     * Test the initiate_webdavclient function.
+     */
     public function test_initiate_webdavclient() {
         $idwebdav = $this->get_endpoint_id('webdav_endpoint');
         if (!empty($idwebdav)) {
