@@ -1,0 +1,191 @@
+diff --git a/webdavlib.php b/webdavlib.php
+index 12441f2..6bc9296 100755
+--- a/webdavlib.php
++++ b/webdavlib.php
+@@ -15,9 +15,14 @@
+ // You should have received a copy of the GNU General Public License
+ // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ 
++namespace repository_owncloud;
++use core_php_time_limit;
++
+ /**
+- * webdav_client v0.1.5, a php based webdav client class.
+- * class webdav client. a php based nearly RFC 2518 conforming client.
++ * Basically the same functionality as the webdav_client v0.1.5, a php based webdav client class.
++ * A php based nearly RFC 2518 conforming client.
++ *
++ * All changes that were necessary for handling the oauth2 authentication are visible in the Differenz file.
+  *
+  * This class implements methods to get access to an webdav server.
+  * Most of the methods are returning boolean false on error, an integer status (http response status) on success
+@@ -33,7 +38,7 @@
+  * @version 0.1.5
+  */
+ 
+-class webdav_client {
++class owncloud_client {
+ 
+     /**#@+
+      * @access private
+@@ -53,7 +58,7 @@ class webdav_client {
+     private $_socket_timeout = 5;
+     private $_errno;
+     private $_errstr;
+-    private $_user_agent = 'Moodle WebDav Client';
++    private $_user_agent = 'Moodle WebDav Client for ownCloud';
+     private $_crlf = "\r\n";
+     private $_req;
+     private $_resp_status;
+@@ -79,12 +84,24 @@ class webdav_client {
+     private $_cnonce = '';
+     private $_nc = 0;
+ 
++    /**
++     * OAuth 2 client; is expected to hold the token for authenticated accesses.
++     * @var \core\oauth2\client
++     */
++    private $oauthclient;
++
++    /**
++     * Prefix to the WebDAV server on host, e.g. /remote.php/webdav/ on most ownCloud installations.
++     * @var string
++     */
++    private $pathprefix;
++
+     /**#@-*/
+ 
+     /**
+      * Constructor - Initialise class variables
+      */
+-    function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '') {
++    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthclient = null, $pathprefix = '/') {
+         if (!empty($server)) {
+             $this->_server = $server;
+         }
+@@ -94,6 +111,12 @@ class webdav_client {
+         }
+         $this->_auth = $auth;
+         $this->_socket = $socket;
++        $this->oauthclient = $oauthclient;
++        // Remove trailing slash, because future uses will come with a leading slash.
++        if (strlen($pathprefix) > 0 && substr($pathprefix, -1) === '/') {
++            $pathprefix = substr($pathprefix, 0, -1);
++        }
++        $this->pathprefix = $pathprefix;
+     }
+     public function __set($key, $value) {
+         $property = '_' . $key;
+@@ -226,23 +249,8 @@ class webdav_client {
+ 
+     /**
+      * Public method mkcol
+-     *
+      * Creates a new collection/directory on a webdav server
+-     * @param string path
+-     * @return int status code received as response from webdav server (see rfc 2518)
+-     */
+-    function mkcol($path) {
+-        $this->_path = $this->translate_uri($path);
+-        $this->header_unset();
+-        $this->create_basic_request('MKCOL');
+-        $this->send_request();
+-        $this->get_respond();
+-        $response = $this->process_respond();
+-        // validate the response ...
+-        // check http-version
+-        $http_version = $response['status']['http-version'];
+-        if ($http_version == 'HTTP/1.1' || $http_version == 'HTTP/1.0') {
+-            /** seems to be http ... proceed
++     * seems to be http ... proceed
+              * just return what server gave us
+              * rfc 2518 says:
+              * 201 (Created) - The collection or structured resource was created in its entirety.
+@@ -255,7 +263,20 @@ class webdav_client {
+              * 415 (Unsupported Media Type)- The server does not support the request type of the body.
+              * 507 (Insufficient Storage) - The resource does not have sufficient space to record the state of the
+              *                              resource after the execution of this method.
++     * @param string path
++     * @return int status code received as response from webdav server (see rfc 2518)
+              */
++    public function mkcol($path) {
++        $this->_path = $this->translate_uri($path);
++        $this->header_unset();
++        $this->create_basic_request('MKCOL');
++        $this->send_request();
++        $this->get_respond();
++        $response = $this->process_respond();
++        // validate the response ...
++        // check http-version
++        $httpversion = $response['status']['http-version'];
++        if ($httpversion == 'HTTP/1.1' || $httpversion == 'HTTP/1.0') {
+             return $response['status']['status-code'];
+         }
+ 
+@@ -398,7 +419,9 @@ class webdav_client {
+      * @param string $localpath
+      * @return bool true on success. false on error.
+      */
+-    function get_file($srcpath, $localpath) {
++    public function get_file($srcpath, $localpath) {
++        // Prepend with WebDAV root.
++        $srcpath = $this->pathprefix . $srcpath;
+ 
+         $localpath = $this->utf_decode_path($localpath);
+ 
+@@ -530,7 +553,7 @@ class webdav_client {
+     // move/rename a file/collection on webdav server
+     function move($src_path,$dst_path, $overwrite) {
+ 
+-        $this->_path = $this->translate_uri($src_path);
++        $this->_path = $srcpath;
+         $this->header_unset();
+ 
+         $this->create_basic_request('MOVE');
+@@ -775,6 +798,9 @@ class webdav_client {
+             $this->_error_log('Missing a path in method ls');
+             return false;
+         }
++        // Prepend with WebDAV root.
++        $path = $this->pathprefix . $path;
++
+         $this->_path = $this->translate_uri($path);
+ 
+         $this->header_unset();
+@@ -1147,8 +1173,6 @@ EOD;
+             // cdata must be appended, because sometimes the php xml parser makes multiple calls
+             // to _propfind_cData before the xml end tag was reached...
+             $this->_ls_ref_cdata .= $cdata;
+-        } else {
+-            // do nothing
+         }
+     }
+ 
+@@ -1197,8 +1221,6 @@ EOD;
+     private function _delete_cData($parser, $cdata) {
+         if (trim($cdata) <> '') {
+             $this->_delete_ref_cdata .= $cdata;
+-        } else {
+-            // do nothing
+         }
+     }
+ 
+@@ -1275,8 +1297,6 @@ EOD;
+         if (trim($cdata) <> '') {
+             // $this->_error_log(($this->_xmltree[$parserid]) . '='. htmlentities($cdata));
+             $this->_lock_ref_cdata .= $cdata;
+-        } else {
+-            // do nothing
+         }
+     }
+ 
+@@ -1323,6 +1343,9 @@ EOD;
+             if ($signature = $this->digest_signature($method)){
+                 $this->header_add($signature);
+             }
++            // Our local WebDav client is adjusted to enable it to send Bearer Authorization headers.
++        } else if ($this->_auth == 'bearer') {
++            $this->header_add(sprintf('Authorization: Bearer %s', $this->oauthclient->get_accesstoken()->token));
+         }
+     }
+ 

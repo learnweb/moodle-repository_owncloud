@@ -1,8 +1,8 @@
-17a17,19
+17a18,20
 > namespace repository_owncloud;
 > use core_php_time_limit;
 > 
-19,20c21,24
+19,20c22,25
 <  * webdav_client v0.1.5, a php based webdav client class.
 <  * class webdav client. a php based nearly RFC 2518 conforming client.
 ---
@@ -10,15 +10,15 @@
 >  * A php based nearly RFC 2518 conforming client.
 >  *
 >  * All changes that were necessary for handling the oauth2 authentication are visible in the Differenz file.
-36c40
+36c41
 < class webdav_client {
 ---
 > class owncloud_client {
-56c60
+56c61
 <     private $_user_agent = 'Moodle WebDav Client';
 ---
 >     private $_user_agent = 'Moodle WebDav Client for ownCloud';
-81a86,97
+81a87,98
 >     /**
 >      * OAuth 2 client; is expected to hold the token for authenticated accesses.
 >      * @var \core\oauth2\client
@@ -31,20 +31,20 @@
 >      */
 >     private $pathprefix;
 > 
-87c103
+87c104
 <     function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '') {
 ---
 >     public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthclient = null, $pathprefix = '/') {
-96a113,118
+96a114,119
 >         $this->oauthclient = $oauthclient;
 >         // Remove trailing slash, because future uses will come with a leading slash.
 >         if (strlen($pathprefix) > 0 && substr($pathprefix, -1) === '/') {
 >             $pathprefix = substr($pathprefix, 0, -1);
 >         }
 >         $this->pathprefix = $pathprefix;
-229d250
+229d251
 <      *
-231,245c252
+231,245c253
 <      * @param string path
 <      * @return int status code received as response from webdav server (see rfc 2518)
 <      */
@@ -62,10 +62,10 @@
 <             /** seems to be http ... proceed
 ---
 >      * seems to be http ... proceed
-257a265,266
+257a266,267
 >      * @param string path
 >      * @return int status code received as response from webdav server (see rfc 2518)
-258a268,278
+258a269,279
 >     public function mkcol($path) {
 >         $this->_path = $this->translate_uri($path);
 >         $this->header_unset();
@@ -77,31 +77,30 @@
 >         // check http-version
 >         $httpversion = $response['status']['http-version'];
 >         if ($httpversion == 'HTTP/1.1' || $httpversion == 'HTTP/1.0') {
-400c420,422
+401c422,424
 <     function get_file($srcpath, $localpath) {
 ---
 >     public function get_file($srcpath, $localpath) {
 >         // Prepend with WebDAV root.
 >         $srcpath = $this->pathprefix . $srcpath;
-532c554
+533c556
 <         $this->_path = $this->translate_uri($src_path);
 ---
 >         $this->_path = $srcpath;
-774a795,798
-> 
+777a801,803
 >         // Prepend with WebDAV root.
 >         $path = $this->pathprefix . $path;
 > 
-1146,1147d1169
+1150,1151d1175
 <         } else {
 <             // do nothing
-1196,1197d1217
+1200,1201d1223
 <         } else {
 <             // do nothing
-1274,1275d1293
+1278,1279d1299
 <         } else {
 <             // do nothing
-1321a1340,1342
+1325a1346,1348
 >             // Our local WebDav client is adjusted to enable it to send Bearer Authorization headers.
 >         } else if ($this->_auth == 'bearer') {
 >             $this->header_add(sprintf('Authorization: Bearer %s', $this->oauthclient->get_accesstoken()->token));
