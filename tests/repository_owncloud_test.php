@@ -104,24 +104,6 @@ class repository_owncloud_testcase extends advanced_testcase {
         $this->assertEquals(true, $issuerenabled);
         $this->assertFalse($this->repo->disabled);
     }
-
-
-    /**
-     * Way to test private methods.
-     * @param $object
-     * @param $methodname
-     * @param array $parameters
-     * @return mixed
-     */
-    public function invoke_private_method(&$object, $methodname, array $parameters = array()) {
-        $reflection = new \ReflectionClass(get_class($object));
-        $method = $reflection->getMethod($methodname);
-        $method->setAccessible(true);
-
-        return $method->invokeArgs($object, $parameters);
-    }
-
-
     /**
      * Returns an array of endpoints or null.
      * @param $endpointname
@@ -152,7 +134,7 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = $this->invoke_private_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
     /**
@@ -165,7 +147,7 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = $this->invoke_private_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
     /**
@@ -178,7 +160,7 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = $this->invoke_private_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
 
@@ -192,7 +174,7 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = $this->invoke_private_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer));
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
     /**
@@ -200,7 +182,7 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_parse_endpoint_url_error() {
         $this->expectException(\repository_owncloud\configuration_exception::class);
-        $this->invoke_private_method($this->repo, "parse_endpoint_url", array('notexisting' => "notexisting"));
+        $boolean = phpunit_util::call_internal_method($this->repo, "parse_endpoint_url", array('notexisting' => "notexisting"), 'repository_owncloud');
     }
     /**
      * Test get_listing method with an example directory. Tests error cases.
