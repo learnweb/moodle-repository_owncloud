@@ -362,7 +362,7 @@ class repository_owncloud_testcase extends advanced_testcase {
     public function test_get_link() {
         $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $url = '/datei';
-        $somexml = <<<XML
+        $expectedresponse = <<<XML
 <?xml version='1.0'?>
 <document>
  <title>sometitle</title>
@@ -386,13 +386,11 @@ XML;
         $posturl = $this->issuer->get_endpoint_url('ocs');
 
         // With test whether mock is called with right parameters.
-        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($somexml));
+        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
         $this->set_private_repository($mock, 'client');
-        $getlink = $this->repo->get_link('/datei');
 
-        // Methode does extract the link from the xml format.
-        $this->assertNotEmpty($getlink);
-        $this->assertEquals('https://www.default.de/download', $getlink);
+        // Method does extract the link from the xml format.
+        $this->assertEquals('https://www.default.de/download', $this->repo->get_link('/datei'));
     }
     /**
      * Test logout.
@@ -482,10 +480,10 @@ XML;
 
         $output = html_writer::link($url, get_string('login', 'repository'),
             array('target' => '_blank',  'rel' => 'noopener noreferrer'));
-
         $this->expectOutputString($output);
         $this->repo->print_login();
     }
+
     public function test_initiate_webdavclient() {
         $idwebdav = $this->get_endpoint_id('webdav_endpoint');
         if (!empty($idwebdav)) {
@@ -496,7 +494,7 @@ XML;
         $this->expectException(core\invalid_persistent_exception::class);
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
 
-        $generator->test_create_single_endpoint("webdav_endpoint", "http://www.default.de/webdav/index.php");
+        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint", "http://www.default.de/webdav/index.php");
         $this->repo->initiate_webdavclient();
     }
     /**
