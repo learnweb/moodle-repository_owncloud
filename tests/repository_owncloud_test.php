@@ -555,8 +555,17 @@ XML;
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $this->expectException(core\invalid_persistent_exception::class);
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
+
+        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint", "https://www.default.de:8080/webdav/index.php");
+        $dav = $this->repo->initiate_webdavclient();
+
+        $value = $this->get_private_value($dav, '_port');
+        // $this->set_private_repository($dav, 'dav');
+
+        $this->assertEquals('8080', $value->getValue($dav));
+
+        $this->expectException(core\invalid_persistent_exception::class);
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint", "http://www.default.de/webdav/index.php");
         $this->repo->initiate_webdavclient();
@@ -588,6 +597,21 @@ XML;
 
         return $private;
     }
+    /**
+     * Get private property
+     *
+     * @param $refclass name of the class
+     * @param $propertyname name of the private property
+     * @return ReflectionProperty the resulting reflection property.
+     */
+    protected function get_private_value($refclass, $propertyname) {
+        $refclient = new ReflectionClass($refclass);
+        $property = $refclient->getProperty($propertyname);
+        $property->setAccessible(true);
+
+        return $property;
+    }
+    
     /**
      * Helper method to set required return parameters for get_listing.
      *
