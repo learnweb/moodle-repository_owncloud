@@ -602,7 +602,6 @@ XML;
 
         $this->set_type_config_form_expect($form, $functionsparams, 6, $selectelement);
 
-        // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
     }
     /**
@@ -625,7 +624,6 @@ XML;
 
         $this->set_type_config_form_expect ($form, $functionsparams, 6, $selectelement);
 
-        // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
     }
     /**
@@ -644,7 +642,9 @@ XML;
     }
 
     /**
-     * Handles the exception for different php versions.
+     * Was supposed to handle the different php Versions since php 5.6 and 7/7.1 throw different exceptions.
+     * Php 5.6 is not able to catch fatal_errors therefore it is excluded in travis.
+     * Still exceptions are handled seperately.
      * @param $form
      */
     protected function handle_exceptions($form) {
