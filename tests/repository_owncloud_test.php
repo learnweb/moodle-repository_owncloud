@@ -581,7 +581,7 @@ XML;
 
         // The expected values for the methode are defined. It is expected to be called 6 times.
         // Since the params can not be allocated to specific calls a logical OR is used.
-        $this->set_type_config_form_expect ($form, $functionsparams, 6);
+        $this->set_type_config_form_expect ($form, $functionsparams, 6, null);
         // Finally, the methode is called.
         phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
 
@@ -592,13 +592,15 @@ XML;
      */
     public function test_type_config_valid_issuer() {
         $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $selectelement = $this->getMockBuilder(MoodleQuickForm_select::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
         set_config('issuerid', $this->issuer->get('id'),  'owncloud');
 
         // Params for the addElement function are generated.
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('info', 'issuervalidation_valid');
 
-        $this->set_type_config_form_expect ($form, $functionsparams, 6);
+        $this->set_type_config_form_expect ($form, $functionsparams, 6, $selectelement);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
@@ -608,6 +610,7 @@ XML;
      */
     public function test_type_config_invalid_issuer() {
         $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $selectelement = $this->getMockBuilder(MoodleQuickForm_select::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         set_config('issuerid', $this->issuer->get('id'),  'owncloud');
         // Delete issuer endpoint to make issuer invalid.
         $idwebdav = $this->get_endpoint_id('webdav_endpoint');
@@ -620,7 +623,7 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('error', 'issuervalidation_invalid');
 
-        $this->set_type_config_form_expect ($form, $functionsparams, 6);
+        $this->set_type_config_form_expect ($form, $functionsparams, 6, $selectelement);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
@@ -650,20 +653,20 @@ XML;
             // This block should never be reached since always a exception should be thrown.
             $this->assertTrue(false);
         } catch (Exception $e) {
-            $this->assertEquals('Call to a member function setSelected() on null', $e->getMessage());
+            $this->assertRegexp('/Call to undefined method Mock_MoodleQuickForm_select/', $e->getMessage());
         } catch (Throwable $exceptionorerror) {
-            $this->assertEquals('Call to a member function setSelected() on null', $exceptionorerror->getMessage());
+            $this->assertRegexp('/Call to undefined method Mock_MoodleQuickForm_select/', $exceptionorerror->getMessage());
         }
 
     }
-
     /**
      * Sets the expect params for form.
      * @param $form
      * @param $functionsparams
      * @param $count
+     * @param $return
      */
-    protected function set_type_config_form_expect ($form, $functionsparams, $count) {
+    protected function set_type_config_form_expect ($form, $functionsparams, $count, $return) {
         $form->expects($this->exactly($count))->method('addElement')->with($this->logicalOr(
             'text', 'pluginname', 'Repository plugin name', array('size' => 40),
             'html', $functionsparams['outputnotifiction'],
@@ -671,7 +674,7 @@ XML;
             'text', 'pluginname', 'Repository plugin name', array('size' => 40),
             'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
             'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
-            $functionsparams['types']));
+            $functionsparams['types']))->will($this->returnValue($return));
     }
     /**
      * Returns the param for the type_config_form.
