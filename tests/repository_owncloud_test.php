@@ -648,12 +648,12 @@ XML;
         try {
             // Finally, the methode is called.
             phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-        } catch (Throwable $exceptionorerror) {
-            $this->expectException(Error::class);
-            $this->expectExceptionMessage('Call to a member function setSelected() on null');
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
         } catch (Exception $e) {
             $this->expectException(Exception::class);
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        } catch (Error $exceptionorerror) {
+            $this->expectException(Error::class);
+            $this->expectExceptionMessage('Call to a member function setSelected() on null');
             phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
         }
     }
