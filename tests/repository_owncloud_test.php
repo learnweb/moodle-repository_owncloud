@@ -598,7 +598,7 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('info', 'issuervalidation_valid');
 
-        $this->set_type_config_form_expect ($form, $functionsparams, 12);
+        $this->set_type_config_form_expect ($form, $functionsparams, 6);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
@@ -620,7 +620,7 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('error', 'issuervalidation_invalid');
 
-        $this->set_type_config_form_expect ($form, $functionsparams, 12);
+        $this->set_type_config_form_expect ($form, $functionsparams, 6);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
@@ -646,16 +646,15 @@ XML;
      */
     protected function handle_exceptions($form) {
         try {
-            // Finally, the methode is called.
             phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+            // This block should never be reached since always a exception should be thrown.
+            $this->assertTrue(false);
         } catch (Exception $e) {
-            $this->expectException(Exception::class);
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-        } catch (Error $exceptionorerror) {
-            $this->expectException(Error::class);
-            $this->expectExceptionMessage('Call to a member function setSelected() on null');
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+            $this->assertEquals('Call to a member function setSelected() on null', $e->getMessage());
+        } catch (Throwable $exceptionorerror) {
+            $this->assertEquals('Call to a member function setSelected() on null', $exceptionorerror->getMessage());
         }
+
     }
 
     /**
