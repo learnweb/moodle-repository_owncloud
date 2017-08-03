@@ -614,18 +614,11 @@ XML;
             'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
             $functionsparams['types']));
 
-        // Since php 5.6 and php 7 throw different classes (Exception or Error) phpversion is checked ...
-        // And the different values set to expected.
-        $phpversion = phpversion();
-        if (strpos($phpversion, '5.6')) {
-            $this->expectException(Exception::class);
-            $this->expectExceptionMessage('Call to a member function setSelected() on null');
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-        } else {
-            $this->expectException(Error::class);
-            $this->expectExceptionMessage('Call to a member function setSelected() on null');
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-        }
+        // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
+        $this->expectException(Throwable::class);
+        $this->expectExceptionMessage('Call to a member function setSelected() on null');
+        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+
     }
     /**
      * Test the type-config form with a invalid issuer.
@@ -653,18 +646,10 @@ XML;
             'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
             $functionsparams['types']));
 
-        // Since php 5.6 and php 7 throw different classes (Exception or Error) phpversion is checked ...
-        // And the different values set to expected.
-        $phpversion = phpversion();
-        if (strpos($phpversion, '5.6')) {
-            $this->expectException(Exception::class);
-            $this->expectExceptionMessage('Call to a member function setSelected() on null');
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-        } else {
-            $this->expectException(Error::class);
-            $this->expectExceptionMessage('Call to a member function setSelected() on null');
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-        }
+        // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
+        $this->expectException(Throwable::class);
+        $this->expectExceptionMessage('Call to a member function setSelected() on null');
+        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
     }
     /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
