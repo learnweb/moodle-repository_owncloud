@@ -605,7 +605,7 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('info', 'issuervalidation_valid');
 
-        $form->expects($this->exactly(6))->method('addElement')->with($this->logicalOr(
+        $form->expects($this->exactly(12))->method('addElement')->with($this->logicalOr(
             'text', 'pluginname', 'Repository plugin name', array('size' => 40),
             'html', $functionsparams['outputnotifiction'],
             'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
@@ -614,13 +614,16 @@ XML;
             'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
             $functionsparams['types']));
 
-        // Since we have no real select Element the method can not be called.
-        // Still it is tested form expects the method called 6 times.
-        $this->expectException(Error::class);
-        $this->expectExceptionMessage('Call to a member function setSelected() on null');
-
-        // Finally, the methode is called.
-        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        // Since php 5.6 and php 7 throw different classes (Exception or Error) both are catched ...
+        // And set to expected.
+        try {
+            // Finally, the methode is called.
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        } catch (Throwable $exceptionorerror) {
+            $this->expectException(get_class($exceptionorerror));
+            $this->expectExceptionMessage('Call to a member function setSelected() on null');
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        }
     }
     /**
      * Test the type-config form with a invalid issuer.
@@ -639,7 +642,7 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('error', 'issuervalidation_invalid');
 
-        $form->expects($this->exactly(6))->method('addElement')->with($this->logicalOr(
+        $form->expects($this->exactly(12))->method('addElement')->with($this->logicalOr(
             'text', 'pluginname', 'Repository plugin name', array('size' => 40),
             'html', $functionsparams['outputnotifiction'],
             'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
@@ -648,13 +651,17 @@ XML;
             'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
             $functionsparams['types']));
 
-        // Since we have no real select Element the method can not be called.
-        // Still it is tested form expects the method called 6 times.
-        $this->expectException(Error::class);
-        $this->expectExceptionMessage('Call to a member function setSelected() on null');
+        // Since php 5.6 and php 7 throw different classes (Exception or Error) both are catched ...
+        // And set to expected.
+        try {
+            // Finally, the methode is called.
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        } catch (Throwable $exceptionorerror) {
+            $this->expectException(get_class($exceptionorerror));
+            $this->expectExceptionMessage('Call to a member function setSelected() on null');
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        }
 
-        // Finally, the methode is called.
-        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
     }
     /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
