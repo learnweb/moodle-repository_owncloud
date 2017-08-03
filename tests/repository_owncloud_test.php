@@ -567,6 +567,49 @@ XML;
     }
 
     /**
+     * Test the type_config_form
+     *
+     */
+    public function test_type_config_form() {
+        global $OUTPUT;
+        // Simulate the QuickFormClass
+        $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        // No issuer was perviously selected.
+        set_config('issuerid', '',  'owncloud');
+
+        // Expected Messages since no issuer is selected.
+        $issuervalidation = get_string('issuervalidation_without', 'repository_owncloud');
+        $urgency = 'warning';
+        $outputnotifiction = $OUTPUT->notification($issuervalidation, $urgency);
+
+        // Params for the addElement function are generated.
+        // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
+        $url = new \moodle_url('/admin/tool/oauth2/issuers.php');
+        $issuers = core\oauth2\api::get_all_issuers();
+        $types = array();
+        $validissuers = [];
+        foreach ($issuers as $issuer) {
+            if (phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $issuer),
+                'repository_owncloud')) {
+                $validissuers[] = $issuer->get('name');
+            }
+            $types[$issuer->get('id')] = $issuer->get('name');
+        }
+
+        // The expected values for the methode are defined. It is expected to be called 6 times.
+        // Since the params can not be allocated to specific calls a logical OR is used.
+        $form->expects($this->exactly(6))->method('addElement')->with($this->logicalOr(
+            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
+            'html', $outputnotifiction,
+            'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $url->out()),
+            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
+            'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
+            'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $types));
+
+        // Finally, the methode is called.
+        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+    }
+    /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
      *
      * @param $mock object mock object, which needs to be inserted.
