@@ -600,7 +600,7 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('info', 'issuervalidation_valid');
 
-        $this->set_type_config_form_expect ($form, $functionsparams, 6, $selectelement);
+        $this->set_type_config_form_expect($form, $functionsparams, 6, $selectelement);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
         $this->handle_exceptions($form);
