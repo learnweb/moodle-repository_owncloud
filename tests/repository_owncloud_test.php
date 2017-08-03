@@ -581,14 +581,7 @@ XML;
 
         // The expected values for the methode are defined. It is expected to be called 6 times.
         // Since the params can not be allocated to specific calls a logical OR is used.
-        $form->expects($this->exactly(6))->method('addElement')->with($this->logicalOr(
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'html', $functionsparams['outputnotifiction'],
-            'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
-            'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $functionsparams['types']));
-
+        $this->set_type_config_form_expect ($form, $functionsparams, 6);
         // Finally, the methode is called.
         phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
 
@@ -605,20 +598,10 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('info', 'issuervalidation_valid');
 
-        $form->expects($this->exactly(6))->method('addElement')->with($this->logicalOr(
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'html', $functionsparams['outputnotifiction'],
-            'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
-            'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
-            $functionsparams['types']));
+        $this->set_type_config_form_expect ($form, $functionsparams, 12);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
-        $this->expectException(Throwable::class);
-        $this->expectExceptionMessage('Call to a member function setSelected() on null');
-        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-
+        $this->handle_exceptions($form);
     }
     /**
      * Test the type-config form with a invalid issuer.
@@ -637,19 +620,10 @@ XML;
         // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
         $functionsparams = $this->get_params_addelement_configform('error', 'issuervalidation_invalid');
 
-        $form->expects($this->exactly(6))->method('addElement')->with($this->logicalOr(
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'html', $functionsparams['outputnotifiction'],
-            'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
-            'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
-            $functionsparams['types']));
+        $this->set_type_config_form_expect ($form, $functionsparams, 12);
 
         // Since php 5.6 and php 7 throw different classes (Exception or Error) expected is set to throwable.
-        $this->expectException(Throwable::class);
-        $this->expectExceptionMessage('Call to a member function setSelected() on null');
-        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        $this->handle_exceptions($form);
     }
     /**
      * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
@@ -666,6 +640,40 @@ XML;
         return $private;
     }
 
+    /**
+     * Handles the exception for different php versions.
+     * @param $form
+     */
+    protected function handle_exceptions($form) {
+        try {
+            // Finally, the methode is called.
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        } catch (Throwable $exceptionorerror) {
+            $this->expectException(Error::class);
+            $this->expectExceptionMessage('Call to a member function setSelected() on null');
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        } catch (Exception $e) {
+            $this->expectException(Exception::class);
+            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
+        }
+    }
+
+    /**
+     * Sets the expect params for form.
+     * @param $form
+     * @param $functionsparams
+     * @param $count
+     */
+    protected function set_type_config_form_expect ($form, $functionsparams, $count) {
+        $form->expects($this->exactly($count))->method('addElement')->with($this->logicalOr(
+            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
+            'html', $functionsparams['outputnotifiction'],
+            'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
+            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
+            'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
+            'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
+            $functionsparams['types']));
+    }
     /**
      * Returns the param for the type_config_form.
      * @param $urgency
