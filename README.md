@@ -94,7 +94,7 @@ Enter a name that will be displayed to Moodle users and select the configured is
 A text underneath the select box tells you which issuers are suited for use with this repository.
 If your issuer does not show up, double-check the issuer settings; particularly all URLs (base URL and endpoints) and the names of the endpoints.
 
-![Select Form](https://user-images.githubusercontent.com/432117/27905346-f42d55d0-623f-11e7-9e1b-ad4782e989d7.png)
+![Instance configuration form](https://user-images.githubusercontent.com/432117/28979878-de28da98-794b-11e7-9ce8-b48e73daed4e.png)
 
 Afterwards, everything is configured and ready to go! Let's see what this looks like for your users:
 
