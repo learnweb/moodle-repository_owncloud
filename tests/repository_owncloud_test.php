@@ -111,7 +111,6 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     private function get_endpoint_id($endpointname) {
         $endpoints = \core\oauth2\api::get_endpoints($this->issuer);
-        $counter = 0;
         $id = array();
         foreach ($endpoints as $endpoint) {
             $name = $endpoint->get('name');
@@ -182,7 +181,7 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_parse_endpoint_url_error() {
         $this->expectException(\repository_owncloud\configuration_exception::class);
-        $boolean = phpunit_util::call_internal_method($this->repo, "parse_endpoint_url", array('notexisting' => "notexisting"), 'repository_owncloud');
+        phpunit_util::call_internal_method($this->repo, "parse_endpoint_url", array('notexisting' => "notexisting"), 'repository_owncloud');
     }
     /**
      * Test get_listing method with an example directory. Tests error cases.
@@ -570,7 +569,6 @@ XML;
      *
      */
     public function test_type_config_form() {
-        global $OUTPUT;
         // Simulate the QuickFormClass
         $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         // No issuer was perviously selected.
@@ -581,7 +579,7 @@ XML;
 
         // The expected values for the methode are defined. It is expected to be called 6 times.
         // Since the params can not be allocated to specific calls a logical OR is used.
-        $this->set_type_config_form_expect ($form, $functionsparams, 6, null);
+        $this->set_type_config_form_expect($form, $functionsparams, 6, null);
         // Finally, the methode is called.
         phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
 

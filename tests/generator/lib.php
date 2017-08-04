@@ -35,11 +35,9 @@ class repository_owncloud_generator extends testing_repository_generator {
 
     /**
      * Creates an issuer and a user.
-     * @return \core\oauth2\core\oauth2\issuer
+     * @return \core\oauth2\issuer
      */
     public function test_create_issuer () {
-        $generator = advanced_testcase::getDataGenerator();
-        $data = array();
         $issuerdata = new stdClass();
         $issuerdata->name = "Service";
         $issuerdata->clientid = "Clientid";
@@ -56,7 +54,7 @@ class repository_owncloud_generator extends testing_repository_generator {
     /**
      * Creates four endpoints.
      * @param int $issuerid
-     * @return \core\oauth2\core\oauth2\issuer
+     * @return \core\oauth2\issuer
      */
     public function test_create_endpoints ($issuerid) {
         $this->test_create_single_endpoint($issuerid, "ocs_endpoint");
