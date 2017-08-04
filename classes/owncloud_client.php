@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,10 +19,9 @@ namespace repository_owncloud;
 use core_php_time_limit;
 
 /**
- * Basically the same functionality as the webdav_client v0.1.5, a php based webdav client class.
- * A php based nearly RFC 2518 conforming client.
+ * webdav_client v0.1.5, a php based webdav client class.
+ * class webdav client. a php based nearly RFC 2518 conforming client.
  *
- * All changes that were necessary for handling the oauth2 authentication are visible in the Differenz file.
  *
  * This class implements methods to get access to an webdav server.
  * Most of the methods are returning boolean false on error, an integer status (http response status) on success
@@ -29,6 +29,8 @@ use core_php_time_limit;
  * It's your responsibility to handle the webdav server responses in an proper manner.
  * Please notice that all Filenames coming from or going to the webdav server should be UTF-8 encoded (see RFC 2518).
  * This class tries to convert all you filenames into utf-8 when it's needed.
+ *
+ * This class was augmented in 2017 to account for OAuth 2-compatible bearer authentication.
  *
  * @package moodlecore
  * @author Christian Juerges <christian.juerges@xwave.ch>, Xwave GmbH, Josefstr. 92, 8005 Zuerich - Switzerland
@@ -49,7 +51,7 @@ class owncloud_client {
     private $_protocol = 'HTTP/1.1';
     private $_port = 80;
     private $_socket = '';
-    private $_path = '/';
+    private $_path ='/';
     private $_auth = false;
     private $_user;
     private $_pass;
@@ -74,9 +76,9 @@ class owncloud_client {
     private $_lock = array();
     private $_lock_ref;
     private $_lock_rec_cdata;
-    private $_null = null;
-    private $_header = '';
-    private $_body = '';
+    private $_null = NULL;
+    private $_header='';
+    private $_body='';
     private $_connection_closed = false;
     private $_maxheaderlenth = 65536;
     private $_digestchallenge = null;
@@ -110,6 +112,7 @@ class owncloud_client {
         }
         $this->_auth = $auth;
         $this->_socket = $socket;
+        // If provided, add OAuth client and path prefix.
         $this->oauthclient = $oauthclient;
         // Remove trailing slash, because future uses will come with a leading slash.
         if (strlen($pathprefix) > 0 && substr($pathprefix, -1) === '/') {
@@ -128,7 +131,7 @@ class owncloud_client {
      * Otherwise HTTP/1.0 will be used.
      * @param int version
      */
-    public function set_protocol($version) {
+    function set_protocol($version) {
         if ($version == 1) {
             $this->_protocol = 'HTTP/1.1';
         } else {
@@ -142,7 +145,7 @@ class owncloud_client {
      * @param string iso8601
      * @return unixtimestamp on sucess. Otherwise false.
      */
-    public function iso8601totime($iso8601) {
+    function iso8601totime($iso8601) {
         /*
 
          date-time       = full-date "T" full-time
@@ -168,7 +171,7 @@ class owncloud_client {
         $regs = array();
         /*         [1]        [2]        [3]        [4]        [5]        [6]  */
         if (preg_match('/^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$/', $iso8601, $regs)) {
-            return mktime($regs[4], $regs[5], $regs[6], $regs[2], $regs[3], $regs[1]);
+            return mktime($regs[4],$regs[5], $regs[6], $regs[2], $regs[3], $regs[1]);
         }
         // to be done: regex for partial-time...apache webdav mod never returns partial-time
 
@@ -179,7 +182,7 @@ class owncloud_client {
      * Open's a socket to a webdav server
      * @return bool true on success. Otherwise false.
      */
-    public function open() {
+    function open() {
         // let's try to open a socket
         $this->_error_log('open a socket connection');
         $this->sock = fsockopen($this->_socket . $this->_server, $this->_port, $this->_errno, $this->_errstr, $this->_socket_timeout);
@@ -198,7 +201,7 @@ class owncloud_client {
     /**
      * Closes an open socket.
      */
-    public function close() {
+    function close() {
         $this->_error_log('closing socket ' . $this->sock);
         $this->_connection_closed = true;
         fclose($this->sock);
@@ -210,7 +213,7 @@ class owncloud_client {
      * schema 1,2 is supported.
      * @return bool true if server is webdav server. Otherwise false.
      */
-    public function check_webdav() {
+    function check_webdav() {
         $resp = $this->options();
         if (!$resp) {
             return false;
@@ -229,7 +232,7 @@ class owncloud_client {
      * Get options from webdav server.
      * @return array with all header fields returned from webdav server. false if server does not speak http.
      */
-    public function options() {
+    function options() {
         $this->header_unset();
         $this->create_basic_request('OPTIONS');
         $this->send_request();
@@ -248,24 +251,12 @@ class owncloud_client {
 
     /**
      * Public method mkcol
+     *
      * Creates a new collection/directory on a webdav server
-     * seems to be http ... proceed
-     * just return what server gave us
-     * rfc 2518 says:
-     * 201 (Created) - The collection or structured resource was created in its entirety.
-     * 403 (Forbidden) - This indicates at least one of two conditions:
-     *    1) the server does not allow the creation of collections at the given location in its namespace, or
-     *    2) the parent collection of the Request-URI exists but cannot accept members.
-     * 405 (Method Not Allowed) - MKCOL can only be executed on a deleted/non-existent resource.
-     * 409 (Conflict) - A collection cannot be made at the Request-URI until one or more intermediate
-     *                  collections have been created.
-     * 415 (Unsupported Media Type)- The server does not support the request type of the body.
-     * 507 (Insufficient Storage) - The resource does not have sufficient space to record the state of the
-     *                              resource after the execution of this method.
      * @param string path
      * @return int status code received as response from webdav server (see rfc 2518)
      */
-    public function mkcol($path) {
+    function mkcol($path) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('MKCOL');
@@ -274,8 +265,22 @@ class owncloud_client {
         $response = $this->process_respond();
         // validate the response ...
         // check http-version
-        $httpversion = $response['status']['http-version'];
-        if ($httpversion == 'HTTP/1.1' || $httpversion == 'HTTP/1.0') {
+        $http_version = $response['status']['http-version'];
+        if ($http_version == 'HTTP/1.1' || $http_version == 'HTTP/1.0') {
+            /** seems to be http ... proceed
+             * just return what server gave us
+             * rfc 2518 says:
+             * 201 (Created) - The collection or structured resource was created in its entirety.
+             * 403 (Forbidden) - This indicates at least one of two conditions:
+             *    1) the server does not allow the creation of collections at the given location in its namespace, or
+             *    2) the parent collection of the Request-URI exists but cannot accept members.
+             * 405 (Method Not Allowed) - MKCOL can only be executed on a deleted/non-existent resource.
+             * 409 (Conflict) - A collection cannot be made at the Request-URI until one or more intermediate
+             *                  collections have been created.
+             * 415 (Unsupported Media Type)- The server does not support the request type of the body.
+             * 507 (Insufficient Storage) - The resource does not have sufficient space to record the state of the
+             *                              resource after the execution of this method.
+             */
             return $response['status']['status-code'];
         }
 
@@ -290,7 +295,7 @@ class owncloud_client {
      * @param resource $fp optional if included, the data is written directly to this resource and not to the buffer
      * @return string|bool status code and &$buffer (by reference) with response data from server on success. False on error.
      */
-    public function get($path, &$buffer, $fp = null) {
+    function get($path, &$buffer, $fp = null) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('GET');
@@ -298,10 +303,10 @@ class owncloud_client {
         $this->get_respond($fp);
         $response = $this->process_respond();
 
-        $httpversion = $response['status']['http-version'];
+        $http_version = $response['status']['http-version'];
         // validate the response
         // check http-version
-        if ($httpversion == 'HTTP/1.1' || $httpversion == 'HTTP/1.0') {
+        if ($http_version == 'HTTP/1.1' || $http_version == 'HTTP/1.0') {
             // seems to be http ... proceed
             // We expect a 200 code
             if ($response['status']['status-code'] == 200 ) {
@@ -323,11 +328,11 @@ class owncloud_client {
      * Public method put
      *
      * Puts a file into a collection.
-     * Data is putted as one chunk!
+     *	Data is putted as one chunk!
      * @param string path, string data
      * @return int status-code read from webdavserver. False on error.
      */
-    public function put($path, $data ) {
+    function put($path, $data ) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('PUT');
@@ -366,8 +371,9 @@ class owncloud_client {
      * @param string targetpath, string filename
      * @return int status code. False on error.
      */
-    public function put_file($path, $filename) {
+    function put_file($path, $filename) {
         // try to open the file ...
+
 
         $handle = @fopen ($filename, 'r');
 
@@ -382,7 +388,7 @@ class owncloud_client {
             // send header
             $this->send_request();
             while (!feof($handle)) {
-                fputs($this->sock, fgets($handle, 4096));
+                fputs($this->sock,fgets($handle,4096));
             }
             fclose($handle);
             $this->get_respond();
@@ -417,10 +423,9 @@ class owncloud_client {
      * @param string $localpath
      * @return bool true on success. false on error.
      */
-    public function get_file($srcpath, $localpath) {
+    function get_file($srcpath, $localpath) {
         // Prepend with WebDAV root.
         $srcpath = $this->pathprefix . $srcpath;
-
         $localpath = $this->utf_decode_path($localpath);
 
         $handle = fopen($localpath, 'wb');
@@ -447,11 +452,11 @@ class owncloud_client {
      * @param string src_path, string dest_path, bool overwrite
      * @return int status code (look at rfc 2518). false on error.
      */
-    public function copy_file($srcpath, $dstpath, $overwrite) {
-        $this->_path = $this->translate_uri($srcpath);
+    function copy_file($src_path, $dst_path, $overwrite) {
+        $this->_path = $this->translate_uri($src_path);
         $this->header_unset();
         $this->create_basic_request('COPY');
-        $this->header_add(sprintf('Destination: http://%s%s', $this->_server, $this->translate_uri($dstpath)));
+        $this->header_add(sprintf('Destination: http://%s%s', $this->_server, $this->translate_uri($dst_path)));
         if ($overwrite) {
             $this->header_add('Overwrite: T');
         } else {
@@ -495,11 +500,11 @@ class owncloud_client {
      * @param string src_path, string dest_path, bool overwrite
      * @return int status code (look at rfc 2518). false on error.
      */
-    public function copy_coll($srcpath, $dstpath, $overwrite) {
-        $this->_path = $this->translate_uri($srcpath);
+    function copy_coll($src_path, $dst_path, $overwrite) {
+        $this->_path = $this->translate_uri($src_path);
         $this->header_unset();
         $this->create_basic_request('COPY');
-        $this->header_add(sprintf('Destination: http://%s%s', $this->_server, $this->translate_uri($dstpath)));
+        $this->header_add(sprintf('Destination: http://%s%s', $this->_server, $this->translate_uri($dst_path)));
         $this->header_add('Depth: Infinity');
 
         $xml  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n";
@@ -549,12 +554,13 @@ class owncloud_client {
     // --------------------------------------------------------------------------
     // public method move
     // move/rename a file/collection on webdav server
-    public function move($srcpath, $dstpath, $overwrite) {
+    function move($src_path,$dst_path, $overwrite) {
 
-        $this->_path = $srcpath;
+        $this->_path = $this->translate_uri($src_path); // TODO problem w. owncloud? (translate_uri).
         $this->header_unset();
+
         $this->create_basic_request('MOVE');
-        $this->header_add(sprintf('Destination: http://%s%s', $this->_server, $this->translate_uri($dstpath)));
+        $this->header_add(sprintf('Destination: http://%s%s', $this->_server, $this->translate_uri($dst_path)));
         if ($overwrite) {
             $this->header_add('Overwrite: T');
         } else {
@@ -603,14 +609,14 @@ class owncloud_client {
      * @param string path
      * @return int status code (look at rfc 2518). false on error.
      */
-    public function lock($path) {
+    function lock($path) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('LOCK');
         $this->header_add('Timeout: Infinite');
         $this->header_add('Content-type: text/xml');
         // create the xml request ...
-        $xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n";
+        $xml =  "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n";
         $xml .= "<D:lockinfo xmlns:D='DAV:'\r\n>";
         $xml .= "  <D:lockscope><D:exclusive/></D:lockscope>\r\n";
         $xml .= "  <D:locktype><D:write/></D:locktype>\r\n";
@@ -646,10 +652,10 @@ class owncloud_client {
                         // forget old data...
                         unset($this->_lock[$this->_parserid]);
                         unset($this->_xmltree[$this->_parserid]);
-                        xml_parser_set_option($this->_parser, XML_OPTION_SKIP_WHITE, 0);
-                        xml_parser_set_option($this->_parser, XML_OPTION_CASE_FOLDING, 0);
+                        xml_parser_set_option($this->_parser,XML_OPTION_SKIP_WHITE,0);
+                        xml_parser_set_option($this->_parser,XML_OPTION_CASE_FOLDING,0);
                         xml_set_object($this->_parser, $this);
-                        xml_set_element_handler($this->_parser, "_lock_startelement", "_endelement");
+                        xml_set_element_handler($this->_parser, "_lock_startElement", "_endElement");
                         xml_set_character_data_handler($this->_parser, "_lock_cdata");
 
                         if (!xml_parse($this->_parser, $response['body'])) {
@@ -677,6 +683,7 @@ class owncloud_client {
             }
         }
 
+
     }
 
 
@@ -688,7 +695,7 @@ class owncloud_client {
      * @param string path, string locktoken
      * @return int status code (look at rfc 2518). false on error.
      */
-    public function unlock($path, $locktoken) {
+    function unlock($path, $locktoken) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('UNLOCK');
@@ -714,7 +721,7 @@ class owncloud_client {
      * @param string path
      * @return int status code (look at rfc 2518). false on error.
      */
-    public function delete($path) {
+    function delete($path) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('DELETE');
@@ -743,10 +750,10 @@ class owncloud_client {
                         // forget old data...
                         unset($this->_delete[$this->_parserid]);
                         unset($this->_xmltree[$this->_parserid]);
-                        xml_parser_set_option($this->_parser, XML_OPTION_SKIP_WHITE, 0);
-                        xml_parser_set_option($this->_parser, XML_OPTION_CASE_FOLDING, 0);
+                        xml_parser_set_option($this->_parser,XML_OPTION_SKIP_WHITE,0);
+                        xml_parser_set_option($this->_parser,XML_OPTION_CASE_FOLDING,0);
                         xml_set_object($this->_parser, $this);
-                        xml_set_element_handler($this->_parser, "_delete_startelement", "_endelement");
+                        xml_set_element_handler($this->_parser, "_delete_startElement", "_endElement");
                         xml_set_character_data_handler($this->_parser, "_delete_cdata");
 
                         if (!xml_parse($this->_parser, $response['body'])) {
@@ -771,6 +778,8 @@ class owncloud_client {
                     // collection or file was successfully deleted
                     $this->_delete['status'] = $response['status']['status-code'];
                     return $this->_delete;
+
+
             }
         }
 
@@ -786,17 +795,13 @@ class owncloud_client {
      * @param string path
      * @return array dirinfo, false on error
      */
-    public function ls($path) {
+    function ls($path) {
 
         if (trim($path) == '') {
             $this->_error_log('Missing a path in method ls');
             return false;
         }
-
-        // Prepend with WebDAV root.
-        $path = $this->pathprefix . $path;
-
-        $this->_path = $this->translate_uri($path);
+        $this->_path = $this->translate_uri($this->pathprefix . $path); // TODO problem w. owncloud? (translate_uri).
 
         $this->header_unset();
         $this->create_basic_request('PROPFIND');
@@ -827,7 +832,7 @@ EOD;
             // seems to be http ... proceed
             // We expect a 207 Multi-Status status code
             // print 'http ok<br>';
-            if (strcmp($response['status']['status-code'], '207') == 0 ) {
+            if (strcmp($response['status']['status-code'],'207') == 0 ) {
                 // ok so far
                 // next there should be a Content-Type: text/xml; charset="utf-8" header line
                 if (preg_match('#(application|text)/xml;\s?charset=[\'\"]?utf-8[\'\"]?#i', $response['header']['Content-Type'])) {
@@ -837,12 +842,13 @@ EOD;
                     // forget old data...
                     unset($this->_ls[$this->_parserid]);
                     unset($this->_xmltree[$this->_parserid]);
-                    xml_parser_set_option($this->_parser, XML_OPTION_SKIP_WHITE, 0);
-                    xml_parser_set_option($this->_parser, XML_OPTION_CASE_FOLDING, 0);
+                    xml_parser_set_option($this->_parser,XML_OPTION_SKIP_WHITE,0);
+                    xml_parser_set_option($this->_parser,XML_OPTION_CASE_FOLDING,0);
                     // xml_parser_set_option($this->_parser,XML_OPTION_TARGET_ENCODING,'UTF-8');
                     xml_set_object($this->_parser, $this);
-                    xml_set_element_handler($this->_parser, "_propfind_startelement", "_endelement");
+                    xml_set_element_handler($this->_parser, "_propfind_startElement", "_endElement");
                     xml_set_character_data_handler($this->_parser, "_propfind_cdata");
+
 
                     if (!xml_parse($this->_parser, $response['body'])) {
                         die(sprintf("XML error: %s at line %d",
@@ -878,7 +884,7 @@ EOD;
      * @param string path
      * @return array dirinfo. false on error
      */
-    public function gpi($path) {
+    function gpi($path) {
 
         // split path by last "/"
         $path = rtrim($path, "/");
@@ -889,7 +895,7 @@ EOD;
 
         // be sure it is an array
         if (is_array($list)) {
-            foreach ($list as $e) {
+            foreach($list as $e) {
 
                 $fullpath = urldecode($e['href']);
                 $filename = basename($fullpath);
@@ -910,7 +916,7 @@ EOD;
      * @param string path
      * @return bool true or false
      */
-    public function is_file($path) {
+    function is_file($path) {
 
         $item = $this->gpi($path);
 
@@ -928,7 +934,7 @@ EOD;
      * @param string path
      * return bool true or false
      */
-    public function is_dir($path) {
+    function is_dir($path) {
 
         // be sure path is utf-8
         $item = $this->gpi($path);
@@ -952,7 +958,7 @@ EOD;
      * @param array filelist
      * @return bool true on success. otherwise int status code on error
      */
-    public function mput($filelist) {
+    function mput($filelist) {
 
         $result = true;
 
@@ -968,7 +974,7 @@ EOD;
                 $pathparts = explode("/", $destpath);
             }
             $checkpath = "";
-            for ($i = 1; $i < count($pathparts) - 1; $i++) {
+            for ($i=1; $i<sizeof($pathparts)-1; $i++) {
                 $checkpath .= "/" . $pathparts[$i];
                 if (!($this->is_dir($checkpath))) {
 
@@ -984,8 +990,8 @@ EOD;
                         return false;
                     }
                     $fl = array();
-                    while ($filename = readdir($dp)) {
-                        if ((is_file($localpath."/".$filename) || is_dir($localpath."/".$filename)) && $filename != "." && $filename != "..") {
+                    while($filename = readdir($dp)) {
+                        if ((is_file($localpath."/".$filename) || is_dir($localpath."/".$filename)) && $filename!="." && $filename != "..") {
                             $fl[$localpath."/".$filename] = $destpath."/".$filename;
                         }
                     }
@@ -1009,7 +1015,7 @@ EOD;
      * @param array filelist
      * @return bool true on succes, other int status code on error
      */
-    public function mget($filelist) {
+    function mget($filelist) {
 
         $result = true;
 
@@ -1025,7 +1031,7 @@ EOD;
                 $pathparts = explode("/", $localpath);
             }
             $checkpath = "";
-            for ($i = 1; $i < count($pathparts) - 1; $i++) {
+            for ($i=1; $i<sizeof($pathparts)-1; $i++) {
                 $checkpath .= "/" . $pathparts[$i];
                 if (!is_dir($checkpath)) {
 
@@ -1039,7 +1045,7 @@ EOD;
                     $list = $this->ls($remotepath);
 
                     $fl = array();
-                    foreach ($list as $e) {
+                    foreach($list as $e) {
                         $fullpath = urldecode($e['href']);
                         $filename = basename($fullpath);
                         if ($filename != '' and $fullpath != $remotepath . '/') {
@@ -1069,10 +1075,10 @@ EOD;
      * @access private
      */
 
-    private function _endelement($parser, $name) {
+    private function _endElement($parser, $name) {
         // end tag was found...
         $parserid = (int) $parser;
-        $this->_xmltree[$parserid] = substr($this->_xmltree[$parserid], 0, strlen($this->_xmltree[$parserid]) - (strlen($name) + 1));
+        $this->_xmltree[$parserid] = substr($this->_xmltree[$parserid],0, strlen($this->_xmltree[$parserid]) - (strlen($name) + 1));
     }
 
     /**
@@ -1085,7 +1091,7 @@ EOD;
      * @param resource parser, string name, string attrs
      * @access private
      */
-    private function _propfind_startelement($parser, $name, $attrs) {
+    private function _propfind_startElement($parser, $name, $attrs) {
         // lower XML Names... maybe break a RFC, don't know ...
         $parserid = (int) $parser;
 
@@ -1162,11 +1168,13 @@ EOD;
      * @param resource parser, string cdata
      * @access private
      */
-    private function _propfind_cdata($parser, $cdata) {
+    private function _propfind_cData($parser, $cdata) {
         if (trim($cdata) <> '') {
             // cdata must be appended, because sometimes the php xml parser makes multiple calls
             // to _propfind_cData before the xml end tag was reached...
             $this->_ls_ref_cdata .= $cdata;
+        } else {
+            // do nothing
         }
     }
 
@@ -1179,7 +1187,7 @@ EOD;
      * @param resource parser, string name, string attrs)
      * @access private
      */
-    private function _delete_startelement($parser, $name, $attrs) {
+    private function _delete_startElement($parser, $name, $attrs) {
         // lower XML Names... maybe break a RFC, don't know ...
         $parserid = (int) $parser;
         $propname = strtolower($name);
@@ -1212,9 +1220,11 @@ EOD;
      * @param resource parser, string cdata
      * @access private
      */
-    private function _delete_cdata($parser, $cdata) {
+    private function _delete_cData($parser, $cdata) {
         if (trim($cdata) <> '') {
             $this->_delete_ref_cdata .= $cdata;
+        } else {
+            // do nothing
         }
     }
 
@@ -1229,7 +1239,7 @@ EOD;
      * @param resource parser, string name, string attrs
      * @access private
      */
-    private function _lock_startelement($parser, $name, $attrs) {
+    private function _lock_startElement($parser, $name, $attrs) {
         // lower XML Names... maybe break a RFC, don't know ...
         $parserid = (int) $parser;
         $propname = strtolower($name);
@@ -1286,11 +1296,13 @@ EOD;
      * @param resource parser, string cdata
      * @access private
      */
-    private function _lock_cdata($parser, $cdata) {
+    private function _lock_cData($parser, $cdata) {
         $parserid = (int) $parser;
         if (trim($cdata) <> '') {
             // $this->_error_log(($this->_xmltree[$parserid]) . '='. htmlentities($cdata));
             $this->_lock_ref_cdata .= $cdata;
+        } else {
+            // do nothing
         }
     }
 
@@ -1327,18 +1339,18 @@ EOD;
     private function create_basic_request($method) {
         $this->header_add(sprintf('%s %s %s', $method, $this->_path, $this->_protocol));
         $this->header_add(sprintf('Host: %s:%s', $this->_server, $this->_port));
-        // Request .= sprintf('Connection: Keep-Alive');
+        //$request .= sprintf('Connection: Keep-Alive');
         $this->header_add(sprintf('User-Agent: %s', $this->_user_agent));
         $this->header_add('Connection: TE');
         $this->header_add('TE: Trailers');
         if ($this->_auth == 'basic') {
             $this->header_add(sprintf('Authorization: Basic %s', base64_encode("$this->_user:$this->_pass")));
         } else if ($this->_auth == 'digest') {
-            if ($signature = $this->digest_signature($method)) {
+            if ($signature = $this->digest_signature($method)){
                 $this->header_add($signature);
             }
-            // Our local WebDav client is adjusted to enable it to send Bearer Authorization headers.
         } else if ($this->_auth == 'bearer') {
+            // Send a bearer token if OAuth 2 is active.
             $this->header_add(sprintf('Authorization: Bearer %s', $this->oauthclient->get_accesstoken()->token));
         }
     }
@@ -1475,8 +1487,8 @@ EOD;
         // init vars (good coding style ;-)
         $buffer = '';
         $header = '';
-        // attention: do not make maxchunksize to big....
-        $maxchunksize = 8192;
+        // attention: do not make max_chunk_size to big....
+        $max_chunk_size = 8192;
         // be sure we got a open ressource
         if (! $this->sock) {
             $this->_error_log('socket is not open. Can not process response');
@@ -1492,9 +1504,9 @@ EOD;
         $i = 0;
         $matches = array();
         do {
-            $header .= fread($this->sock, 1);
+            $header.=fread($this->sock, 1);
             $i++;
-        } while (!preg_match('/\\r\\n\\r\\n$/', $header, $matches) && $i < $this->_maxheaderlenth);
+        } while (!preg_match('/\\r\\n\\r\\n$/',$header, $matches) && $i < $this->_maxheaderlenth);
 
         $this->_error_log($header);
 
@@ -1511,54 +1523,54 @@ EOD;
         // chunked or content-length (HTTP/1.1) or
         // one block until feof is received (HTTP/1.0)
         switch(true) {
-            case (preg_match('/Transfer\\-Encoding:\\s+chunked\\r\\n/', $header)):
+            case (preg_match('/Transfer\\-Encoding:\\s+chunked\\r\\n/',$header)):
                 $this->_error_log('Getting HTTP/1.1 chunked data...');
                 do {
                     $byte = '';
-                    $chunksize = '';
+                    $chunk_size='';
                     do {
-                        $chunksize .= $byte;
-                        $byte = fread($this->sock, 1);
+                        $chunk_size.=$byte;
+                        $byte=fread($this->sock,1);
                         // check what happens while reading, because I do not really understand how php reads the socketstream...
                         // but so far - it seems to work here - tested with php v4.3.1 on apache 1.3.27 and Debian Linux 3.0 ...
                         if (strlen($byte) == 0) {
                             $this->_error_log('get_respond: warning --> read zero bytes');
                         }
-                    } while ($byte != "\r" and strlen($byte) > 0);      // till we match the Carriage Return
+                    } while ($byte!="\r" and strlen($byte)>0);      // till we match the Carriage Return
                     fread($this->sock, 1);                           // also drop off the Line Feed
-                    $chunksize = hexdec($chunksize);                // convert to a number in decimal system
-                    if ($chunksize > 0) {
+                    $chunk_size=hexdec($chunk_size);                // convert to a number in decimal system
+                    if ($chunk_size > 0) {
                         $read = 0;
                         // Reading the chunk in one bite is not secure, we read it byte by byte.
-                        while ($read < $chunksize) {
+                        while ($read < $chunk_size) {
                             $chunk = fread($this->sock, 1);
                             self::update_file_or_buffer($chunk, $fp, $buffer);
                             $read++;
                         }
                     }
                     fread($this->sock, 2);                            // ditch the CRLF that trails the chunk
-                } while ($chunksize);                            // till we reach the 0 length chunk (end marker)
+                } while ($chunk_size);                            // till we reach the 0 length chunk (end marker)
                 break;
 
             // check for a specified content-length
-            case preg_match('/Content\\-Length:\\s+([0-9]*)\\r\\n/', $header, $matches):
+            case preg_match('/Content\\-Length:\\s+([0-9]*)\\r\\n/',$header,$matches):
                 $this->_error_log('Getting data using Content-Length '. $matches[1]);
 
                 // check if we the content data size is small enough to get it as one block
-                if ($matches[1] <= $maxchunksize ) {
+                if ($matches[1] <= $max_chunk_size ) {
                     // only read something if Content-Length is bigger than 0
                     if ($matches[1] > 0 ) {
                         $chunk = fread($this->sock, $matches[1]);
                         $loadsize = strlen($chunk);
-                        // Did we realy get the full length?
+                        //did we realy get the full length?
                         if ($loadsize < $matches[1]) {
-                            $maxchunksize = $loadsize;
+                            $max_chunk_size = $loadsize;
                             do {
-                                $mod = $maxchunksize % ($matches[1] - strlen($chunk));
-                                $chunksize = ($mod == $maxchunksize ? $maxchunksize : $matches[1] - strlen($chunk));
-                                $chunk .= fread($this->sock, $chunksize);
-                                $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunksize . ' total: ' . strlen($chunk));
-                            } while ($mod == $maxchunksize);
+                                $mod = $max_chunk_size % ($matches[1] - strlen($chunk));
+                                $chunk_size = ($mod == $max_chunk_size ? $max_chunk_size : $matches[1] - strlen($chunk));
+                                $chunk .= fread($this->sock, $chunk_size);
+                                $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunk_size . ' total: ' . strlen($chunk));
+                            } while ($mod == $max_chunk_size);
                         }
                         self::update_file_or_buffer($chunk, $fp, $buffer);
                         break;
@@ -1568,22 +1580,22 @@ EOD;
                     }
                 }
 
-                // Data is to big to handle it as one. Get it chunk per chunk...
-                // Trying to get the full length of maxchunksize
-                $chunk = fread($this->sock, $maxchunksize);
+                // data is to big to handle it as one. Get it chunk per chunk...
+                //trying to get the full length of max_chunk_size
+                $chunk = fread($this->sock, $max_chunk_size);
                 $loadsize = strlen($chunk);
                 self::update_file_or_buffer($chunk, $fp, $buffer);
-                if ($loadsize < $maxchunksize) {
-                    $maxchunksize = $loadsize;
+                if ($loadsize < $max_chunk_size) {
+                    $max_chunk_size = $loadsize;
                 }
                 do {
-                    $mod = $maxchunksize % ($matches[1] - $loadsize);
-                    $chunksize = ($mod == $maxchunksize ? $maxchunksize : $matches[1] - $loadsize);
-                    $chunk = fread($this->sock, $chunksize);
+                    $mod = $max_chunk_size % ($matches[1] - $loadsize);
+                    $chunk_size = ($mod == $max_chunk_size ? $max_chunk_size : $matches[1] - $loadsize);
+                    $chunk = fread($this->sock, $chunk_size);
                     self::update_file_or_buffer($chunk, $fp, $buffer);
                     $loadsize += strlen($chunk);
-                    $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunksize . ' total: ' . $loadsize);
-                } while ($mod == $maxchunksize);
+                    $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunk_size . ' total: ' . $loadsize);
+                } while ($mod == $max_chunk_size);
                 if ($loadsize < $matches[1]) {
                     $chunk = fread($this->sock, $matches[1] - $loadsize);
                     self::update_file_or_buffer($chunk, $fp, $buffer);
@@ -1593,7 +1605,7 @@ EOD;
             // check for 204 No Content
             // 204 responds have no body.
             // Therefore we do not need to read any data from socket stream.
-            case preg_match('/HTTP\/1\.1\ 204/', $header):
+            case preg_match('/HTTP\/1\.1\ 204/',$header):
                 // nothing to do, just proceed
                 $this->_error_log('204 No Content found. No further data to read..');
                 break;
@@ -1641,43 +1653,43 @@ EOD;
      */
     private function process_respond() {
         $lines = explode("\r\n", $this->_header);
-        $headerdone = false;
+        $header_done = false;
         // $this->_error_log($this->_buffer);
         // First line should be a HTTP status line (see http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6)
         // Format is: HTTP-Version SP Status-Code SP Reason-Phrase CRLF
-        list($retstruct['status']['http-version'],
-            $retstruct['status']['status-code'],
-            $retstruct['status']['reason-phrase']) = explode(' ', $lines[0], 3);
+        list($ret_struct['status']['http-version'],
+            $ret_struct['status']['status-code'],
+            $ret_struct['status']['reason-phrase']) = explode(' ', $lines[0],3);
 
         // print "HTTP Version: '$http_version' Status-Code: '$status_code' Reason Phrase: '$reason_phrase'<br>";
         // get the response header fields
         // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6
-        for ($i = 1; $i < count($lines); $i++) {
-            if (rtrim($lines[$i]) == '' && !$headerdone) {
-                $headerdone = true;
+        for($i=1; $i<count($lines); $i++) {
+            if (rtrim($lines[$i]) == '' && !$header_done) {
+                $header_done = true;
                 // print "--- response header end ---<br>";
 
             }
-            if (!$headerdone ) {
+            if (!$header_done ) {
                 // store all found headers in array ...
                 list($fieldname, $fieldvalue) = explode(':', $lines[$i]);
                 // check if this header was allready set (apache 2.0 webdav module does this....).
                 // If so we add the the value to the end the fieldvalue, separated by comma...
-                if (empty($retstruct['header'])) {
-                    $retstruct['header'] = array();
+                if (empty($ret_struct['header'])) {
+                    $ret_struct['header'] = array();
                 }
-                if (empty($retstruct['header'][$fieldname])) {
-                    $retstruct['header'][$fieldname] = trim($fieldvalue);
+                if (empty($ret_struct['header'][$fieldname])) {
+                    $ret_struct['header'][$fieldname] = trim($fieldvalue);
                 } else {
-                    $retstruct['header'][$fieldname] .= ',' . trim($fieldvalue);
+                    $ret_struct['header'][$fieldname] .= ',' . trim($fieldvalue);
                 }
             }
         }
         // print 'string len of response_body:'. strlen($response_body);
         // print '[' . htmlentities($response_body) . ']';
-        $retstruct['body'] = $this->_body;
-        $this->_error_log('process_respond: ' . var_export($retstruct, true));
-        return $retstruct;
+        $ret_struct['body'] = $this->_body;
+        $this->_error_log('process_respond: ' . var_export($ret_struct,true));
+        return $ret_struct;
 
     }
 
@@ -1707,8 +1719,8 @@ EOD;
      */
     private function translate_uri($uri) {
         // remove all html entities...
-        $nativepath = html_entity_decode($uri);
-        $parts = explode('/', $nativepath);
+        $native_path = html_entity_decode($uri);
+        $parts = explode('/', $native_path);
         for ($i = 0; $i < count($parts); $i++) {
             // check if part is allready utf8
             if (iconv('UTF-8', 'UTF-8', $parts[$i]) == $parts[$i]) {
@@ -1743,9 +1755,9 @@ EOD;
      * @param string err_string
      * @access private
      */
-    private function _error_log($errstring) {
-        // if ($this->_debug) {
-        // error_log($errstring);
-        // }
+    private function _error_log($err_string) {
+        if ($this->_debug) {
+            error_log($err_string);
+        }
     }
 }
