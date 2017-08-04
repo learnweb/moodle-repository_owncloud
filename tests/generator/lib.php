@@ -35,11 +35,9 @@ class repository_owncloud_generator extends testing_repository_generator {
 
     /**
      * Creates an issuer and a user.
-     * @return array
+     * @return \core\oauth2\issuer
      */
-    public function test_create_preparation () {
-        $generator = advanced_testcase::getDataGenerator();
-        $data = array();
+    public function test_create_issuer () {
         $issuerdata = new stdClass();
         $issuerdata->name = "Service";
         $issuerdata->clientid = "Clientid";
@@ -49,9 +47,33 @@ class repository_owncloud_generator extends testing_repository_generator {
         $issuerdata->baseurl = "";
         $issuerdata->image = "aswdf";
 
-        $data['issuerdata'] = $issuerdata;
-        $user = $generator->create_user();
-        $data['user'] = $user;
-        return $data;
+        // Create the issuer.
+        $issuer = \core\oauth2\api::create_issuer($issuerdata);
+        return $issuer;
+    }
+    /**
+     * Creates four endpoints.
+     * @param int $issuerid
+     * @return \core\oauth2\issuer
+     */
+    public function test_create_endpoints ($issuerid) {
+        $this->test_create_single_endpoint($issuerid, "ocs_endpoint");
+        $this->test_create_single_endpoint($issuerid, "authorization_endpoint");
+        $this->test_create_single_endpoint($issuerid, "webdav_endpoint", "https://www.default.de/webdav/index.php");
+        $this->test_create_single_endpoint($issuerid, "token_endpoint");
+    }
+    /**
+     * @param $endpointtype
+     * @param int $issuerid
+     * @param string $url
+     * @return mixed
+     */
+    public function test_create_single_endpoint($issuerid, $endpointtype, $url="https://www.default.de") {
+        $endpoint = new stdClass();
+        $endpoint->name = $endpointtype;
+        $endpoint->url = $url;
+        $endpoint->issuerid = $issuerid;
+        $return = \core\oauth2\api::create_endpoint($endpoint);
+        return $return;
     }
 }
