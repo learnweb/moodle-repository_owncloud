@@ -133,7 +133,8 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
+            array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
     /**
@@ -146,7 +147,8 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
+            array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
     /**
@@ -159,7 +161,8 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
+            array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
 
@@ -173,7 +176,8 @@ class repository_owncloud_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $this->issuer), 'repository_owncloud');
+        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
+            array('issuer' => $this->issuer), 'repository_owncloud');
         $this->assertFalse($boolean);
     }
     /**
@@ -181,7 +185,8 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_parse_endpoint_url_error() {
         $this->expectException(\repository_owncloud\configuration_exception::class);
-        phpunit_util::call_internal_method($this->repo, "parse_endpoint_url", array('notexisting' => "notexisting"), 'repository_owncloud');
+        phpunit_util::call_internal_method($this->repo, "parse_endpoint_url",
+            array('notexisting' => "notexisting"), 'repository_owncloud');
     }
     /**
      * Test get_listing method with an example directory. Tests error cases.
@@ -538,7 +543,8 @@ XML;
         }
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
 
-        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint", "https://www.default.de:8080/webdav/index.php");
+        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
+            "https://www.default.de:8080/webdav/index.php");
         $dav = $this->repo->initiate_webdavclient();
 
         $value = $this->get_private_property($dav, '_port');
@@ -547,7 +553,8 @@ XML;
 
         $this->expectException(core\invalid_persistent_exception::class);
 
-        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint", "http://www.default.de/webdav/index.php");
+        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
+            "http://www.default.de/webdav/index.php");
         $this->repo->initiate_webdavclient();
     }
     /**
@@ -727,7 +734,12 @@ XML;
         $ret['dynload'] = true;
         $ret['nosearch'] = true;
         $ret['nologin'] = false;
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
+        $ret['path'] = [
+            [
+                'name' => get_string('owncloud', 'repository_owncloud'),
+                'path' => '',
+            ]
+        ];
         $ret['list'] = array();
 
         return $ret;
