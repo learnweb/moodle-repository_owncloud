@@ -188,12 +188,12 @@ class repository_owncloud_testcase extends advanced_testcase {
      * Test get_listing method with an example directory. Tests error cases.
      */
     public function test_get_listing_error() {
-        $ret = $this->get_ret();
+        $ret = $this->get_initialised_return_array();
         $this->setUser();
         // WebDAV socket is not opened.
         $mock = $this->createMock(\repository_owncloud\owncloud_client::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(false));
-        $private = $this->set_private_repository($mock, 'dav');
+        $private = $this->set_private_property($mock, 'dav');
 
         $this->assertEquals($ret, $this->repo->get_listing('path'));
 
@@ -210,7 +210,7 @@ class repository_owncloud_testcase extends advanced_testcase {
      */
     public function test_get_listing_root() {
         $this->setUser();
-        $ret = $this->get_ret();
+        $ret = $this->get_initialised_return_array();
 
         // This is the expected response from the ls method.
         $response = array(
@@ -258,7 +258,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $mock = $this->createMock(repository_owncloud\owncloud_client::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(true));
         $mock->expects($this->once())->method('ls')->will($this->returnValue($response));
-        $this->set_private_repository($mock, 'dav');
+        $this->set_private_property($mock, 'dav');
 
         $ls = $this->repo->get_listing('/');
 
@@ -273,7 +273,7 @@ class repository_owncloud_testcase extends advanced_testcase {
      * directory.
      */
     public function test_get_listing_directory() {
-        $ret = $this->get_ret();
+        $ret = $this->get_initialised_return_array();
         $this->setUser();
 
         // An additional directory path has to be added to the 'path' field within the returned array.
@@ -328,7 +328,7 @@ class repository_owncloud_testcase extends advanced_testcase {
         $mock = $this->createMock(repository_owncloud\owncloud_client::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(true));
         $mock->expects($this->once())->method('ls')->will($this->returnValue($response));
-        $this->set_private_repository($mock, 'dav');
+        $this->set_private_property($mock, 'dav');
 
         $ls = $this->repo->get_listing('/dir/');
 
@@ -369,7 +369,7 @@ XML;
 
         // With test whether mock is called with right parameters.
         $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
-        $this->set_private_repository($mock, 'client');
+        $this->set_private_property($mock, 'client');
 
         // Method does extract the link from the xml format.
         $this->assertEquals('https://www.default.de/download', $this->repo->get_link('/datei'));
@@ -415,7 +415,7 @@ XML;
 
         // With test whether mock is called with right parameters.
         $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
-        $this->set_private_repository($mock, 'client');
+        $this->set_private_property($mock, 'client');
 
         // Method redirects to get_link() and return the suitable value.
         $this->assertEquals('https://www.default.de/somefile/download', $this->repo->get_file_reference('/somefile'));
@@ -442,7 +442,7 @@ XML;
         $mock = $this->createMock(\core\oauth2\client::class);
 
         $mock->expects($this->exactly(2))->method('log_out');
-        $this->set_private_repository($mock, 'client');
+        $this->set_private_property($mock, 'client');
         $this->repo->options['ajax'] = false;
 
         $this->assertEquals($this->repo->print_login(), $this->repo->logout());
@@ -460,7 +460,7 @@ XML;
         // WebDAV socket is not open.
         $mock = $this->createMock(repository_owncloud\owncloud_client::class);
         $mock->expects($this->once())->method('open')->will($this->returnValue(false));
-        $private = $this->set_private_repository($mock, 'dav');
+        $private = $this->set_private_property($mock, 'dav');
 
         $this->assertFalse($this->repo->get_file('path'));
 
@@ -484,7 +484,7 @@ XML;
         $mock->expects($this->once())->method('log_out');
         $mock->expects($this->once())->method('is_logged_in');
 
-        $this->set_private_repository($mock, 'client');
+        $this->set_private_property($mock, 'client');
 
         $this->repo->callback();
     }
@@ -494,7 +494,7 @@ XML;
     public function test_check_login() {
         $mock = $this->createMock(\core\oauth2\client::class);
         $mock->expects($this->once())->method('is_logged_in')->will($this->returnValue(true));
-        $this->set_private_repository($mock, 'client');
+        $this->set_private_property($mock, 'client');
 
         $this->assertTrue($this->repo->check_login());
     }
@@ -504,7 +504,7 @@ XML;
     public function test_print_login() {
         $mock = $this->createMock(\core\oauth2\client::class);
         $mock->expects($this->exactly(2))->method('get_login_url')->will($this->returnValue(new moodle_url('url')));
-        $this->set_private_repository($mock, 'client');
+        $this->set_private_property($mock, 'client');
 
         // Test with ajax activated.
         $this->repo->options['ajax'] = true;
@@ -542,7 +542,7 @@ XML;
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint", "https://www.default.de:8080/webdav/index.php");
         $dav = $this->repo->initiate_webdavclient();
 
-        $value = $this->get_private_value($dav, '_port');
+        $value = $this->get_private_property($dav, '_port');
 
         $this->assertEquals('8080', $value->getValue($dav));
 
@@ -626,20 +626,6 @@ XML;
 
         $this->handle_exceptions($form);
     }
-    /**
-     * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
-     *
-     * @param $mock object mock object, which needs to be inserted.
-     * @return ReflectionProperty the resulting reflection property.
-     */
-    protected function set_private_repository($mock, $value) {
-        $refclient = new ReflectionClass($this->repo);
-        $private = $refclient->getProperty($value);
-        $private->setAccessible(true);
-        $private->setValue($this->repo, $mock);
-
-        return $private;
-    }
 
     /**
      * Was supposed to handle the different php Versions since php 5.6 and 7/7.1 throw different exceptions.
@@ -710,7 +696,7 @@ XML;
      * @param $propertyname name of the private property
      * @return ReflectionProperty the resulting reflection property.
      */
-    protected function get_private_value($refclass, $propertyname) {
+    protected function get_private_property($refclass, $propertyname) {
         $refclient = new ReflectionClass($refclass);
         $property = $refclient->getProperty($propertyname);
         $property->setAccessible(true);
@@ -718,11 +704,25 @@ XML;
         return $property;
     }
     /**
+     * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
+     *
+     * @param $mock object mock object, which needs to be inserted.
+     * @return ReflectionProperty the resulting reflection property.
+     */
+    protected function set_private_property($mock, $value) {
+        $refclient = new ReflectionClass($this->repo);
+        $private = $refclient->getProperty($value);
+        $private->setAccessible(true);
+        $private->setValue($this->repo, $mock);
+
+        return $private;
+    }
+    /**
      * Helper method to set required return parameters for get_listing.
      *
      * @return array array, which contains the parameters.
      */
-    protected function get_ret() {
+    protected function get_initialised_return_array() {
         $ret = array();
         $ret['dynload'] = true;
         $ret['nosearch'] = true;
