@@ -99,7 +99,7 @@ index 12441f254a..86eac7fd88 100644
      function move($src_path,$dst_path, $overwrite) {
  
 -        $this->_path = $this->translate_uri($src_path);
-+        $this->_path = $this->translate_uri($src_path); // TODO problem w. owncloud? (translate_uri).
++        $this->_path = $this->translate_uri($src_path);
          $this->header_unset();
  
          $this->create_basic_request('MOVE');
@@ -108,7 +108,7 @@ index 12441f254a..86eac7fd88 100644
              return false;
          }
 -        $this->_path = $this->translate_uri($path);
-+        $this->_path = $this->translate_uri($this->pathprefix . $path); // TODO problem w. owncloud? (translate_uri).
++        $this->_path = $this->translate_uri($this->pathprefix . $path);
  
          $this->header_unset();
          $this->create_basic_request('PROPFIND');
