@@ -556,7 +556,7 @@ class owncloud_client {
     // move/rename a file/collection on webdav server
     function move($src_path,$dst_path, $overwrite) {
 
-        $this->_path = $this->translate_uri($src_path); // TODO problem w. owncloud? (translate_uri).
+        $this->_path = $this->translate_uri($src_path);
         $this->header_unset();
 
         $this->create_basic_request('MOVE');
@@ -801,7 +801,7 @@ class owncloud_client {
             $this->_error_log('Missing a path in method ls');
             return false;
         }
-        $this->_path = $this->translate_uri($this->pathprefix . $path); // TODO problem w. owncloud? (translate_uri).
+        $this->_path = $this->translate_uri($this->pathprefix . $path);
 
         $this->header_unset();
         $this->create_basic_request('PROPFIND');

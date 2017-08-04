@@ -66,8 +66,8 @@ class repository_owncloud extends repository {
     public function __construct($repositoryid, $context = SYSCONTEXTID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
         try {
-            // Issuer from config table, in the type_config_form a select form is defined to choose an issuer.
-            $issuerid = get_config('owncloud', 'issuerid');
+            // Issuer from repository instance config.
+            $issuerid = $this->get_option('issuerid');
             $this->issuer = \core\oauth2\api::get_issuer($issuerid);
         } catch (dml_missing_record_exception $e) {
             // A repository is marked as disabled when no issuer is present.
@@ -426,54 +426,54 @@ class repository_owncloud extends repository {
     }
 
     /**
+     * Create an instance for this plug-in
+     *
+     * @static
+     * @param string $type the type of the repository
+     * @param int $userid the user id
+     * @param stdClass $context the context
+     * @param array $params the options for this instance
+     * @param int $readonly whether to create it readonly or not (defaults to not)
+     * @return mixed
+     */
+    public static function create($type, $userid, $context, $params, $readonly=0) {
+        require_capability('moodle/site:config', context_system::instance());
+        return parent::create($type, $userid, $context, $params, $readonly);
+    }
+
+    /**
      * This method adds a select form and additional information to the settings form..
      *
      * @param \moodleform $mform Moodle form (passed by reference)
-     * @param string $classname repository class name
      */
-    public static function type_config_form($mform, $classname = 'repository') {
-        global $OUTPUT;
-        parent::type_config_form($mform);
+    public static function instance_config_form($mform) {
+        if (!has_capability('moodle/site:config', context_system::instance())) {
+            $mform->addElement('static', null, '',  get_string('nopermissions', 'error', get_string('configplugin',
+                'repository_owncloud')));
+            return false;
+        }
 
-        // Firstly all issuers are considered.
+        // Load configured issuers.
         $issuers = core\oauth2\api::get_all_issuers();
         $types = array();
-
-        // Fetch selected issuer.
-        $issuerid = get_config('owncloud', 'issuerid');
 
         // Validates which issuers implement the right endpoints. WebDav is necessary for ownCloud.
         $validissuers = [];
         foreach ($issuers as $issuer) {
+            $types[$issuer->get('id')] = $issuer->get('name');
             if (self::is_valid_issuer($issuer)) {
                 $validissuers[] = $issuer->get('name');
             }
-            $types[$issuer->get('id')] = $issuer->get('name');
-        }
-
-        // Depending on the hitherto settings the user is which issuer is chosen.
-        // In case no issuer is chosen there appears a warning.
-        // Additionally when the chosen issuer is invalid there appears a strong warning.
-        if (empty($issuerid)) {
-            $issuervalidation = get_string('issuervalidation_without', 'repository_owncloud');
-            $urgency = 'warning';
-        } else if (!in_array($types[$issuerid], $validissuers)) {
-            $issuervalidation = get_string('issuervalidation_invalid', 'repository_owncloud', $types[$issuerid]);
-            $urgency = 'error';
-        } else {
-            $issuervalidation = get_string('issuervalidation_valid', 'repository_owncloud', $types[$issuerid]);
-            $urgency = 'info';
         }
 
         // Render the form.
         $url = new \moodle_url('/admin/tool/oauth2/issuers.php');
         $mform->addElement('static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $url->out()));
 
-        $mform->addElement('html', $OUTPUT->notification($issuervalidation, $urgency));
-        $select = $mform->addElement('select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $types);
+        $mform->addElement('select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'), $types);
         $mform->addRule('issuerid', get_string('required'), 'required', null, 'issuer');
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
-        $mform->setType('issuerid', PARAM_RAW_TRIMMED); // TODO ÄH?
+        $mform->setType('issuerid', PARAM_INT);
 
         // All issuers that are valid are displayed seperately (if any).
         if (count($validissuers) === 0) {
@@ -481,10 +481,18 @@ class repository_owncloud extends repository {
         } else {
             $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
         }
-        // The default is set to the issuer chosen.
-        if (!empty($issuerid)) {
-            $select->setSelected($issuerid);
-        }
+    }
+
+    /**
+     * Save settings for repository instance
+     *
+     * @param array $options settings
+     * @return bool
+     */
+    public function set_option($options = array()) {
+        $options['issuerid'] = clean_param($options['issuerid'], PARAM_INT);
+        $ret = parent::set_option($options);
+        return $ret;
     }
 
     /**
@@ -492,9 +500,10 @@ class repository_owncloud extends repository {
      *
      * @return array
      */
-    public static function get_type_option_names() {
-        return ['issuerid', 'pluginname'];
+    public static function get_instance_option_names() {
+        return ['issuerid'];
     }
+
     /**
      * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
      *
