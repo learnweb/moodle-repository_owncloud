@@ -577,7 +577,7 @@ XML;
      * Test the type_config_form
      *
      */
-    public function test_type_config_form() {
+    /*public function test_type_config_form() {
         // Simulate the QuickFormClass
         $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         // No issuer was perviously selected.
@@ -592,7 +592,7 @@ XML;
         // Finally, the methode is called.
         phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
 
-    }
+    }*/
 
     /**
      * Test the type-config form with a valid issuer.
