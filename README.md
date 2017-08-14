@@ -1,7 +1,7 @@
 # owncloud Repository Plugin for Moodle
 
 [![Build Status](https://travis-ci.org/learnweb/moodle-repository_owncloud.svg?branch=master)](https://travis-ci.org/learnweb/moodle-repository_owncloud)
-<!-- [![codecov](https://codecov.io/gh/learnweb/moodle-repository_owncloud/branch/master/graph/badge.svg)](https://codecov.io/gh/learnweb/moodle-repository_owncloud) -->
+[![Coverage Status](https://coveralls.io/repos/github/learnweb/moodle-repository_owncloud/badge.svg)](https://coveralls.io/github/learnweb/moodle-repository_owncloud)
 
 This plugin enables Moodle users to have direct access to their private files from ownCloud in the *Moodle file picker* and the *URL resource module*,
 enabling to upload files into Moodle directly from their ownCloud,
