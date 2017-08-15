@@ -345,8 +345,8 @@ class repository_owncloud_testcase extends advanced_testcase {
      * Test the get_link method.
      */
     public function test_get_link() {
-        $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $url = '/datei';
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $file = '/datei';
         $expectedresponse = <<<XML
 <?xml version='1.0'?>
 <document>
@@ -363,19 +363,19 @@ class repository_owncloud_testcase extends advanced_testcase {
 </document>
 XML;
         // Expected Parameters.
-        $ocsquery = http_build_query(array('path' => $url,
-            'shareType' => 3,
+        $ocsquery = [
+            'path' => urlencode($file),
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
-            'permissions' => 31
-        ), null, "&");
-        $posturl = $this->issuer->get_endpoint_url('ocs');
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
+        ];
 
         // With test whether mock is called with right parameters.
-        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
-        $this->set_private_property($mock, 'client');
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
 
         // Method does extract the link from the xml format.
-        $this->assertEquals('https://www.default.de/download', $this->repo->get_link('/datei'));
+        $this->assertEquals('https://www.default.de/download', $this->repo->get_link($file));
     }
 
     /**
@@ -391,8 +391,9 @@ XML;
      */
     public function test_get_file_reference_withoptionalparam() {
         $_GET['usefilereference'] = true;
+        $filename = '/somefile';
         // Calls for get link(). Therefore, mocks for get_link are build.
-        $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $expectedresponse = <<<XML
 <?xml version='1.0'?>
 <document>
@@ -409,19 +410,18 @@ XML;
 </document>
 XML;
         // Expected Parameters.
-        $ocsquery = http_build_query(array('path' => '/somefile',
-            'shareType' => 3,
+        $ocsquery = ['path' => urlencode($filename),
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
-            'permissions' => 31
-        ), null, "&");
-        $posturl = $this->issuer->get_endpoint_url('ocs');
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ,
+        ];
 
         // With test whether mock is called with right parameters.
-        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
-        $this->set_private_property($mock, 'client');
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
 
         // Method redirects to get_link() and return the suitable value.
-        $this->assertEquals('https://www.default.de/somefile/download', $this->repo->get_file_reference('/somefile'));
+        $this->assertEquals('https://www.default.de' . $filename . '/download', $this->repo->get_file_reference($filename));
     }
 
     /**

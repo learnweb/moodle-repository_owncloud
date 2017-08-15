@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or
  */
 
+use repository_owncloud\ocs_client;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
@@ -96,6 +98,7 @@ class repository_owncloud extends repository {
 
         // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
         $this->dav = $this->initiate_webdavclient();
+        $this->ocsclient = new ocs_client($this->get_user_oauth_client());
     }
 
 
@@ -291,15 +294,14 @@ class repository_owncloud extends repository {
      */
     public function get_link($url) {
         // Use OCS to generate a public share to the requested file.
-        $ocsquery = http_build_query(array('path' => $url,
-            'shareType' => 3,
+        $ocsparams = [
+            'path' => urlencode($url),
+            'shareType' => ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
-            'permissions' => 31
-        ), null, "&");
-        $posturl = $this->issuer->get_endpoint_url('ocs');
+            'permissions' => ocs_client::SHARE_PERMISSION_READ
+            ];
 
-        $client = $this->get_user_oauth_client();
-        $response = $client->post($posturl, $ocsquery, []);
+        $response = $this->ocsclient->call('create_share', $ocsparams);
 
         $ret = array();
 
