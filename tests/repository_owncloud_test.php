@@ -382,7 +382,6 @@ XML;
      * Test get_file reference, merely returns the input if no optional_param is set.
      */
     public function test_get_file_reference_withoutoptionalparam() {
-        $this->repo->get_file_reference('/somefile');
         $this->assertEquals('/somefile', $this->repo->get_file_reference('/somefile'));
     }
 
