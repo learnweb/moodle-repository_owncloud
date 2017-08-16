@@ -43,3 +43,4 @@ $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services 
 
 // Exceptions.
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
+$string['request_exception'] = 'A request to ownCloud has failed: {$a}';

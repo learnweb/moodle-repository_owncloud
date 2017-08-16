@@ -355,10 +355,9 @@ class repository_owncloud_testcase extends advanced_testcase {
  <url>https://www.default.de</url>
  </data>
  <meta>
- <statuscode>HTTP/1.1 200</statuscode>
- <status>
-   OK
- </status>
+ <statuscode>100</statuscode>
+ <status>ok</status>
+ <message/>
  </meta>
 </document>
 XML;
@@ -401,10 +400,9 @@ XML;
  <url>https://www.default.de/somefile</url>
  </data>
  <meta>
- <statuscode>HTTP/1.1 200</statuscode>
- <status>
-   OK
- </status>
+ <statuscode>100</statuscode>
+ <status>ok</status>
+ <message/>
  </meta>
 </document>
 XML;

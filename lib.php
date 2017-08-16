@@ -295,7 +295,8 @@ class repository_owncloud extends repository {
      *
      * @param string $url relative path to the chosen file
      * @return string the generated downloadlink.
-     * @throws repository_exception if $url is empty an exception is thrown.
+     * @throws \repository_owncloud\request_exception If ownCloud responded badly
+     *
      */
     public function get_link($url) {
         // Use OCS to generate a public share to the requested file.
@@ -307,17 +308,15 @@ class repository_owncloud extends repository {
             ];
 
         $response = $this->ocsclient->call('create_share', $ocsparams);
-
-        $ret = array();
-
         $xml = simplexml_load_string($response);
-        $ret['code'] = $xml->meta->statuscode;
-        $ret['status'] = $xml->meta->status;
+
+        if (trim($xml->meta->status) !== 'ok') {
+            throw new \repository_owncloud\request_exception(sprintf('(%s) %s',
+                trim($xml->meta->statuscode), $xml->meta->message));
+        }
 
         // Take the link and convert it into a download link.
-        $ret['link'] = $xml->data[0]->url[0] . "/download";
-
-        return $ret['link'];
+        return trim($xml->data[0]->url[0]) . "/download";
     }
 
     /**
