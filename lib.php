@@ -236,15 +236,19 @@ class repository_owncloud extends repository {
         if (empty($path) || $path == '/') {
             $path = '/';
         } else {
-            // This calculates all the parents paths form the current path. This is shown in the
-            // navigation bar of the file picker.
-            $chunks = preg_split('|/|', trim($path, '/'));
-            // Every sub-path to the last part of the current path, is a parent path.
-            for ($i = 0; $i < count($chunks); $i++) {
-                $ret['path'][] = array(
-                    'name' => urldecode($chunks[$i]),
-                    'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
-                );
+            // Relative path is a non-top-level path. Calculate all the parents paths form the current path.
+            // This is shown in the navigation bar of the file picker.
+            $chunks = explode('/', trim($path, '/'));
+            $parent = '/';
+            // Every sub-path to the last part of the current path is a parent path.
+            foreach ($chunks as $chunk) {
+                $subpath = $parent . $chunk . '/';
+                $ret['path'][] = [
+                    'name' => urldecode($chunk),
+                    'path' => $subpath
+                ];
+                // Prepare next iteration.
+                $parent = $subpath;
             }
         }
 
