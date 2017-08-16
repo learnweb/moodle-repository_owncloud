@@ -588,12 +588,6 @@ class repository_owncloud extends repository {
         // Contains all file/folder information and is required to build the file/folder tree.
         $ret['list'] = array();
 
-        // If admin, add reference to repository settings.
-        $sitecontext = context_system::instance();
-        if (has_capability('moodle/site:config', $sitecontext)) {
-            $settingsurl = new moodle_url('/admin/repository.php');
-            $ret['manage'] = $settingsurl->out();
-        }
         return $ret;
     }
 }
