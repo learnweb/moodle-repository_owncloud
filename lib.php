@@ -79,7 +79,10 @@ class repository_owncloud extends repository {
         } catch (dml_missing_record_exception $e) {
             // A repository is marked as disabled when no issuer is present.
             $this->disabled = true;
-        } try {
+            return;
+        }
+
+        try {
             // Check the webdavendpoint.
             $this->parse_endpoint_url('webdav');
         } catch (\repository_owncloud\configuration_exception $e) {
@@ -87,17 +90,19 @@ class repository_owncloud extends repository {
             // or it fails to parse, because all operations concerning files
             // rely on the webdav endpoint.
             $this->disabled = true;
+            return;
         }
+
         if (!$this->issuer) {
             $this->disabled = true;
+            return;
         } else if (!$this->issuer->get('enabled')) {
             // In case the Issuer is not enabled, the repository is disabled.
             $this->disabled = true;
+            return;
         } else if (!self::is_valid_issuer($this->issuer)) {
             // Check if necessary endpoints are present.
             $this->disabled = true;
-        }
-        if ($this->disabled) {
             return;
         }
 
