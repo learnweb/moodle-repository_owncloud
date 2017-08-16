@@ -340,7 +340,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
     /**
      * Test the get_link method.
      */
-    public function test_get_link() {
+    public function test_get_link_success() {
         $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $file = '/datei';
         $expectedresponse = <<<XML
@@ -394,6 +394,74 @@ XML;
 
         // Method does extract the link from the xml format.
         $this->assertEquals('https://www.default.test/somefile/download', $this->repo->get_link($file));
+    }
+
+    /**
+     * get_link can get OCS failure responses. Test that this is handled appropriately.
+     */
+    public function test_get_link_failure() {
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $file = '/datei';
+        $expectedresponse = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>failure</status>
+  <statuscode>404</statuscode>
+  <message>Msg</message>
+ </meta>
+ <data/>
+</ocs>
+XML;
+        // Expected Parameters.
+        $ocsquery = [
+            'path' => $file,
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
+            'publicUpload' => false,
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
+        ];
+
+        // With test whether mock is called with right parameters.
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+
+        // Suppress (expected) XML parse error... ownCloud/Nextcloud sometimes return JSON on extremely bad errors.
+        libxml_use_internal_errors(true);
+
+        // get_link correctly raises an exception that contains error code and message.
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->expectExceptionMessage(get_string('request_exception', 'repository_owncloud',
+            sprintf('(%s) %s', '404', 'Msg')));
+        $this->repo->get_link($file);
+    }
+
+    /**
+     * get_link can get OCS responses that are not actually XML. Test that this is handled appropriately.
+     */
+    public function test_get_link_problem() {
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $file = '/datei';
+        $expectedresponse = <<<JSON
+{"message":"CSRF check failed"}
+JSON;
+        // Expected Parameters.
+        $ocsquery = [
+            'path' => $file,
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
+            'publicUpload' => false,
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
+        ];
+
+        // With test whether mock is called with right parameters.
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+
+        // Suppress (expected) XML parse error... ownCloud/Nextcloud sometimes return JSON on extremely bad errors.
+        libxml_use_internal_errors(true);
+
+        // get_link correctly raises an exception.
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->repo->get_link($file);
     }
 
     /**

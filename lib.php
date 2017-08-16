@@ -313,8 +313,8 @@ class repository_owncloud extends repository {
         }
 
         if ((string)$xml->meta->status !== 'ok') {
-            throw new \repository_owncloud\request_exception(sprintf('(%s) %s',
-                trim($xml->meta->statuscode), $xml->meta->message));
+            throw new \repository_owncloud\request_exception(
+                sprintf('(%s) %s', $xml->meta->statuscode, $xml->meta->message));
         }
 
         // Take the share link and convert it into a download link.
