@@ -348,22 +348,45 @@ class repository_owncloud_testcase extends advanced_testcase {
         $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $file = '/datei';
         $expectedresponse = <<<XML
-<?xml version='1.0'?>
-<document>
- <title>sometitle</title>
- <data>
- <url>https://www.default.de</url>
- </data>
+<?xml version="1.0"?>
+<ocs>
  <meta>
- <statuscode>100</statuscode>
- <status>ok</status>
- <message/>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
  </meta>
-</document>
+ <data>
+  <id>2</id>
+  <share_type>3</share_type>
+  <uid_owner>admin</uid_owner>
+  <displayname_owner>admin</displayname_owner>
+  <permissions>1</permissions>
+  <stime>1502883721</stime>
+  <parent/>
+  <expiration/>
+  <token>QXbqrJj8DcMaXen</token>
+  <uid_file_owner>admin</uid_file_owner>
+  <displayname_file_owner>admin</displayname_file_owner>
+  <path>/somefile</path>
+  <item_type>file</item_type>
+  <mimetype>application/pdf</mimetype>
+  <storage_id>home::admin</storage_id>
+  <storage>1</storage>
+  <item_source>6</item_source>
+  <file_source>6</file_source>
+  <file_parent>4</file_parent>
+  <file_target>/somefile</file_target>
+  <share_with/>
+  <share_with_displayname/>
+  <name/>
+  <url>https://www.default.test/somefile</url>
+  <mail_send>0</mail_send>
+ </data>
+</ocs>
 XML;
         // Expected Parameters.
         $ocsquery = [
-            'path' => urlencode($file),
+            'path' => $file,
             'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
             'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
@@ -374,7 +397,7 @@ XML;
         $this->set_private_property($mock, 'ocsclient');
 
         // Method does extract the link from the xml format.
-        $this->assertEquals('https://www.default.de/download', $this->repo->get_link($file));
+        $this->assertEquals('https://www.default.test/somefile/download', $this->repo->get_link($file));
     }
 
     /**
@@ -393,21 +416,44 @@ XML;
         // Calls for get link(). Therefore, mocks for get_link are build.
         $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $expectedresponse = <<<XML
-<?xml version='1.0'?>
-<document>
- <title>sometitle</title>
- <data>
- <url>https://www.default.de/somefile</url>
- </data>
+<?xml version="1.0"?>
+<ocs>
  <meta>
- <statuscode>100</statuscode>
- <status>ok</status>
- <message/>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
  </meta>
-</document>
+ <data>
+  <id>2</id>
+  <share_type>3</share_type>
+  <uid_owner>admin</uid_owner>
+  <displayname_owner>admin</displayname_owner>
+  <permissions>1</permissions>
+  <stime>1502883721</stime>
+  <parent/>
+  <expiration/>
+  <token>QXbqrJj8DcMaXen</token>
+  <uid_file_owner>admin</uid_file_owner>
+  <displayname_file_owner>admin</displayname_file_owner>
+  <path>/somefile</path>
+  <item_type>file</item_type>
+  <mimetype>application/pdf</mimetype>
+  <storage_id>home::admin</storage_id>
+  <storage>1</storage>
+  <item_source>6</item_source>
+  <file_source>6</file_source>
+  <file_parent>4</file_parent>
+  <file_target>/somefile</file_target>
+  <share_with/>
+  <share_with_displayname/>
+  <name/>
+  <url>https://www.default.test/somefile</url>
+  <mail_send>0</mail_send>
+ </data>
+</ocs>
 XML;
         // Expected Parameters.
-        $ocsquery = ['path' => urlencode($filename),
+        $ocsquery = ['path' => $filename,
             'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
             'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ,
@@ -418,7 +464,7 @@ XML;
         $this->set_private_property($mock, 'ocsclient');
 
         // Method redirects to get_link() and return the suitable value.
-        $this->assertEquals('https://www.default.de' . $filename . '/download', $this->repo->get_file_reference($filename));
+        $this->assertEquals('https://www.default.test' . $filename . '/download', $this->repo->get_file_reference($filename));
     }
 
     /**
@@ -541,7 +587,7 @@ XML;
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
-            "https://www.default.de:8080/webdav/index.php");
+            "https://www.default.test:8080/webdav/index.php");
         $dav = $this->repo->initiate_webdavclient();
 
         $value = $this->get_private_property($dav, '_port');

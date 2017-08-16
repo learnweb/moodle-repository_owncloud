@@ -298,7 +298,6 @@ class repository_owncloud extends repository {
      *
      */
     public function get_link($url) {
-        //
         $ocsparams = [
             'path' => $url,
             'shareType' => ocs_client::SHARE_TYPE_PUBLIC,
