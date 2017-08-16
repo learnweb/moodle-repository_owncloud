@@ -51,10 +51,11 @@ class ocs_client extends rest {
      * @throws configuration_exception Exception if critical endpoints are missing.
      */
     public function __construct(client $oauthclient) {
-
         parent::__construct($oauthclient);
+
         $issuer = $oauthclient->get_issuer();
         $this->ocsendpoint = $issuer->get_endpoint_url('ocs');
+
         if ($this->ocsendpoint === false) {
             throw new configuration_exception('Endpoint ocs_endpoint not defined.');
         }

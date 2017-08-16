@@ -549,15 +549,8 @@ XML;
         $value = $this->get_private_property($dav, '_port');
 
         $this->assertEquals('8080', $value->getValue($dav));
-
-        // Throws error for security reasons because Moodle only allows to create https connections.
-        // The exception is raised by a Moodle lib, though.
-        $this->expectException(core\invalid_persistent_exception::class);
-
-        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
-            "http://www.default.de/webdav/index.php");
-        $this->repo->initiate_webdavclient();
     }
+
     /**
      * Test supported_filetypes.
      */

@@ -58,6 +58,11 @@ class repository_owncloud extends repository {
      * @var \repository_owncloud\owncloud_client
      */
     private $dav = null;
+    /**
+     * OCS client that uses the Open Collaboration Services REST API.
+     * @var ocs_client
+     */
+    private $ocsclient;
 
     /**
      * repository_owncloud constructor.
