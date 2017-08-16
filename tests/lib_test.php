@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
  * Class repository_owncloud_testcase
  * @group repository_owncloud
  */
-class repository_owncloud_testcase extends advanced_testcase {
+class repository_owncloud_lib_testcase extends advanced_testcase {
 
     /** @var null|\repository_owncloud the repository_owncloud object, which the tests are run on. */
     private $repo = null;

@@ -102,7 +102,7 @@ class ocs_client extends rest {
         if ($rawpost === false && $contenttype === false) {
             return parent::call($functionname, $functionargs, false, 'multipart/form-data');
         } else {
-            return parend::call($functionname, $functionargs, $rawpost, $contenttype);
+            return parent::call($functionname, $functionargs, $rawpost, $contenttype);
         }
     }
 
