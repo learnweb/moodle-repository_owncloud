@@ -289,19 +289,18 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method to generate a download link for a chosen file (in the file picker).
-     * Creates a share for the chosen file and fetches the specific file ID through
-     * the OCS Share API (ownCloud).
+     * Use OCS to generate a public share to the requested file.
+     * This method derives a download link from the public share URL.
      *
      * @param string $url relative path to the chosen file
-     * @return string the generated downloadlink.
+     * @return string the generated download link.
      * @throws \repository_owncloud\request_exception If ownCloud responded badly
      *
      */
     public function get_link($url) {
-        // Use OCS to generate a public share to the requested file.
+        //
         $ocsparams = [
-            'path' => urlencode($url),
+            'path' => $url,
             'shareType' => ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
             'permissions' => ocs_client::SHARE_PERMISSION_READ
@@ -310,13 +309,17 @@ class repository_owncloud extends repository {
         $response = $this->ocsclient->call('create_share', $ocsparams);
         $xml = simplexml_load_string($response);
 
-        if (trim($xml->meta->status) !== 'ok') {
+        if ($xml === false ) {
+            throw new \repository_owncloud\request_exception('Invalid response');
+        }
+
+        if ((string)$xml->meta->status !== 'ok') {
             throw new \repository_owncloud\request_exception(sprintf('(%s) %s',
                 trim($xml->meta->statuscode), $xml->meta->message));
         }
 
-        // Take the link and convert it into a download link.
-        return trim($xml->data[0]->url[0]) . "/download";
+        // Take the share link and convert it into a download link.
+        return ((string)$xml->data[0]->url) . '/download';
     }
 
     /**

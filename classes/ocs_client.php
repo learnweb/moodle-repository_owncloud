@@ -31,6 +31,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * REST interface to ownCloud's implementation of Open Collaboration Services.
  *
+ * @package    repository_owncloud
  * @copyright  2017 Jan Dageförde (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -82,6 +83,27 @@ class ocs_client extends rest {
                 'response' => 'text/xml'
             ],
         ];
+    }
+
+    /**
+     * In POST requests, Moodle's REST API assumes that params are
+     * - transmitted as part of the URL or
+     * - expressed in JSON.
+     * Neither is true; we are passing an array to $functionargs which is then put into CURLOPT_POSTFIELDS.
+     * Curl assumes the content type to be `multipart/form-data` then, but the Moodle REST API tries to put
+     * a JSON content type. As a result, clients would fail.
+     * To make this less tedious to use, we assume that the params-as-array-in-$functionargs is the default for us.
+     *
+     * @param string $functionname
+     * @param array $functionargs
+     * @return object|string
+     */
+    public function call($functionname, $functionargs, $rawpost = false, $contenttype = false) {
+        if ($rawpost === false && $contenttype === false) {
+            return parent::call($functionname, $functionargs, false, 'multipart/form-data');
+        } else {
+            return parend::call($functionname, $functionargs, $rawpost, $contenttype);
+        }
     }
 
 }
