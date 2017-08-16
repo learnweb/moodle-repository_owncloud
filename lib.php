@@ -215,7 +215,17 @@ class repository_owncloud extends repository {
     public function get_listing($path='', $page = '') {
         global $OUTPUT;
 
-        $ret = $this->prepare_get_listing();
+        $ret = [
+            // Fetch the list dynamically. An AJAX request is sent to the server as soon as the user opens a folder.
+            'dynload' => true,
+            'nosearch' => true, // Disable search.
+            'nologin' => false, // Provide a login link because a user logs into his/her private ownCloud storage.
+            'path' => array([ // Contains all parent paths to the current path.
+                'name' => get_string('owncloud', 'repository_owncloud'),
+                'path' => '',
+            ]),
+            'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
+        ];
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
@@ -562,32 +572,5 @@ class repository_owncloud extends repository {
             throw new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
         }
         return parse_url($url);
-    }
-
-    /**
-     * Prepares the params for the get_listing method, defining filepicker settings.
-     * @return array
-     */
-    private function prepare_get_listing() {
-        $ret  = array();
-
-        // Tell the file picker to fetch the list dynamically. An AJAX request is send to the server,
-        // as soon as the user opens a folder.
-        $ret['dynload'] = true;
-
-        // Search is disabled in this plugin.
-        $ret['nosearch'] = true;
-
-        // We need to provide a login link, because the user needs login himself with his own ownCloud
-        // user account.
-        $ret['nologin'] = false;
-
-        // Contains all parent paths to the current path.
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
-
-        // Contains all file/folder information and is required to build the file/folder tree.
-        $ret['list'] = array();
-
-        return $ret;
     }
 }
