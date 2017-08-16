@@ -213,19 +213,11 @@ class repository_owncloud extends repository {
      * @return array directory properties.
      */
     public function get_listing($path='', $page = '') {
-        global $OUTPUT;
+        if (empty($path)) {
+            $path = '/';
+        }
 
-        $ret = [
-            // Fetch the list dynamically. An AJAX request is sent to the server as soon as the user opens a folder.
-            'dynload' => true,
-            'nosearch' => true, // Disable search.
-            'nologin' => false, // Provide a login link because a user logs into his/her private ownCloud storage.
-            'path' => array([ // Contains all parent paths to the current path.
-                'name' => get_string('owncloud', 'repository_owncloud'),
-                'path' => '',
-            ]),
-            'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
-        ];
+        $ret = $this->get_listing_prepare_response($path);
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
@@ -233,26 +225,7 @@ class repository_owncloud extends repository {
             return $ret;
         }
 
-        if (empty($path) || $path == '/') {
-            $path = '/';
-        } else {
-            // Relative path is a non-top-level path. Calculate all the parents paths form the current path.
-            // This is shown in the navigation bar of the file picker.
-            $chunks = explode('/', trim($path, '/'));
-            $parent = '/';
-            // Every sub-path to the last part of the current path is a parent path.
-            foreach ($chunks as $chunk) {
-                $subpath = $parent . $chunk . '/';
-                $ret['path'][] = [
-                    'name' => urldecode($chunk),
-                    'path' => $subpath
-                ];
-                // Prepare next iteration.
-                $parent = $subpath;
-            }
-        }
-
-        // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
+        // Since the paths which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
         $ls = $this->dav->ls(urldecode($path));
@@ -265,7 +238,7 @@ class repository_owncloud extends repository {
         }
 
         // Process WebDAV output and convert it into Moodle format.
-        $ret['list'] = $this->generate_listing($path, $ls);
+        $ret['list'] = $this->get_listing_convert_response($path, $ls);
         return $ret;
 
     }
@@ -544,9 +517,9 @@ class repository_owncloud extends repository {
      *
      * @param string $dirpath Relative (urlencoded) path of the folder of interest.
      * @param array $ls Output by WebDAV
-     * @return array Moodle-formatted list of directory contents; ready for use in filepicker
+     * @return array Moodle-formatted list of directory contents; ready for use as $ret['list'] in get_listings
      */
-    private function generate_listing($dirpath, $ls) {
+    private function get_listing_convert_response($dirpath, $ls) {
         global $OUTPUT;
         $folders = array();
         $files = array();
@@ -595,5 +568,44 @@ class repository_owncloud extends repository {
         ksort($files);
         ksort($folders);
         return array_merge($folders, $files);
+    }
+
+    /**
+     * Prepare response of get_listing; namely
+     * - defining setting elements,
+     * - filling in the parent path of the currently-viewed directory.
+     * @param string $path Relative path
+     * @return array ret array for use as get_listing's $ret
+     */
+    private function get_listing_prepare_response($path) {
+        $ret = [
+            // Fetch the list dynamically. An AJAX request is sent to the server as soon as the user opens a folder.
+            'dynload' => true,
+            'nosearch' => true, // Disable search.
+            'nologin' => false, // Provide a login link because a user logs into his/her private ownCloud storage.
+            'path' => array([ // Contains all parent paths to the current path.
+                'name' => get_string('owncloud', 'repository_owncloud'),
+                'path' => '',
+            ]),
+            'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
+        ];
+
+        // If relative path is a non-top-level path, calculate all its parents' paths.
+        // This is used for navigation in the file picker.
+        if ($path != '/') {
+            $chunks = explode('/', trim($path, '/'));
+            $parent = '/';
+            // Every sub-path to the last part of the current path is a parent path.
+            foreach ($chunks as $chunk) {
+                $subpath = $parent . $chunk . '/';
+                $ret['path'][] = [
+                    'name' => urldecode($chunk),
+                    'path' => $subpath
+                ];
+                // Prepare next iteration.
+                $parent = $subpath;
+            }
+        }
+        return $ret;
     }
 }
