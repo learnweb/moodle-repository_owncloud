@@ -342,7 +342,8 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
      * Test the get_link method.
      */
     public function test_get_link_success() {
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+            )->getMock();
         $file = '/datei';
         $expectedresponse = <<<XML
 <?xml version="1.0"?>
@@ -401,7 +402,8 @@ XML;
      * get_link can get OCS failure responses. Test that this is handled appropriately.
      */
     public function test_get_link_failure() {
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+            )->getMock();
         $file = '/datei';
         $expectedresponse = <<<XML
 <?xml version="1.0"?>
@@ -429,7 +431,7 @@ XML;
         // Suppress (expected) XML parse error... ownCloud/Nextcloud sometimes return JSON on extremely bad errors.
         libxml_use_internal_errors(true);
 
-        // get_link correctly raises an exception that contains error code and message.
+        // Method get_link correctly raises an exception that contains error code and message.
         $this->expectException(\repository_owncloud\request_exception::class);
         $this->expectExceptionMessage(get_string('request_exception', 'repository_owncloud',
             sprintf('(%s) %s', '404', 'Msg')));
@@ -440,7 +442,8 @@ XML;
      * get_link can get OCS responses that are not actually XML. Test that this is handled appropriately.
      */
     public function test_get_link_problem() {
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+            )->getMock();
         $file = '/datei';
         $expectedresponse = <<<JSON
 {"message":"CSRF check failed"}
@@ -460,7 +463,7 @@ JSON;
         // Suppress (expected) XML parse error... ownCloud/Nextcloud sometimes return JSON on extremely bad errors.
         libxml_use_internal_errors(true);
 
-        // get_link correctly raises an exception.
+        // Method get_link correctly raises an exception.
         $this->expectException(\repository_owncloud\request_exception::class);
         $this->repo->get_link($file);
     }
@@ -479,7 +482,8 @@ JSON;
         $_GET['usefilereference'] = true;
         $filename = '/somefile';
         // Calls for get link(). Therefore, mocks for get_link are build.
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+            )->getMock();
         $expectedresponse = <<<XML
 <?xml version="1.0"?>
 <ocs>
@@ -674,131 +678,6 @@ XML;
         $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE, $this->repo->supported_returntypes());
     }
 
-    /**
-     * Test the type_config_form
-     *
-     */
-    /*public function test_type_config_form() {
-        // Simulate the QuickFormClass
-        $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        // No issuer was perviously selected.
-        set_config('issuerid', '',  'owncloud');
-
-        // Expected Messages since no issuer is selected.
-        $functionsparams = $this->get_params_addelement_configform('warning', 'issuervalidation_without');
-
-        // The expected values for the methode are defined. It is expected to be called 6 times.
-        // Since the params can not be allocated to specific calls a logical OR is used.
-        $this->set_type_config_form_expect($form, $functionsparams, 6, null);
-        // Finally, the methode is called.
-        phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-
-    }*/
-
-    /**
-     * Test the type-config form with a valid issuer.
-     */
-    /*public function test_type_config_valid_issuer() {
-        $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $selectelement = $this->getMockBuilder(MoodleQuickForm_select::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-
-        set_config('issuerid', $this->issuer->get('id'),  'owncloud');
-
-        // Params for the addElement function are generated.
-        // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
-        $functionsparams = $this->get_params_addelement_configform('info', 'issuervalidation_valid');
-
-        $this->set_type_config_form_expect($form, $functionsparams, 6, $selectelement);
-
-        $this->expect_exceptions($form);
-    }*/
-    /**
-     * Test the type-config form with a invalid issuer.
-     */
-    /*public function test_type_config_invalid_issuer() {
-        $form = $this->getMockBuilder(MoodleQuickForm::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $selectelement = $this->getMockBuilder(MoodleQuickForm_select::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        set_config('issuerid', $this->issuer->get('id'),  'owncloud');
-        // Delete issuer endpoint to make issuer invalid.
-        $idwebdav = $this->get_endpoint_id('webdav_endpoint');
-        if (!empty($idwebdav)) {
-            foreach ($idwebdav as $id) {
-                \core\oauth2\api::delete_endpoint($id);
-            }
-        }
-        // Params for the addElement function are generated.
-        // Since the function is called six times and can not be tested individually all params for the 6 calls are generated.
-        $functionsparams = $this->get_params_addelement_configform('error', 'issuervalidation_invalid');
-
-        $this->set_type_config_form_expect ($form, $functionsparams, 6, $selectelement);
-
-        $this->expect_exceptions($form);
-    }*/
-
-    /**
-     * Was supposed to handle the different php Versions since php 5.6 and 7/7.1 throw different exceptions.
-     * Php 5.6 is not able to catch fatal_errors therefore it is excluded in travis.
-     * Still exceptions are handled seperately.
-     * @param $form
-     */
-    /*protected function expect_exceptions($form) {
-        try {
-            phpunit_util::call_internal_method($this->repo, 'type_config_form', array($form), 'repository_owncloud');
-            // This block should never be reached since always a exception should be thrown.
-            $this->assertTrue(false);
-        } catch (Exception $e) {
-            print "a";
-            $this->assertRegExp('/Call to undefined method Mock_MoodleQuickForm_select/', $e->getMessage());
-        } catch (Throwable $exceptionorerror) {
-            print "b";
-            $this->assertRegExp('/Call to undefined method Mock_MoodleQuickForm_select/', $exceptionorerror->getMessage());
-        }
-
-    }*/
-    /**
-     * Sets the expect params for form.
-     * @param $form
-     * @param $functionsparams
-     * @param $count
-     * @param $return
-     */
-    /*protected function set_type_config_form_expect ($form, $functionsparams, $count, $return) {
-        $form->expects($this->exactly($count))->method('addElement')->with($this->logicalOr(
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'html', $functionsparams['outputnotifiction'],
-            'static', null, '', get_string('oauth2serviceslink', 'repository_owncloud', $functionsparams['url']->out()),
-            'text', 'pluginname', 'Repository plugin name', array('size' => 40),
-            'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
-            'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
-            $functionsparams['types']))->will($this->returnValue($return));
-    }*/
-    /**
-     * Returns the param for the type_config_form.
-     * @param $urgency
-     * @param $message
-     * @return array
-     */
-    /*protected function get_params_addelement_configform($urgency, $message) {
-        global $OUTPUT;
-
-        $addelementparams = array();
-        $addelementparams['url'] = new \moodle_url('/admin/tool/oauth2/issuers.php');
-        $issuers = core\oauth2\api::get_all_issuers();
-        $types = array();
-        $validissuers = [];
-        foreach ($issuers as $issuer) {
-            if (phpunit_util::call_internal_method($this->repo, "is_valid_issuer", array('issuer' => $issuer),
-                'repository_owncloud')) {
-                $validissuers[] = $issuer->get('name');
-            }
-            $types[$issuer->get('id')] = $issuer->get('name');
-        }
-        $addelementparams['types'] = $types;
-        $addelementparams['validissuers'] = $validissuers;
-        $issuervalidation = get_string($message, 'repository_owncloud', $types[ $this->issuer->get('id')]);
-        $addelementparams['outputnotifiction'] = $OUTPUT->notification($issuervalidation, $urgency);
-        return $addelementparams;
-    }*/
     /**
      * Get private property from any class
      *
