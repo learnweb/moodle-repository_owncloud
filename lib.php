@@ -251,56 +251,17 @@ class repository_owncloud extends repository {
         // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        $dir = $this->dav->ls(urldecode($path));
+        $ls = $this->dav->ls(urldecode($path));
         $this->dav->close();
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
-        if (!is_array($dir)) {
+        if (!is_array($ls)) {
             return $ret;
         }
-        $folders = array();
-        $files = array();
-        // TODO (#6) handle (base)path in client, not here.
-        $parsedurl = $this->parse_endpoint_url('webdav');
-        $webdavpath = rtrim('/'.ltrim($parsedurl['path'], '/ '), '/ ');
-        foreach ($dir as $v) {
-            if (!empty($v['lastmodified'])) {
-                $v['lastmodified'] = strtotime($v['lastmodified']);
-            } else {
-                $v['lastmodified'] = null;
-            }
-            // TODO there must be a better way... /remote.php/webdav/ is always present.
-            // Extracting object title from absolute path.
-            $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
-            $title = substr($v['href'], strlen($path));
 
-            if (!empty($v['resourcetype']) && $v['resourcetype'] == 'collection') {
-                // A folder.
-                if ($path != $v['href']) {
-                    $folders[strtoupper($title)] = array(
-                        'title' => rtrim($title, '/'),
-                        'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
-                        'children' => array(),
-                        'datemodified' => $v['lastmodified'],
-                        'path' => $v['href']
-                    );
-                }
-            } else {
-                // A file.
-                $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
-                $files[strtoupper($title)] = array(
-                    'title' => $title,
-                    'thumbnail' => $OUTPUT->image_url(file_extension_icon($title, 90))->out(false),
-                    'size' => $size,
-                    'datemodified' => $v['lastmodified'],
-                    'source' => $v['href']
-                );
-            }
-        }
-        ksort($files);
-        ksort($folders);
-        $ret['list'] = array_merge($folders, $files);
+        // Process WebDAV output and convert it into Moodle format.
+        $ret['list'] = $this->generate_listing($path, $ls);
         return $ret;
 
     }
@@ -572,5 +533,63 @@ class repository_owncloud extends repository {
             throw new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
         }
         return parse_url($url);
+    }
+
+    /**
+     * Take the WebDAV `ls()' output and convert it into a format that Moodle's filepicker understands.
+     *
+     * @param string $dirpath Relative (urlencoded) path of the folder of interest.
+     * @param array $ls Output by WebDAV
+     * @return array Moodle-formatted list of directory contents; ready for use in filepicker
+     */
+    private function generate_listing($dirpath, $ls) {
+        global $OUTPUT;
+        $folders = array();
+        $files = array();
+        // TODO (#6) handle (base)path in client, not here.
+        $parsedurl = $this->parse_endpoint_url('webdav');
+        $basepath = rtrim('/' . ltrim($parsedurl['path'], '/ '), '/ ');
+
+        foreach ($ls as $item) {
+            if (!empty($item['lastmodified'])) {
+                $item['lastmodified'] = strtotime($item['lastmodified']);
+            } else {
+                $item['lastmodified'] = null;
+            }
+
+            // Extracting object title from absolute path: First remove ownCloud basepath.
+            $item['href'] = substr(urldecode($item['href']), strlen($basepath));
+            // Then remove relative path to current folder.
+            $title = substr($item['href'], strlen($dirpath));
+
+            if (!empty($item['resourcetype']) && $item['resourcetype'] == 'collection') {
+                // A folder.
+                if ($dirpath == $item['href']) {
+                    // Skip "." listing.
+                    continue;
+                }
+
+                $folders[strtoupper($title)] = array(
+                    'title' => rtrim($title, '/'),
+                    'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
+                    'children' => array(),
+                    'datemodified' => $item['lastmodified'],
+                    'path' => $item['href']
+                );
+            } else {
+                // A file.
+                $size = !empty($item['getcontentlength']) ? $item['getcontentlength'] : '';
+                $files[strtoupper($title)] = array(
+                    'title' => $title,
+                    'thumbnail' => $OUTPUT->image_url(file_extension_icon($title, 90))->out(false),
+                    'size' => $size,
+                    'datemodified' => $item['lastmodified'],
+                    'source' => $item['href']
+                );
+            }
+        }
+        ksort($files);
+        ksort($folders);
+        return array_merge($folders, $files);
     }
 }
