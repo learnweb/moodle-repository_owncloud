@@ -26,7 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Class repository_owncloud_testcase
- * @group repository_owncloud
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud_lib_testcase extends advanced_testcase {
 
@@ -101,7 +102,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
     }
     /**
      * Returns an array of endpoints or null.
-     * @param $endpointname
+     * @param string $endpointname
      * @return array|null
      */
     private function get_endpoint_id($endpointname) {
@@ -801,8 +802,8 @@ XML;
     /**
      * Get private property
      *
-     * @param $refclass name of the class
-     * @param $propertyname name of the private property
+     * @param string $refclass name of the class
+     * @param string $propertyname name of the private property
      * @return ReflectionProperty the resulting reflection property.
      */
     protected function get_private_property($refclass, $propertyname) {
@@ -813,9 +814,9 @@ XML;
         return $property;
     }
     /**
-     * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
+     * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
-     * @param $mock object mock object, which needs to be inserted.
+     * @param mixed $mock mock value, which needs to be inserted.
      * @return ReflectionProperty the resulting reflection property.
      */
     protected function set_private_property($mock, $value) {

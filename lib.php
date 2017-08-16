@@ -140,7 +140,7 @@ class repository_owncloud extends repository {
 
     /**
      * Check if an issuer provides all endpoints that we require.
-     * @param $issuer An issuer.
+     * @param \core\oauth2\issuer $issuer An issuer.
      * @return bool True, if all endpoints exist; false otherwise.
      */
     private static function is_valid_issuer($issuer) {
@@ -191,6 +191,8 @@ class repository_owncloud extends repository {
     }
 
     /**
+     * This plugin does not support global search.
+     *
      * @return bool Always false, as global search is unsupported.
      */
     public function global_search() {
@@ -344,7 +346,14 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method that generates a reference link to the chosen file.
+     * Repository method that serves the referenced file (created e.g. via get_link).
+     * All parameters are there for compatibility with superclass, but they are ignored.
+     *
+     * @param stored_file $storedfile (ignored)
+     * @param int $lifetime (ignored)
+     * @param int $filter (ignored)
+     * @param bool $forcedownload (ignored)
+     * @param array $options (ignored)
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         // Delivers a download link to the concerning file.
@@ -436,7 +445,6 @@ class repository_owncloud extends repository {
     /**
      * Create an instance for this plug-in
      *
-     * @static
      * @param string $type the type of the repository
      * @param int $userid the user id
      * @param stdClass $context the context
