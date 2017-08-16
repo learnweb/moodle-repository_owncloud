@@ -655,9 +655,9 @@ XML;
             "https://www.default.test:8080/webdav/index.php");
         $dav = $this->repo->initiate_webdavclient();
 
-        $value = $this->get_private_property($dav, '_port');
+        $port = $this->get_private_property($dav, '_port')->getValue($dav);
 
-        $this->assertEquals('8080', $value->getValue($dav));
+        $this->assertEquals('8080', $port);
     }
 
     /**
@@ -762,7 +762,7 @@ XML;
      * @param $count
      * @param $return
      */
-    protected function set_type_config_form_expect ($form, $functionsparams, $count, $return) {
+    /*protected function set_type_config_form_expect ($form, $functionsparams, $count, $return) {
         $form->expects($this->exactly($count))->method('addElement')->with($this->logicalOr(
             'text', 'pluginname', 'Repository plugin name', array('size' => 40),
             'html', $functionsparams['outputnotifiction'],
@@ -771,14 +771,14 @@ XML;
             'static', 'pluginnamehelp', '', 'If you leave this empty the d... used.',
             'select', 'issuerid', get_string('chooseissuer', 'repository_owncloud'),
             $functionsparams['types']))->will($this->returnValue($return));
-    }
+    }*/
     /**
      * Returns the param for the type_config_form.
      * @param $urgency
      * @param $message
      * @return array
      */
-    protected function get_params_addelement_configform($urgency, $message) {
+    /*protected function get_params_addelement_configform($urgency, $message) {
         global $OUTPUT;
 
         $addelementparams = array();
@@ -798,32 +798,34 @@ XML;
         $issuervalidation = get_string($message, 'repository_owncloud', $types[ $this->issuer->get('id')]);
         $addelementparams['outputnotifiction'] = $OUTPUT->notification($issuervalidation, $urgency);
         return $addelementparams;
-    }
+    }*/
     /**
-     * Get private property
+     * Get private property from any class
      *
-     * @param string $refclass name of the class
+     * @param string $refobject name of the class
      * @param string $propertyname name of the private property
      * @return ReflectionProperty the resulting reflection property.
      */
-    protected function get_private_property($refclass, $propertyname) {
-        $refclient = new ReflectionClass($refclass);
+    protected function get_private_property($refobject, $propertyname) {
+        $refclient = new ReflectionClass($refobject);
         $property = $refclient->getProperty($propertyname);
         $property->setAccessible(true);
 
         return $property;
     }
+
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
-     * @param mixed $mock mock value, which needs to be inserted.
+     * @param mixed $value mock value that will be inserted.
+     * @param string $propertyname name of the private property.
      * @return ReflectionProperty the resulting reflection property.
      */
-    protected function set_private_property($mock, $value) {
+    protected function set_private_property($value, $propertyname) {
         $refclient = new ReflectionClass($this->repo);
-        $private = $refclient->getProperty($value);
+        $private = $refclient->getProperty($propertyname);
         $private->setAccessible(true);
-        $private->setValue($this->repo, $mock);
+        $private->setValue($this->repo, $value);
 
         return $private;
     }

@@ -37,7 +37,13 @@ defined('MOODLE_INTERNAL') || die();
  */
 class ocs_client extends rest {
 
+    /**
+     * shareType=3 creates a public share.
+     */
     const SHARE_TYPE_PUBLIC = 3;
+    /**
+     * permissions=1 gives read permission for a share.
+     */
     const SHARE_PERMISSION_READ = 1;
 
     /**
@@ -94,8 +100,10 @@ class ocs_client extends rest {
      * a JSON content type. As a result, clients would fail.
      * To make this less tedious to use, we assume that the params-as-array-in-$functionargs is the default for us.
      *
-     * @param string $functionname
-     * @param array $functionargs
+     * @param string $functionname Name of a function from get_api_functions()
+     * @param array $functionargs Request parameters
+     * @param bool|string $rawpost Optional param to include in the body of a post
+     * @param bool|string $contenttype Content type of the request body. Default: multipart/form-data if !$rawpost, JSON otherwise
      * @return object|string
      */
     public function call($functionname, $functionargs, $rawpost = false, $contenttype = false) {
