@@ -18,21 +18,18 @@
  * This file contains tests for the repository_owncloud class.
  *
  * @package     repository_owncloud
- * @group       repository_owncloud
- * @category    test
  * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
-
 /**
  * Class repository_owncloud_testcase
- * @group repository_owncloud
+ * @copyright  2017 Project seminar (Learnweb, University of Münster)
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_owncloud_testcase extends advanced_testcase {
+class repository_owncloud_lib_testcase extends advanced_testcase {
 
     /** @var null|\repository_owncloud the repository_owncloud object, which the tests are run on. */
     private $repo = null;
@@ -105,7 +102,7 @@ class repository_owncloud_testcase extends advanced_testcase {
     }
     /**
      * Returns an array of endpoints or null.
-     * @param $endpointname
+     * @param string $endpointname
      * @return array|null
      */
     private function get_endpoint_id($endpointname) {
@@ -344,45 +341,134 @@ class repository_owncloud_testcase extends advanced_testcase {
     /**
      * Test the get_link method.
      */
-    public function test_get_link() {
-        $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $url = '/datei';
+    public function test_get_link_success() {
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $file = '/datei';
         $expectedresponse = <<<XML
-<?xml version='1.0'?>
-<document>
- <title>sometitle</title>
- <data>
- <url>https://www.default.de</url>
- </data>
+<?xml version="1.0"?>
+<ocs>
  <meta>
- <statuscode>HTTP/1.1 200</statuscode>
- <status>
-   OK
- </status>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
  </meta>
-</document>
+ <data>
+  <id>2</id>
+  <share_type>3</share_type>
+  <uid_owner>admin</uid_owner>
+  <displayname_owner>admin</displayname_owner>
+  <permissions>1</permissions>
+  <stime>1502883721</stime>
+  <parent/>
+  <expiration/>
+  <token>QXbqrJj8DcMaXen</token>
+  <uid_file_owner>admin</uid_file_owner>
+  <displayname_file_owner>admin</displayname_file_owner>
+  <path>/somefile</path>
+  <item_type>file</item_type>
+  <mimetype>application/pdf</mimetype>
+  <storage_id>home::admin</storage_id>
+  <storage>1</storage>
+  <item_source>6</item_source>
+  <file_source>6</file_source>
+  <file_parent>4</file_parent>
+  <file_target>/somefile</file_target>
+  <share_with/>
+  <share_with_displayname/>
+  <name/>
+  <url>https://www.default.test/somefile</url>
+  <mail_send>0</mail_send>
+ </data>
+</ocs>
 XML;
         // Expected Parameters.
-        $ocsquery = http_build_query(array('path' => $url,
-            'shareType' => 3,
+        $ocsquery = [
+            'path' => $file,
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
-            'permissions' => 31
-        ), null, "&");
-        $posturl = $this->issuer->get_endpoint_url('ocs');
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
+        ];
 
         // With test whether mock is called with right parameters.
-        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
-        $this->set_private_property($mock, 'client');
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
 
         // Method does extract the link from the xml format.
-        $this->assertEquals('https://www.default.de/download', $this->repo->get_link('/datei'));
+        $this->assertEquals('https://www.default.test/somefile/download', $this->repo->get_link($file));
+    }
+
+    /**
+     * get_link can get OCS failure responses. Test that this is handled appropriately.
+     */
+    public function test_get_link_failure() {
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $file = '/datei';
+        $expectedresponse = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>failure</status>
+  <statuscode>404</statuscode>
+  <message>Msg</message>
+ </meta>
+ <data/>
+</ocs>
+XML;
+        // Expected Parameters.
+        $ocsquery = [
+            'path' => $file,
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
+            'publicUpload' => false,
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
+        ];
+
+        // With test whether mock is called with right parameters.
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+
+        // Suppress (expected) XML parse error... ownCloud/Nextcloud sometimes return JSON on extremely bad errors.
+        libxml_use_internal_errors(true);
+
+        // get_link correctly raises an exception that contains error code and message.
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->expectExceptionMessage(get_string('request_exception', 'repository_owncloud',
+            sprintf('(%s) %s', '404', 'Msg')));
+        $this->repo->get_link($file);
+    }
+
+    /**
+     * get_link can get OCS responses that are not actually XML. Test that this is handled appropriately.
+     */
+    public function test_get_link_problem() {
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $file = '/datei';
+        $expectedresponse = <<<JSON
+{"message":"CSRF check failed"}
+JSON;
+        // Expected Parameters.
+        $ocsquery = [
+            'path' => $file,
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
+            'publicUpload' => false,
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ
+        ];
+
+        // With test whether mock is called with right parameters.
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+
+        // Suppress (expected) XML parse error... ownCloud/Nextcloud sometimes return JSON on extremely bad errors.
+        libxml_use_internal_errors(true);
+
+        // get_link correctly raises an exception.
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->repo->get_link($file);
     }
 
     /**
      * Test get_file reference, merely returns the input if no optional_param is set.
      */
     public function test_get_file_reference_withoutoptionalparam() {
-        $this->repo->get_file_reference('/somefile');
         $this->assertEquals('/somefile', $this->repo->get_file_reference('/somefile'));
     }
 
@@ -391,37 +477,59 @@ XML;
      */
     public function test_get_file_reference_withoptionalparam() {
         $_GET['usefilereference'] = true;
+        $filename = '/somefile';
         // Calls for get link(). Therefore, mocks for get_link are build.
-        $mock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $expectedresponse = <<<XML
-<?xml version='1.0'?>
-<document>
- <title>sometitle</title>
- <data>
- <url>https://www.default.de/somefile</url>
- </data>
+<?xml version="1.0"?>
+<ocs>
  <meta>
- <statuscode>HTTP/1.1 200</statuscode>
- <status>
-   OK
- </status>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
  </meta>
-</document>
+ <data>
+  <id>2</id>
+  <share_type>3</share_type>
+  <uid_owner>admin</uid_owner>
+  <displayname_owner>admin</displayname_owner>
+  <permissions>1</permissions>
+  <stime>1502883721</stime>
+  <parent/>
+  <expiration/>
+  <token>QXbqrJj8DcMaXen</token>
+  <uid_file_owner>admin</uid_file_owner>
+  <displayname_file_owner>admin</displayname_file_owner>
+  <path>/somefile</path>
+  <item_type>file</item_type>
+  <mimetype>application/pdf</mimetype>
+  <storage_id>home::admin</storage_id>
+  <storage>1</storage>
+  <item_source>6</item_source>
+  <file_source>6</file_source>
+  <file_parent>4</file_parent>
+  <file_target>/somefile</file_target>
+  <share_with/>
+  <share_with_displayname/>
+  <name/>
+  <url>https://www.default.test/somefile</url>
+  <mail_send>0</mail_send>
+ </data>
+</ocs>
 XML;
         // Expected Parameters.
-        $ocsquery = http_build_query(array('path' => '/somefile',
-            'shareType' => 3,
+        $ocsquery = ['path' => $filename,
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
-            'permissions' => 31
-        ), null, "&");
-        $posturl = $this->issuer->get_endpoint_url('ocs');
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ,
+        ];
 
         // With test whether mock is called with right parameters.
-        $mock->expects($this->once())->method('post')->with($posturl, $ocsquery, [])->will($this->returnValue($expectedresponse));
-        $this->set_private_property($mock, 'client');
+        $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
 
         // Method redirects to get_link() and return the suitable value.
-        $this->assertEquals('https://www.default.de/somefile/download', $this->repo->get_file_reference('/somefile'));
+        $this->assertEquals('https://www.default.test' . $filename . '/download', $this->repo->get_file_reference($filename));
     }
 
     /**
@@ -544,21 +652,14 @@ XML;
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
-            "https://www.default.de:8080/webdav/index.php");
+            "https://www.default.test:8080/webdav/index.php");
         $dav = $this->repo->initiate_webdavclient();
 
         $value = $this->get_private_property($dav, '_port');
 
         $this->assertEquals('8080', $value->getValue($dav));
-
-        // Throws error for security reasons because Moodle only allows to create https connections.
-        // The exception is raised by a Moodle lib, though.
-        $this->expectException(core\invalid_persistent_exception::class);
-
-        $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
-            "http://www.default.de/webdav/index.php");
-        $this->repo->initiate_webdavclient();
     }
+
     /**
      * Test supported_filetypes.
      */
@@ -701,8 +802,8 @@ XML;
     /**
      * Get private property
      *
-     * @param $refclass name of the class
-     * @param $propertyname name of the private property
+     * @param string $refclass name of the class
+     * @param string $propertyname name of the private property
      * @return ReflectionProperty the resulting reflection property.
      */
     protected function get_private_property($refclass, $propertyname) {
@@ -713,9 +814,9 @@ XML;
         return $property;
     }
     /**
-     * Helper method, which inserts a given owncloud mock object into the repository_owncloud object.
+     * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
-     * @param $mock object mock object, which needs to be inserted.
+     * @param mixed $mock mock value, which needs to be inserted.
      * @return ReflectionProperty the resulting reflection property.
      */
     protected function set_private_property($mock, $value) {

@@ -15,17 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version.php for ownCloud repository.
+ * Exception for when an OCS request fails
  *
  * @package    repository_owncloud
- * @copyright  2017 Project seminar (Learnweb, University of Münster)
+ * @copyright  2017 Jan Dageförde (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace repository_owncloud;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017081600;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2017051500;        // Requires Moodle 3.3 version.
-$plugin->component = 'repository_owncloud'; // Full name of the plugin (used for diagnostics).
-$plugin->release = 'v3.3-r6';
-$plugin->maturity = MATURITY_STABLE;
+/**
+ * Exception for when an OCS request fails
+ *
+ * @package    repository_owncloud
+ * @copyright  2017 Jan Dageförde (Learnweb, University of Münster)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class request_exception extends \moodle_exception {
+
+    /**
+     * An OCS request has failed.
+     *
+     * @param string $hint optional param for additional information of the problem
+     * @param string $debuginfo detailed information how to fix problem
+     */
+    public function __construct($hint = '', $debuginfo = null) {
+        parent::__construct('request_exception', 'repository_owncloud', '', $hint, $debuginfo);
+    }
+}

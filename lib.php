@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or
  */
 
+use repository_owncloud\ocs_client;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
@@ -56,6 +58,11 @@ class repository_owncloud extends repository {
      * @var \repository_owncloud\owncloud_client
      */
     private $dav = null;
+    /**
+     * OCS client that uses the Open Collaboration Services REST API.
+     * @var ocs_client
+     */
+    private $ocsclient;
 
     /**
      * repository_owncloud constructor.
@@ -72,7 +79,10 @@ class repository_owncloud extends repository {
         } catch (dml_missing_record_exception $e) {
             // A repository is marked as disabled when no issuer is present.
             $this->disabled = true;
-        } try {
+            return;
+        }
+
+        try {
             // Check the webdavendpoint.
             $this->parse_endpoint_url('webdav');
         } catch (\repository_owncloud\configuration_exception $e) {
@@ -80,22 +90,25 @@ class repository_owncloud extends repository {
             // or it fails to parse, because all operations concerning files
             // rely on the webdav endpoint.
             $this->disabled = true;
+            return;
         }
+
         if (!$this->issuer) {
             $this->disabled = true;
+            return;
         } else if (!$this->issuer->get('enabled')) {
             // In case the Issuer is not enabled, the repository is disabled.
             $this->disabled = true;
+            return;
         } else if (!self::is_valid_issuer($this->issuer)) {
             // Check if necessary endpoints are present.
             $this->disabled = true;
-        }
-        if ($this->disabled) {
             return;
         }
 
         // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
         $this->dav = $this->initiate_webdavclient();
+        $this->ocsclient = new ocs_client($this->get_user_oauth_client());
     }
 
 
@@ -132,7 +145,7 @@ class repository_owncloud extends repository {
 
     /**
      * Check if an issuer provides all endpoints that we require.
-     * @param $issuer An issuer.
+     * @param \core\oauth2\issuer $issuer An issuer.
      * @return bool True, if all endpoints exist; false otherwise.
      */
     private static function is_valid_issuer($issuer) {
@@ -183,6 +196,8 @@ class repository_owncloud extends repository {
     }
 
     /**
+     * This plugin does not support global search.
+     *
      * @return bool Always false, as global search is unsupported.
      */
     public function global_search() {
@@ -281,36 +296,36 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method to generate a download link for a chosen file (in the file picker).
-     * Creates a share for the chosen file and fetches the specific file ID through
-     * the OCS Share API (ownCloud).
+     * Use OCS to generate a public share to the requested file.
+     * This method derives a download link from the public share URL.
      *
      * @param string $url relative path to the chosen file
-     * @return string the generated downloadlink.
-     * @throws repository_exception if $url is empty an exception is thrown.
+     * @return string the generated download link.
+     * @throws \repository_owncloud\request_exception If ownCloud responded badly
+     *
      */
     public function get_link($url) {
-        // Use OCS to generate a public share to the requested file.
-        $ocsquery = http_build_query(array('path' => $url,
-            'shareType' => 3,
+        $ocsparams = [
+            'path' => $url,
+            'shareType' => ocs_client::SHARE_TYPE_PUBLIC,
             'publicUpload' => false,
-            'permissions' => 31
-        ), null, "&");
-        $posturl = $this->issuer->get_endpoint_url('ocs');
+            'permissions' => ocs_client::SHARE_PERMISSION_READ
+            ];
 
-        $client = $this->get_user_oauth_client();
-        $response = $client->post($posturl, $ocsquery, []);
-
-        $ret = array();
-
+        $response = $this->ocsclient->call('create_share', $ocsparams);
         $xml = simplexml_load_string($response);
-        $ret['code'] = $xml->meta->statuscode;
-        $ret['status'] = $xml->meta->status;
 
-        // Take the link and convert it into a download link.
-        $ret['link'] = $xml->data[0]->url[0] . "/download";
+        if ($xml === false ) {
+            throw new \repository_owncloud\request_exception('Invalid response');
+        }
 
-        return $ret['link'];
+        if ((string)$xml->meta->status !== 'ok') {
+            throw new \repository_owncloud\request_exception(
+                sprintf('(%s) %s', $xml->meta->statuscode, $xml->meta->message));
+        }
+
+        // Take the share link and convert it into a download link.
+        return ((string)$xml->data[0]->url) . '/download';
     }
 
     /**
@@ -336,7 +351,14 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method that generates a reference link to the chosen file.
+     * Repository method that serves the referenced file (created e.g. via get_link).
+     * All parameters are there for compatibility with superclass, but they are ignored.
+     *
+     * @param stored_file $storedfile (ignored)
+     * @param int $lifetime (ignored)
+     * @param int $filter (ignored)
+     * @param bool $forcedownload (ignored)
+     * @param array $options (ignored)
      */
     public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
         // Delivers a download link to the concerning file.
@@ -428,7 +450,6 @@ class repository_owncloud extends repository {
     /**
      * Create an instance for this plug-in
      *
-     * @static
      * @param string $type the type of the repository
      * @param int $userid the user id
      * @param stdClass $context the context
@@ -567,12 +588,6 @@ class repository_owncloud extends repository {
         // Contains all file/folder information and is required to build the file/folder tree.
         $ret['list'] = array();
 
-        // If admin, add reference to repository settings.
-        $sitecontext = context_system::instance();
-        if (has_capability('moodle/site:config', $sitecontext)) {
-            $settingsurl = new moodle_url('/admin/repository.php');
-            $ret['manage'] = $settingsurl->out();
-        }
         return $ret;
     }
 }
