@@ -67,6 +67,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
         // At last, create a repository_owncloud object from the instance id.
         $this->repo = new repository_owncloud($instance->id);
         $this->repo->options['typeid'] = $reptype->id;
+        $this->repo->options['sortorder'] = 1;
         $this->resetAfterTest(true);
     }
 
@@ -195,7 +196,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
         $mock->expects($this->once())->method('open')->will($this->returnValue(false));
         $private = $this->set_private_property($mock, 'dav');
 
-        $this->assertEquals($ret, $this->repo->get_listing('path'));
+        $this->assertEquals($ret, $this->repo->get_listing('/'));
 
         // Response is not an array.
         $mock = $this->createMock(\repository_owncloud\owncloud_client::class);
@@ -657,7 +658,7 @@ XML;
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
             "https://www.default.test:8080/webdav/index.php");
-        $dav = phpunit_util::call_internal_method($this->repo, "initiate_webdavclient");
+        $dav = phpunit_util::call_internal_method($this->repo, "initiate_webdavclient", [], 'repository_owncloud');
 
         $port = $this->get_private_property($dav, '_port')->getValue($dav);
 
@@ -713,7 +714,7 @@ XML;
         $ret['nologin'] = false;
         $ret['path'] = [
             [
-                'name' => get_string('owncloud', 'repository_owncloud'),
+                'name' => $this->repo->get_meta()->name,
                 'path' => '',
             ]
         ];
