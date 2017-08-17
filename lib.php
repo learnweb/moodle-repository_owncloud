@@ -35,12 +35,12 @@ require_once($CFG->dirroot . '/repository/lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud extends repository {
-
     /**
      * OAuth 2 client
      * @var \core\oauth2\client
      */
     private $client = null;
+
     /**
      * OAuth 2 Issuer
      * @var \core\oauth2\issuer
@@ -58,6 +58,7 @@ class repository_owncloud extends repository {
      * @var \repository_owncloud\owncloud_client
      */
     private $dav = null;
+
     /**
      * OCS client that uses the Open Collaboration Services REST API.
      * @var ocs_client
@@ -111,12 +112,11 @@ class repository_owncloud extends repository {
         $this->ocsclient = new ocs_client($this->get_user_oauth_client());
     }
 
-
     /**
      * Initiates the webdav client.
      * @throws \repository_owncloud\configuration_exception If configuration is missing (endpoints).
      */
-    public function initiate_webdavclient() {
+    private function initiate_webdavclient() {
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
         // Selects the necessary information (port, type, server) from the path to build the webdavclient.
@@ -193,15 +193,6 @@ class repository_owncloud extends repository {
         $this->dav->close();
 
         return array('path' => $path);
-    }
-
-    /**
-     * This plugin does not support global search.
-     *
-     * @return bool Always false, as global search is unsupported.
-     */
-    public function global_search() {
-        return false;
     }
 
     /**
@@ -471,17 +462,6 @@ class repository_owncloud extends repository {
      */
     public static function get_instance_option_names() {
         return ['issuerid'];
-    }
-
-    /**
-     * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
-     *
-     * For a full list of possible types and groups, look in lib/filelib.php, function get_mimetypes_array()
-     *
-     * @return string '*' means this repository support any files
-     */
-    public function supported_filetypes() {
-        return '*';
     }
 
     /**

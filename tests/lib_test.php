@@ -657,18 +657,11 @@ XML;
 
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
             "https://www.default.test:8080/webdav/index.php");
-        $dav = $this->repo->initiate_webdavclient();
+        $dav = phpunit_util::call_internal_method($this->repo, "initiate_webdavclient");
 
         $port = $this->get_private_property($dav, '_port')->getValue($dav);
 
         $this->assertEquals('8080', $port);
-    }
-
-    /**
-     * Test supported_filetypes.
-     */
-    public function test_supported_filetypes() {
-        $this->assertEquals('*', $this->repo->supported_filetypes());
     }
 
     /**
