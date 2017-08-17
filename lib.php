@@ -584,7 +584,7 @@ class repository_owncloud extends repository {
             'nosearch' => true, // Disable search.
             'nologin' => false, // Provide a login link because a user logs into his/her private ownCloud storage.
             'path' => array([ // Contains all parent paths to the current path.
-                'name' => get_string('owncloud', 'repository_owncloud'),
+                'name' => $this->get_meta()->name,
                 'path' => '',
             ]),
             'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
