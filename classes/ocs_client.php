@@ -38,6 +38,11 @@ defined('MOODLE_INTERNAL') || die();
 class ocs_client extends rest {
 
     /**
+     * shareType=0 creates a private user share.
+     */
+    const SHARE_TYPE_USER = 0;
+
+    /**
      * shareType=3 creates a public share.
      */
     const SHARE_TYPE_PUBLIC = 3;
@@ -83,6 +88,7 @@ class ocs_client extends rest {
                 'args' => [
                     'path' => PARAM_TEXT, // Could be PARAM_PATH, we really don't want to enforce a Moodle understanding of paths.
                     'shareType' => PARAM_INT,
+                    'shareWith' => PARAM_TEXT, // Name of receiving user/group. Required if SHARE_TYPE_USER.
                     'publicUpload' => PARAM_RAW, // Actually Boolean, but neither String-Boolean ('false') nor PARAM_BOOL (0/1).
                     'permissions' => PARAM_INT
                 ],
