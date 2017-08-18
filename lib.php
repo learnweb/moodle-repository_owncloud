@@ -35,12 +35,12 @@ require_once($CFG->dirroot . '/repository/lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud extends repository {
-
     /**
      * OAuth 2 client
      * @var \core\oauth2\client
      */
     private $client = null;
+
     /**
      * OAuth 2 Issuer
      * @var \core\oauth2\issuer
@@ -58,6 +58,7 @@ class repository_owncloud extends repository {
      * @var \repository_owncloud\owncloud_client
      */
     private $dav = null;
+
     /**
      * OCS client that uses the Open Collaboration Services REST API.
      * @var ocs_client
@@ -111,12 +112,11 @@ class repository_owncloud extends repository {
         $this->ocsclient = new ocs_client($this->get_user_oauth_client());
     }
 
-
     /**
      * Initiates the webdav client.
      * @throws \repository_owncloud\configuration_exception If configuration is missing (endpoints).
      */
-    public function initiate_webdavclient() {
+    private function initiate_webdavclient() {
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
         // Selects the necessary information (port, type, server) from the path to build the webdavclient.
@@ -196,15 +196,6 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * This plugin does not support global search.
-     *
-     * @return bool Always false, as global search is unsupported.
-     */
-    public function global_search() {
-        return false;
-    }
-
-    /**
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
@@ -213,9 +204,11 @@ class repository_owncloud extends repository {
      * @return array directory properties.
      */
     public function get_listing($path='', $page = '') {
-        global $OUTPUT;
+        if (empty($path)) {
+            $path = '/';
+        }
 
-        $ret = $this->prepare_get_listing();
+        $ret = $this->get_listing_prepare_response($path);
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
@@ -223,74 +216,20 @@ class repository_owncloud extends repository {
             return $ret;
         }
 
-        if (empty($path) || $path == '/') {
-            $path = '/';
-        } else {
-            // This calculates all the parents paths form the current path. This is shown in the
-            // navigation bar of the file picker.
-            $chunks = preg_split('|/|', trim($path, '/'));
-            // Every sub-path to the last part of the current path, is a parent path.
-            for ($i = 0; $i < count($chunks); $i++) {
-                $ret['path'][] = array(
-                    'name' => urldecode($chunks[$i]),
-                    'path' => '/'. join('/', array_slice($chunks, 0, $i + 1)). '/'
-                );
-            }
-        }
-
-        // Since the paths, which are received from the PROPFIND WebDAV method are url encoded
+        // Since the paths which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        $dir = $this->dav->ls(urldecode($path));
+        $ls = $this->dav->ls(urldecode($path));
         $this->dav->close();
 
         // The method get_listing return all information about all child files/folders of the
         // current directory. If no information was received, the directory must be empty.
-        if (!is_array($dir)) {
+        if (!is_array($ls)) {
             return $ret;
         }
-        $folders = array();
-        $files = array();
-        // TODO (#6) handle (base)path in client, not here.
-        $parsedurl = $this->parse_endpoint_url('webdav');
-        $webdavpath = rtrim('/'.ltrim($parsedurl['path'], '/ '), '/ ');
-        foreach ($dir as $v) {
-            if (!empty($v['lastmodified'])) {
-                $v['lastmodified'] = strtotime($v['lastmodified']);
-            } else {
-                $v['lastmodified'] = null;
-            }
-            // TODO there must be a better way... /remote.php/webdav/ is always present.
-            // Extracting object title from absolute path.
-            $v['href'] = substr(urldecode($v['href']), strlen($webdavpath));
-            $title = substr($v['href'], strlen($path));
 
-            if (!empty($v['resourcetype']) && $v['resourcetype'] == 'collection') {
-                // A folder.
-                if ($path != $v['href']) {
-                    $folders[strtoupper($title)] = array(
-                        'title' => rtrim($title, '/'),
-                        'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
-                        'children' => array(),
-                        'datemodified' => $v['lastmodified'],
-                        'path' => $v['href']
-                    );
-                }
-            } else {
-                // A file.
-                $size = !empty($v['getcontentlength']) ? $v['getcontentlength'] : '';
-                $files[strtoupper($title)] = array(
-                    'title' => $title,
-                    'thumbnail' => $OUTPUT->image_url(file_extension_icon($title, 90))->out(false),
-                    'size' => $size,
-                    'datemodified' => $v['lastmodified'],
-                    'source' => $v['href']
-                );
-            }
-        }
-        ksort($files);
-        ksort($folders);
-        $ret['list'] = array_merge($folders, $files);
+        // Process WebDAV output and convert it into Moodle format.
+        $ret['list'] = $this->get_listing_convert_response($path, $ls);
         return $ret;
 
     }
@@ -526,17 +465,6 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method to define which filetypes are supported (hardcoded can not be changed in Admin Menu)
-     *
-     * For a full list of possible types and groups, look in lib/filelib.php, function get_mimetypes_array()
-     *
-     * @return string '*' means this repository support any files
-     */
-    public function supported_filetypes() {
-        return '*';
-    }
-
-    /**
      * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
      * Now only FILE_INTERNAL since get_link and get_file_reference is not implemented.
      * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
@@ -565,29 +493,99 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Prepares the params for the get_listing method, defining filepicker settings.
-     * @return array
+     * Take the WebDAV `ls()' output and convert it into a format that Moodle's filepicker understands.
+     *
+     * @param string $dirpath Relative (urlencoded) path of the folder of interest.
+     * @param array $ls Output by WebDAV
+     * @return array Moodle-formatted list of directory contents; ready for use as $ret['list'] in get_listings
      */
-    private function prepare_get_listing() {
-        $ret  = array();
+    private function get_listing_convert_response($dirpath, $ls) {
+        global $OUTPUT;
+        $folders = array();
+        $files = array();
+        // TODO (#6) handle (base)path in client, not here.
+        $parsedurl = $this->parse_endpoint_url('webdav');
+        $basepath = rtrim('/' . ltrim($parsedurl['path'], '/ '), '/ ');
 
-        // Tell the file picker to fetch the list dynamically. An AJAX request is send to the server,
-        // as soon as the user opens a folder.
-        $ret['dynload'] = true;
+        foreach ($ls as $item) {
+            if (!empty($item['lastmodified'])) {
+                $item['lastmodified'] = strtotime($item['lastmodified']);
+            } else {
+                $item['lastmodified'] = null;
+            }
 
-        // Search is disabled in this plugin.
-        $ret['nosearch'] = true;
+            // Extracting object title from absolute path: First remove ownCloud basepath.
+            $item['href'] = substr(urldecode($item['href']), strlen($basepath));
+            // Then remove relative path to current folder.
+            $title = substr($item['href'], strlen($dirpath));
 
-        // We need to provide a login link, because the user needs login himself with his own ownCloud
-        // user account.
-        $ret['nologin'] = false;
+            if (!empty($item['resourcetype']) && $item['resourcetype'] == 'collection') {
+                // A folder.
+                if ($dirpath == $item['href']) {
+                    // Skip "." listing.
+                    continue;
+                }
 
-        // Contains all parent paths to the current path.
-        $ret['path'] = array(array('name' => get_string('owncloud', 'repository_owncloud'), 'path' => ''));
+                $folders[strtoupper($title)] = array(
+                    'title' => rtrim($title, '/'),
+                    'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
+                    'children' => array(),
+                    'datemodified' => $item['lastmodified'],
+                    'path' => $item['href']
+                );
+            } else {
+                // A file.
+                $size = !empty($item['getcontentlength']) ? $item['getcontentlength'] : '';
+                $files[strtoupper($title)] = array(
+                    'title' => $title,
+                    'thumbnail' => $OUTPUT->image_url(file_extension_icon($title, 90))->out(false),
+                    'size' => $size,
+                    'datemodified' => $item['lastmodified'],
+                    'source' => $item['href']
+                );
+            }
+        }
+        ksort($files);
+        ksort($folders);
+        return array_merge($folders, $files);
+    }
 
-        // Contains all file/folder information and is required to build the file/folder tree.
-        $ret['list'] = array();
+    /**
+     * Prepare response of get_listing; namely
+     * - defining setting elements,
+     * - filling in the parent path of the currently-viewed directory.
+     * @param string $path Relative path
+     * @return array ret array for use as get_listing's $ret
+     */
+    private function get_listing_prepare_response($path) {
+        $ret = [
+            // Fetch the list dynamically. An AJAX request is sent to the server as soon as the user opens a folder.
+            'dynload' => true,
+            'nosearch' => true, // Disable search.
+            'nologin' => false, // Provide a login link because a user logs into his/her private ownCloud storage.
+            'path' => array([ // Contains all parent paths to the current path.
+                'name' => $this->get_meta()->name,
+                'path' => '',
+            ]),
+            'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
+        ];
 
+        // If relative path is a non-top-level path, calculate all its parents' paths.
+        // This is used for navigation in the file picker.
+        if ($path != '/') {
+            $chunks = explode('/', trim($path, '/'));
+            $parent = '/';
+            // Every sub-path to the last part of the current path is a parent path.
+            foreach ($chunks as $chunk) {
+                $subpath = $parent . $chunk . '/';
+                $ret['path'][] = [
+                    'name' => urldecode($chunk),
+                    'path' => $subpath
+                ];
+                // Prepare next iteration.
+                $parent = $subpath;
+            }
+        }
         return $ret;
     }
 }
