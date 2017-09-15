@@ -493,7 +493,20 @@ class repository_owncloud extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
+        if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
+            // TODO: decide wheather extra setting for supportedreturntypes is needed
+//            $setting = get_config('googledocs', 'supportedreturntypes');
+//            if ($setting == 'internal') {
+//                return FILE_INTERNAL;
+//            } else if ($setting == 'external') {
+//                return FILE_CONTROLLED_LINK;
+//            } else {
+//                return FILE_CONTROLLED_LINK | FILE_INTERNAL;
+//            }
+            return FILE_CONTROLLED_LINK | FILE_INTERNAL;
+        } else {
+            return FILE_INTERNAL;
+        }
     }
 
     /**
