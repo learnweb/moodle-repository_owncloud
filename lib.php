@@ -397,9 +397,7 @@ class repository_owncloud extends repository {
         // If an Access Token is stored within the client, it has to be deleted to prevent the addition
         // of an Bearer authorization header in the request method.
         $client->log_out();
-        $client->setHeader(array(
-            'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
-        ));
+
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
     }
