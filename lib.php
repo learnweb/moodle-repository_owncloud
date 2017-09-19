@@ -391,13 +391,21 @@ class repository_owncloud extends repository {
      * The Moodle OAuth 2 API transfers Client ID and secret as params in the request.
      * However, the ownCloud OAuth 2 App expects Client ID and secret to be in the request header.
      * Therefore, the header is set beforehand, and ClientID and Secret are passed twice.
+     * @link https://tracker.moodle.org/browse/MDL-59512
      */
     public function callback() {
         $client = $this->get_user_oauth_client();
         // If an Access Token is stored within the client, it has to be deleted to prevent the addition
         // of an Bearer authorization header in the request method.
         $client->log_out();
-
+        // A patch for the support of basic authentication for the oauth2 client is proposed in MDL-59512.
+        // With the modifications the setHeader method is unnecessary. However, when using the plugin with the moodle
+        // core the lines are indispensable. Therefore, they are retained.
+        if (false) {
+            $client->setHeader(array(
+                'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
+            ));
+        }
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
     }
@@ -481,26 +489,17 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
-     * Now only FILE_INTERNAL since get_link and get_file_reference is not implemented.
-     * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
-     * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
-     * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
-     * FILE_REFERENCE - the file may be cached locally, but is automatically synchronised, as required,
-     *                 with any changes to the external original
+     * Method to define which file-types are supported (hardcoded can not be changed in Admin Menu)
+     * By default FILE_INTERNAL is supported. In case a system account is connected and an issuer exist,
+     * FILE_CONTROLLED_LINK is supported.
+     * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system.
+     * FILE_CONTROLLED_LINK - creates a controlled version of the file at the determined place.
+     * The file itself can not be changed any longer by the owner.
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
         if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
-            // TODO: decide wheather extra setting for supportedreturntypes is needed
-//            $setting = get_config('googledocs', 'supportedreturntypes');
-//            if ($setting == 'internal') {
-//                return FILE_INTERNAL;
-//            } else if ($setting == 'external') {
-//                return FILE_CONTROLLED_LINK;
-//            } else {
-//                return FILE_CONTROLLED_LINK | FILE_INTERNAL;
-//            }
+            // TODO: decide whether extra setting for supportedreturntypes is needed
             return FILE_CONTROLLED_LINK | FILE_INTERNAL;
         } else {
             return FILE_INTERNAL;
