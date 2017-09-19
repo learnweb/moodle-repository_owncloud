@@ -42,9 +42,17 @@ class ocs_client extends rest {
      */
     const SHARE_TYPE_PUBLIC = 3;
     /**
+     * shareType=0 creates a public share.
+     */
+    const SHARE_TYPE_USER = 0;
+    /**
      * permissions=1 gives read permission for a share.
      */
     const SHARE_PERMISSION_READ = 1;
+    /**
+     * permissions=1 gives read permission for a share.
+     */
+    const SHARE_PERMISSION_ALL = 31;
 
     /**
      * OCS endpoint as configured for the used issuer.
@@ -84,7 +92,8 @@ class ocs_client extends rest {
                     'path' => PARAM_TEXT, // Could be PARAM_PATH, we really don't want to enforce a Moodle understanding of paths.
                     'shareType' => PARAM_INT,
                     'publicUpload' => PARAM_RAW, // Actually Boolean, but neither String-Boolean ('false') nor PARAM_BOOL (0/1).
-                    'permissions' => PARAM_INT
+                    'permissions' => PARAM_INT,
+                    'shareWith' => PARAM_TEXT
                 ],
                 'response' => 'text/xml'
             ],
