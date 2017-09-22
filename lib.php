@@ -322,7 +322,7 @@ class repository_owncloud extends repository {
      * @throws repository_exception
      */
     public function reference_file_selected($reference, $context, $component, $filearea, $itemid) {
-        // todo: Check if file exist
+        // todo: Check if file already exist
         $source = $reference;
 
         // Check this issuer is enabled.
@@ -330,14 +330,14 @@ class repository_owncloud extends repository {
             throw new repository_exception('cannotdownload', 'repository');
         }
         // Get the system oauth client.
-        $systemauth = \core\oauth2\api::get_system_oauth_client($this->issuer);// Get the system oauth client.
+        $systemauth = \core\oauth2\api::get_system_oauth_client($this->issuer);
 
         if ($systemauth === false) {
             $details = 'Cannot connect as system user';
             throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
         }
         // Creates a owncloud_client for the system account.
-        // todo: should this client be part of $this?
+        // todo: should the client be created here?
         $sysdav = $this->create_system_dav($systemauth);
 
         // Get the system user email so we can share the file with this user.
@@ -350,45 +350,128 @@ class repository_owncloud extends repository {
             $details = 'Cannot connect as current user';
             throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
         }
+        // 1. Share the File with the system account.
+        $responsecreateshare = $this->create_share_dataowner_sysaccount($source, $systemusername);
 
-        // Creates the params to share the file with the system account.
+        // todo: check statuscode also for share already exist
+        if ($responsecreateshare['success'] != 100) {
+            throw new repository_exception('cannotdownload', 'repository');
+        }
+
+        // 2. Create a unique path in the system account.
+        // todo: now generated as Google. Check expedience.
+        $foldercreate = $this->create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav);
+        if ($foldercreate['success'] != true) {
+            throw new repository_exception('Could not create folder path', 'repository');
+        }
+        // 3. Copy File to the new folder path.
+        $copyfile = $this->copy_file_to_path($source, $foldercreate['fullpath'], $sysdav);
+        if ($copyfile != 201) {
+            throw new repository_exception('Could not copy file', 'repository');
+        }
+
+        // 4. Delete the share.
+        $reponsedeleteshare = $this->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
+
+        if ($reponsedeleteshare != 100) {
+            // todo: react in some way, however, this becomes difficult since:
+            // 1. Throwing an exception might be misunderstood, since the file was successfully created.
+            // 2. However, we do not want to see the share in the user account.
+            throw new repository_exception('Share is still present', 'repository');
+        }
+
+        // todo: return the link to the file is not tested with a owncloud instance.
+        // 5. Create final share for access.
+        $finalshare = $foldercreate['fullpath'] . $source;
+        $reponsefinalfile = $this->create_public_link($finalshare);
+
+        if ($reponsefinalfile['success'] != 100) {
+            throw new repository_exception('cannotdownload', 'repository');
+        }
+        return $reponsefinalfile['link'];
+    }
+
+    /** Creates a public link in the sysaccount.
+     * @param $finalshare
+     * @return array
+     */
+    private function create_public_link ($finalshare) {
+        $result = array();
+        $createfinalshareparams = [
+            'path' => $finalshare,
+            'shareType' => ocs_client::SHARE_TYPE_PUBLIC,
+            'publicUpload' => false,
+            'permissions' => ocs_client::SHARE_PERMISSION_READ
+        ];
+
+        // File is now shared with the system account.
+        // todo: insert check for responsecreateshare 100 success.
+        $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+
+        $responsecreateshare = $this->systemocsclient->call('create_share', $createfinalshareparams);
+        $xml = simplexml_load_string($responsecreateshare);
+        $result['success'] = $xml->meta->statuscode;
+        $result['link'] = $xml->data->url;
+        return $result;
+    }
+
+    /** Deletes the share of the sysaccount and the dataowner.
+     * @param $shareid
+     * @return mixed
+     */
+    private function delete_share_dataowner_sysaccount($shareid) {
+        $deleteshareparams = [
+            'share_id' => $shareid
+        ];
+        $deleteshareresponse = $this->ocsclient->call('delete_share', $deleteshareparams);
+        $xml = simplexml_load_string($deleteshareresponse);
+        return $xml->meta->statuscode;
+    }
+
+    /** Creates a share between the dataowner and the sysaccount.
+     * @param $source
+     * @param $systemusername
+     * @return array statuscode and shareid
+     */
+    private function create_share_dataowner_sysaccount($source, $systemusername) {
+        $result = array();
+        // todo: maybe set expiration date?
         $functionsargs = null;
-        $ocsparams = [
+        $createtempshareparams = [
             'path' => $source,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
             'shareWith' => $systemusername,
-            'permissions' => ocs_client::SHARE_PERMISSION_ALL
         ];
 
         // File is now shared with the system account.
-        // todo: insert check for response
-        $response = $this->ocsclient->call('create_share', $ocsparams);
+        $createshareresponse = $this->ocsclient->call('create_share', $createtempshareparams);
+        $xml = simplexml_load_string($createshareresponse);
 
-        // Create a unique path in the system account.
-        // todo: now generated as Google. Check expedience.
-        $foldercreate = $this->create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav);
-
-        // todo: Copy the file to the folder. Does not work yet.
-        $copyfile = $this->copy_file_to_path($source, $foldercreate['fullpath'], $sysdav);
-
-        // todo: merely inserted to have a return value,
-        return $reference;
+        // todo: check statuscode also for share already exist
+        $result['statuscode'] = $xml->meta->statuscode;
+        $result['shareid'] = $xml->data->id;
+        return $result;
     }
 
     /** Copy a file to a new place
-     * @todo does not work 405 not allowed.
      * @param string $srcpath source path
      * @param string $dstpath
      * @param /repository/owncloud/owncloud_client $sysdav
      * @return array
      */
-    public function copy_file_to_path($srcpath, $dstpath, $sysdav) {
+    private function copy_file_to_path($srcpath, $dstpath, $sysdav) {
         $result = array();
         $sysdav->open();
-        $overwrithe = true;
-        // TODO : does not work 405 not allowed.
-        $result['success'] = $sysdav->copy_file($srcpath, $dstpath, $overwrithe);
+        $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
+        $baseurl = $this->issuer->get('baseurl');
+        $path = trim($webdavendpoint, $baseurl);
+        $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
+
+        $sourcepath = $prefixwebdav . $srcpath;
+        $destinationpath = $prefixwebdav . $dstpath . '/' . $srcpath;
+
+        $result['success'] = $sysdav->copy_file($sourcepath, $destinationpath, true);
         $sysdav->close();
         return $result;
     }
@@ -400,14 +483,17 @@ class repository_owncloud extends repository {
      * @param int $itemid
      * @return array $result success for the http status code and fullpath for the generated path.
      */
-    public function create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav) {
-        // Variable $allfolders is the full path we want to put the file in - so walk it and create each folder.
-        $contextlist = array_reverse($context->get_parent_contexts(true));
+    private function create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav) {
+        // Initialize the return array.
         $result = array();
         $result['success'] = true;
 
+        // The fullpath to store the file is generated from the context.
         $fullpath = '';
         $allfolders = [];
+
+        $contextlist = array_reverse($context->get_parent_contexts(true));
+
         foreach ($contextlist as $context) {
             // Make sure a folder exists here.
             $foldername = clean_param($context->get_context_name(), PARAM_PATH);
@@ -418,19 +504,21 @@ class repository_owncloud extends repository {
         $allfolders[] = clean_param($filearea, PARAM_PATH);
         $allfolders[] = clean_param($itemid, PARAM_PATH);
 
+        // Extracts the end of the webdavendpoint.
         $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
         $baseurl = $this->issuer->get('baseurl');
         $path = trim($webdavendpoint, $baseurl);
         $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
+        // Checks whether folder exist and creates non-existent folders.
         foreach ($allfolders as $foldername) {
             $sysdav->open();
             $fullpath .= '/' . $foldername;
             $proof = $sysdav->is_dir($fullpath);
             // Folder already exist, continue
-            if ($proof):
+            if ($proof) {
                 $sysdav->close();
                 continue;
-            endif;
+            }
             $sysdav->open();
             $response = $sysdav->mkcol($prefixwebdav . $fullpath);
 
@@ -480,6 +568,7 @@ class repository_owncloud extends repository {
         $dav->debug = false;
         return $dav;
     }
+
     /**
      * Repository method that serves the referenced file (created e.g. via get_link).
      * All parameters are there for compatibility with superclass, but they are ignored.
