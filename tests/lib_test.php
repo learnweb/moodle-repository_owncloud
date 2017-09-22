@@ -694,7 +694,6 @@ XML;
     public function test_supported_returntypes() {
         global $DB;
         $this->assertEquals(FILE_INTERNAL, $this->repo->supported_returntypes());
-        // timecreated | timemodified | usermodified | issuerid |refreshtoken |grantedscopes|email |username
         $dataobject = new stdClass();
         $dataobject->timecreated = time();
         $dataobject->timemodified = time();
@@ -708,6 +707,22 @@ XML;
         $DB->insert_record('oauth2_system_account', $dataobject);
         // When a system account is registered the file_type FILE_CONTROLLED_LINK is supported.
         $this->assertEquals(FILE_INTERNAL | FILE_CONTROLLED_LINK, $this->repo->supported_returntypes());
+    }
+
+    public function test_reference_file_selected() {
+        $this->repo->disabled = true;
+
+        $this->expectException(\repository_exception::class);
+        // Usually the context would be context_module().
+        // However, for testing the function the specific context is not required.
+
+        $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
+
+        $this->repo->disabled = false;
+        $this->expectException(\repository_exception::class);
+        $this->expectExceptionMessage('Cannot connect as system user');
+
+        $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
     }
 
     /**
