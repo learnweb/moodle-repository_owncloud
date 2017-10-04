@@ -709,6 +709,12 @@ XML;
         $this->assertEquals(FILE_INTERNAL | FILE_CONTROLLED_LINK, $this->repo->supported_returntypes());
     }
 
+    /**
+     * The reference_file_selected() methode is called every time a FILE_CONTROLLED_LINK is chosen for upload.
+     * Since the function is very long the private function are tested separately, and merely the abortion of the
+     * function are tested.
+     *
+     */
     public function test_reference_file_selected() {
         $this->repo->disabled = true;
 
@@ -723,6 +729,94 @@ XML;
         $this->expectExceptionMessage('Cannot connect as system user');
 
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
+    }
+
+    /** The function create_share_dataowner_sysaccount() calls for a ocs client to create a private share with between the
+     * user logged in in Moodle and the currently authenticated system-account. Therefore, a ocs_client is mocked and returns
+     * the answer for a successful share.
+     *
+     */
+    public function test_create_share() {
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+        )->getMock();
+        // TODO check when repo is working again.
+        $expectedresponse = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
+ </meta>
+ <data>
+  <id>2</id>
+  <share_type>0</share_type>
+  <uid_owner>admin</uid_owner>
+  <displayname_owner>admin</displayname_owner>
+  <permissions>31</permissions>
+  <stime>1502883721</stime>
+  <parent/>
+  <expiration/>
+  <token>QXbqrJj8DcMaXen</token>
+  <uid_file_owner>admin</uid_file_owner>
+  <displayname_file_owner>admin</displayname_file_owner>
+  <path>/somefile</path>
+  <item_type>file</item_type>
+  <mimetype>application/pdf</mimetype>
+  <storage_id>home::admin</storage_id>
+  <storage>1</storage>
+  <item_source>6</item_source>
+  <file_source>6</file_source>
+  <file_parent>4</file_parent>
+  <file_target>/somefile</file_target>
+  <share_with/>
+  <share_with_displayname/>
+  <name/>
+  <url>https://www.default.test/somefile</url>
+  <mail_send>0</mail_send>
+ </data>
+</ocs>
+XML;
+        $createtempshareparams = [
+            'path' => '/somefile',
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
+            'publicUpload' => false,
+            'shareWith' => 'somename',
+        ];
+        $mock->expects($this->once())->method('call')->with('create_share', $createtempshareparams)->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+        $result = phpunit_util::call_internal_method($this->repo, "create_share_dataowner_sysaccount",
+            array('source' => "/somefile", 'systemusername' => "somename"), 'repository_owncloud');
+        $xml = simplexml_load_string($expectedresponse);
+
+        $myres['statuscode'] = $xml->meta->statuscode;
+        $myres['shareid'] = $xml->data->id;
+        $this->assertEquals($result, $myres);
+    }
+
+    /** The private methode copy_file_to_path takes a source-path and a destination-path and copies the file.
+     * In the function the methode copy_file from the webdavlib is called. Therefore, not the coping process is tested
+     * but whether the mocked client receives the right params. The way of building the required path is owncloud specific.
+     *
+     */
+    public function test_copy_file_to_path() {
+        $mock = $this->createMock(\repository_owncloud\owncloud_client::class);
+        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
+        $dstpath = '/destination';
+        $srcpath = '/source';
+        $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
+        $baseurl = $this->issuer->get('baseurl');
+        $path = trim($webdavendpoint, $baseurl);
+        $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
+        $sourcepath = $prefixwebdav . $srcpath;
+        $destinationpath = $prefixwebdav . $dstpath . '/' . $srcpath;
+
+        $mock->expects($this->once())->method('copy_file')->with($sourcepath, $destinationpath, true)->will($this->returnValue(200));
+        $mock->expects($this->once())->method('close');
+
+        $result = phpunit_util::call_internal_method($this->repo, "copy_file_to_path",
+            array('srcpath' => "/source", 'dstpath' => "/destination", 'sysdav' => $mock), 'repository_owncloud');
+        $this->assertEquals($result, array( 'success' => 200));
     }
 
     /**
