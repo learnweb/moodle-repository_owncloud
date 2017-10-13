@@ -194,19 +194,21 @@ class repository_owncloud extends repository {
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
-     * @param string $url relative path to the file.
+     * @param string $reference relative path to the file.
      * @param string $title title of the file.
      * @return array|bool returns either the moodle path to the file or false.
      */
-    public function get_file($url, $title = '') {
-        $url = urldecode($url);
+    public function get_file($reference, $title = '') {
+
+        // Normal file
+        $reference = urldecode($reference);
         // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
         $path = $this->prepare_file(uniqid());
         $this->initiate_webdavclient();
         if (!$this->dav->open()) {
             return false;
         }
-        $this->dav->get_file($this->davbasepath . $url, $path);
+        $this->dav->get_file($this->davbasepath . $reference, $path);
         $this->dav->close();
 
         return array('path' => $path);
@@ -324,6 +326,7 @@ class repository_owncloud extends repository {
     public function reference_file_selected($reference, $context, $component, $filearea, $itemid) {
         // todo: Check if file already exist
         $source = $reference;
+        $filereturn = json_decode($reference);
 
         // Check this issuer is enabled.
         if ($this->disabled) {
@@ -351,10 +354,10 @@ class repository_owncloud extends repository {
             throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
         }
         // 1. Share the File with the system account.
-        $responsecreateshare = $this->create_share_dataowner_sysaccount($source, $systemusername);
+        $responsecreateshare = $this->create_share_user_sysaccount($source, $systemusername, 86400, true);
 
         // todo: check statuscode also for share already exist
-        if ($responsecreateshare['success'] != 100) {
+        if ($responsecreateshare['statuscode'] != 100) {
             throw new repository_exception('cannotdownload', 'repository');
         }
 
@@ -366,7 +369,7 @@ class repository_owncloud extends repository {
         }
         // 3. Copy File to the new folder path.
         $copyfile = $this->copy_file_to_path($source, $foldercreate['fullpath'], $sysdav);
-        if ($copyfile != 201) {
+        if ($copyfile['success'] != 201) {
             throw new repository_exception('Could not copy file', 'repository');
         }
 
@@ -383,23 +386,24 @@ class repository_owncloud extends repository {
         // todo: return the link to the file is not tested with a owncloud instance.
         // 5. Create final share for access.
         $finalshare = $foldercreate['fullpath'] . $source;
-        $reponsefinalfile = $this->create_public_link($finalshare);
 
-        if ($reponsefinalfile['success'] != 100) {
-            throw new repository_exception('cannotdownload', 'repository');
-        }
-        return $reponsefinalfile['link'];
+        // Update the returned reference so that the stored_file in moodle points to the newly copied file.
+        $filereturn->link = $finalshare;
+        $filereturn->name = $source;
+        $filereturn->usesystem = true;
+        $filereturn = json_encode($filereturn);
+        return $filereturn;
     }
 
     /** Creates a public link in the sysaccount.
      * @param $finalshare
      * @return array
      */
-    private function create_public_link ($finalshare) {
+    private function create_private_link ($path) {
         $result = array();
         $createfinalshareparams = [
-            'path' => $finalshare,
-            'shareType' => ocs_client::SHARE_TYPE_PUBLIC,
+            'path' => $path,
+            'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
             'permissions' => ocs_client::SHARE_PERMISSION_READ
         ];
@@ -411,7 +415,8 @@ class repository_owncloud extends repository {
         $responsecreateshare = $this->systemocsclient->call('create_share', $createfinalshareparams);
         $xml = simplexml_load_string($responsecreateshare);
         $result['success'] = $xml->meta->statuscode;
-        $result['link'] = $xml->data->url;
+        $result['link'] = (string) $xml->data->url;
+        $result['id'] = (string) $xml->data->id;
         return $result;
     }
 
@@ -430,27 +435,44 @@ class repository_owncloud extends repository {
 
     /** Creates a share between the dataowner and the sysaccount.
      * @param $source
-     * @param $systemusername
+     * @param $username dependent on the direction systemaccountname or other username
+     * @param $temp Time until the share expires
+     * @param $direction true for sharing with the sysaccount, false for sharing with the secondperson
      * @return array statuscode and shareid
      */
-    private function create_share_dataowner_sysaccount($source, $systemusername) {
+    private function create_share_user_sysaccount($source, $username, $temp, $direction) {
         $result = array();
         // todo: maybe set expiration date?
         $functionsargs = null;
+        $time = time();
+        $expiration = $time + $temp;
+        $test = (string) $expiration;
+        if ($direction === false) {
+            $source = $source->get_reference();
+            $jsondecode = json_decode($source);
+            $path = $jsondecode->link;
+        }
         $createtempshareparams = [
-            'path' => $source,
+            'path' => $path,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
-            'shareWith' => $systemusername,
+            'expiration' => $test,
+            'shareWith' => $username,
         ];
 
         // File is now shared with the system account.
-        $createshareresponse = $this->ocsclient->call('create_share', $createtempshareparams);
+        if ($direction === true) {
+            $createshareresponse = $this->ocsclient->call('create_share', $createtempshareparams);
+        } else {
+            $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            $createshareresponse = $this->systemocsclient->call('create_share', $createtempshareparams);
+        }
         $xml = simplexml_load_string($createshareresponse);
 
         // todo: check statuscode also for share already exist
         $result['statuscode'] = $xml->meta->statuscode;
         $result['shareid'] = $xml->data->id;
+        $result['filetarget'] = ((string)$xml->data[0]->file_target);
         return $result;
     }
 
@@ -579,9 +601,92 @@ class repository_owncloud extends repository {
      * @param bool $forcedownload (ignored)
      * @param array $options (ignored)
      */
-    public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
-        // Delivers a download link to the concerning file.
-        redirect($storedfile->get_reference());
+    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
+        // TODO 1. assure the user has is logged in.
+        if (empty($this->client)) {
+            $details = 'Cannot connect as current user';
+            throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+        }
+        if (!$this->client->is_logged_in()) {
+            // TODO: temporary solution, works but is ugly.
+            $this->print_login_popup(['style' => 'margin-top: 250px']);
+            exit;
+        }
+
+        // TODO 2. Create private share
+        $userinfo = $this->client->get_userinfo();
+
+        $username = $userinfo['username'];
+        $response = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
+        // Path can only be generated when share was successfull.
+        if (!empty($reponse)) {
+            $statuscode = $response['statuscode'];
+            if ($statuscode == 100 || 403) {
+                $baseurl = $this->issuer->get('baseurl');
+                $baseurl = rtrim($baseurl, '/');
+                if ($response['statuscode'] == 100) {
+                    $path = $baseurl . $response['filetarget'];
+                } else {
+                    // Create path without shareinformation. This is the case when old private share is still valid.
+                    $directory = $storedfile->get_filepath();
+                    $name = $storedfile->get_filename();
+                    $path = $directory . $name;
+                }
+                header('Location: ' . $baseurl . $path);
+            } else {
+                send_file_not_found();
+            }
+        } else {
+            send_file_not_found();
+        }
+    }
+    public function print_login_popup($attr = null) {
+        global $OUTPUT, $PAGE;
+
+        $url = new moodle_url($this->client->get_login_url());
+        $state = $url->get_param('state') . '&reloadparent=true';
+        $url->param('state', $state);
+
+        $PAGE->set_pagelayout('embedded');
+        echo $OUTPUT->header();
+
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
+
+        $button = new single_button($url, get_string('logintoaccount', 'repository', $repositoryname), 'post', true);
+        $button->add_action(new popup_action('click', $url, 'Login'));
+        $button->class = 'mdl-align';
+        $button = $OUTPUT->render($button);
+        echo html_writer::div($button, '', $attr);
+
+        echo $OUTPUT->footer();
+    }
+    /**
+     * Which return type should be selected by default.
+     *
+     * @return int
+     */
+    public function default_returntype() {
+        return FILE_CONTROLLED_LINK;
+
+    }
+    protected function add_temp_writer_to_file(\repository_googledocs\rest $client, $fileid, $email) {
+        // Expires in 7 days.
+        $expires = new DateTime();
+        $expires->add(new DateInterval("P7D"));
+
+        $updateeditor = [
+            'emailAddress' => $email,
+            'role' => 'writer',
+            'type' => 'user',
+            'expirationTime' => $expires->format(DateTime::RFC3339)
+        ];
+        $params = ['fileid' => $fileid, 'sendNotificationEmail' => 'false'];
+        $response = $client->call('create_permission', $params, json_encode($updateeditor));
+        if (empty($response->id)) {
+            $details = 'Cannot add user ' . $email . ' as a writer for document: ' . $fileid;
+            throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+        }
+        return true;
     }
 
     /**
