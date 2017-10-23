@@ -18,6 +18,23 @@
 namespace repository_owncloud;
 use core_php_time_limit;
 
+defined('MOODLE_INTERNAL') || die();
+
+if ($CFG->branch >= 34 ) {
+    require_once($CFG->libdir . '/webdavlib.php');
+
+    /**
+     * Class owncloud_client; aliases the webdav_client class.
+     * It has the necessary modifications since MDL-59844; i.e. Moodle 3.4.
+
+     * @package    repository_owncloud
+     * @copyright  2017 Jan Dageförde (Learnweb, University of Münster)
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    class owncloud_client extends \webdav_client {
+    }
+} else {
+
 /**
  * webdav_client v0.1.5, a php based webdav client class.
  * class webdav client. a php based nearly RFC 2518 conforming client.
@@ -1760,4 +1777,5 @@ EOD;
             error_log($err_string);
         }
     }
+}
 }
