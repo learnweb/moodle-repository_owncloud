@@ -647,6 +647,8 @@ XML;
      * Test the initiate_webdavclient function.
      */
     public function test_initiate_webdavclient() {
+        global $CFG;
+
         $idwebdav = $this->get_endpoint_id('webdav_endpoint');
         if (!empty($idwebdav)) {
             foreach ($idwebdav as $id) {
@@ -655,12 +657,29 @@ XML;
         }
 
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
-
         $generator->test_create_single_endpoint($this->issuer->get('id'), "webdav_endpoint",
             "https://www.default.test:8080/webdav/index.php");
+
+        $fakeaccesstoken = new stdClass();
+        $fakeaccesstoken->token = "fake access token";
+        $oauthmock = $this->createMock(\core\oauth2\client::class);
+        $oauthmock->expects($this->once())->method('get_accesstoken')->will($this->returnValue($fakeaccesstoken));
+        $this->set_private_property($oauthmock, 'client');
+
         $dav = phpunit_util::call_internal_method($this->repo, "initiate_webdavclient", [], 'repository_owncloud');
 
-        $port = $this->get_private_property($dav, '_port')->getValue($dav);
+        // Verify that port is set correctly (private property).
+        $refclient = new ReflectionClass($dav);
+        if ($CFG->branch >= 34) {
+            // Class owncloud_client is only alias; get property from parent.
+            // TODO Rewrite as soon as M 3.3 is unsupported.
+            $refclient = $refclient->getParentClass();
+        }
+
+        $property = $refclient->getProperty('_port');
+        $property->setAccessible(true);
+
+        $port = $property->getValue($dav);
 
         $this->assertEquals('8080', $port);
     }
@@ -670,21 +689,6 @@ XML;
      */
     public function test_supported_returntypes() {
         $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE, $this->repo->supported_returntypes());
-    }
-
-    /**
-     * Get private property from any class
-     *
-     * @param string $refobject name of the class
-     * @param string $propertyname name of the private property
-     * @return ReflectionProperty the resulting reflection property.
-     */
-    protected function get_private_property($refobject, $propertyname) {
-        $refclient = new ReflectionClass($refobject);
-        $property = $refclient->getProperty($propertyname);
-        $property->setAccessible(true);
-
-        return $property;
     }
 
     /**

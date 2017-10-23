@@ -18,10 +18,29 @@
 namespace repository_owncloud;
 use core_php_time_limit;
 
+defined('MOODLE_INTERNAL') || die();
+
+if ($CFG->branch >= 34 ) {
+    require_once($CFG->libdir . '/webdavlib.php');
+
+    /**
+     * Class owncloud_client; aliases the webdav_client class.
+     * It has the necessary modifications since MDL-59844; i.e. Moodle 3.4.
+
+     * @package    repository_owncloud
+     * @copyright  2017 Jan Dageförde (Learnweb, University of Münster)
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    class owncloud_client extends \webdav_client {
+        // TODO remove as soon as M3.3 is not supported anymore.
+    }
+} else {
+
 /**
+ * Moodle 3.3 polyfill for:
+ * A Moodle-modified WebDAV client, based on
  * webdav_client v0.1.5, a php based webdav client class.
  * class webdav client. a php based nearly RFC 2518 conforming client.
- *
  *
  * This class implements methods to get access to an webdav server.
  * Most of the methods are returning boolean false on error, an integer status (http response status) on success
@@ -30,13 +49,13 @@ use core_php_time_limit;
  * Please notice that all Filenames coming from or going to the webdav server should be UTF-8 encoded (see RFC 2518).
  * This class tries to convert all you filenames into utf-8 when it's needed.
  *
- * This class was augmented in 2017 to account for OAuth 2-compatible bearer authentication.
+ * Moodle modifications:
+ * * Moodle 3.4: Add support for OAuth 2 bearer token-based authentication
  *
  * @package moodlecore
  * @author Christian Juerges <christian.juerges@xwave.ch>, Xwave GmbH, Josefstr. 92, 8005 Zuerich - Switzerland
  * @copyright (C) 2003/2004, Christian Juerges
  * @license http://opensource.org/licenses/lgpl-license.php GNU Lesser General Public License
- * @version 0.1.5
  */
 
 class owncloud_client {
@@ -59,7 +78,7 @@ class owncloud_client {
     private $_socket_timeout = 5;
     private $_errno;
     private $_errstr;
-    private $_user_agent = 'Moodle WebDav Client for ownCloud';
+    private $_user_agent = 'Moodle WebDav Client (3.3 oauth polyfill)';
     private $_crlf = "\r\n";
     private $_req;
     private $_resp_status;
@@ -86,23 +105,17 @@ class owncloud_client {
     private $_nc = 0;
 
     /**
-     * OAuth 2 client; is expected to hold the token for authenticated accesses.
-     * @var \core\oauth2\client
-     */
-    private $oauthclient;
-
-    /**
-     * Prefix to the WebDAV server on host, e.g. /remote.php/webdav/ on most ownCloud installations.
+     * OAuth token used for bearer auth.
      * @var string
      */
-    private $pathprefix;
+    private $oauthtoken;
 
     /**#@-*/
 
     /**
      * Constructor - Initialise class variables
      */
-    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthclient = null, $pathprefix = '/') {
+    public function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '', $oauthtoken = '') {
         if (!empty($server)) {
             $this->_server = $server;
         }
@@ -112,13 +125,9 @@ class owncloud_client {
         }
         $this->_auth = $auth;
         $this->_socket = $socket;
-        // If provided, add OAuth client and path prefix.
-        $this->oauthclient = $oauthclient;
-        // Remove trailing slash, because future uses will come with a leading slash.
-        if (strlen($pathprefix) > 0 && substr($pathprefix, -1) === '/') {
-            $pathprefix = substr($pathprefix, 0, -1);
+        if ($auth == 'bearer') {
+            $this->oauthtoken = $oauthtoken;
         }
-        $this->pathprefix = $pathprefix;
     }
     public function __set($key, $value) {
         $property = '_' . $key;
@@ -242,8 +251,8 @@ class owncloud_client {
         // check http-version
         if ($response['status']['http-version'] == 'HTTP/1.1' ||
             $response['status']['http-version'] == 'HTTP/1.0') {
-            return $response;
-        }
+                return $response;
+            }
         $this->_error_log('Response was not even http');
         return false;
 
@@ -307,19 +316,19 @@ class owncloud_client {
         // validate the response
         // check http-version
         if ($http_version == 'HTTP/1.1' || $http_version == 'HTTP/1.0') {
-            // seems to be http ... proceed
-            // We expect a 200 code
-            if ($response['status']['status-code'] == 200 ) {
-                if (!is_null($fp)) {
-                    $stat = fstat($fp);
-                    $this->_error_log('file created with ' . $stat['size'] . ' bytes.');
-                } else {
-                    $this->_error_log('returning buffer with ' . strlen($response['body']) . ' bytes.');
-                    $buffer = $response['body'];
+                // seems to be http ... proceed
+                // We expect a 200 code
+                if ($response['status']['status-code'] == 200 ) {
+                    if (!is_null($fp)) {
+                        $stat = fstat($fp);
+                        $this->_error_log('file created with ' . $stat['size'] . ' bytes.');
+                    } else {
+                        $this->_error_log('returning buffer with ' . strlen($response['body']) . ' bytes.');
+                        $buffer = $response['body'];
+                    }
                 }
+                return $response['status']['status-code'];
             }
-            return $response['status']['status-code'];
-        }
         // ups: no http status was returned ?
         return false;
     }
@@ -350,12 +359,12 @@ class owncloud_client {
         // check http-version
         if ($response['status']['http-version'] == 'HTTP/1.1' ||
             $response['status']['http-version'] == 'HTTP/1.0') {
-            // seems to be http ... proceed
-            // We expect a 200 or 204 status code
-            // see rfc 2068 - 9.6 PUT...
-            // print 'http ok<br>';
-            return $response['status']['status-code'];
-        }
+                // seems to be http ... proceed
+                // We expect a 200 or 204 status code
+                // see rfc 2068 - 9.6 PUT...
+                // print 'http ok<br>';
+                return $response['status']['status-code'];
+            }
         // ups: no http status was returned ?
         return false;
     }
@@ -398,12 +407,12 @@ class owncloud_client {
             // check http-version
             if ($response['status']['http-version'] == 'HTTP/1.1' ||
                 $response['status']['http-version'] == 'HTTP/1.0') {
-                // seems to be http ... proceed
-                // We expect a 200 or 204 status code
-                // see rfc 2068 - 9.6 PUT...
-                // print 'http ok<br>';
-                return $response['status']['status-code'];
-            }
+                    // seems to be http ... proceed
+                    // We expect a 200 or 204 status code
+                    // see rfc 2068 - 9.6 PUT...
+                    // print 'http ok<br>';
+                    return $response['status']['status-code'];
+                }
             // ups: no http status was returned ?
             return false;
         } else {
@@ -424,8 +433,7 @@ class owncloud_client {
      * @return bool true on success. false on error.
      */
     function get_file($srcpath, $localpath) {
-        // Prepend with WebDAV root.
-        $srcpath = $this->pathprefix . $srcpath;
+
         $localpath = $this->utf_decode_path($localpath);
 
         $handle = fopen($localpath, 'wb');
@@ -470,21 +478,21 @@ class owncloud_client {
         // check http-version
         if ($response['status']['http-version'] == 'HTTP/1.1' ||
             $response['status']['http-version'] == 'HTTP/1.0') {
-            /* seems to be http ... proceed
-                just return what server gave us (as defined in rfc 2518) :
-                201 (Created) - The source resource was successfully copied. The copy operation resulted in the creation of a new resource.
-                204 (No Content) - The source resource was successfully copied to a pre-existing destination resource.
-                403 (Forbidden) - The source and destination URIs are the same.
-                409 (Conflict) - A resource cannot be created at the destination until one or more intermediate collections have been created.
-                412 (Precondition Failed) - The server was unable to maintain the liveness of the properties listed in the propertybehavior XML element
-                        or the Overwrite header is "F" and the state of the destination resource is non-null.
-                423 (Locked) - The destination resource was locked.
-                502 (Bad Gateway) - This may occur when the destination is on another server and the destination server refuses to accept the resource.
-                507 (Insufficient Storage) - The destination resource does not have sufficient space to record the state of the resource after the
-                        execution of this method.
-             */
-            return $response['status']['status-code'];
-        }
+         /* seems to be http ... proceed
+             just return what server gave us (as defined in rfc 2518) :
+             201 (Created) - The source resource was successfully copied. The copy operation resulted in the creation of a new resource.
+             204 (No Content) - The source resource was successfully copied to a pre-existing destination resource.
+             403 (Forbidden) - The source and destination URIs are the same.
+             409 (Conflict) - A resource cannot be created at the destination until one or more intermediate collections have been created.
+             412 (Precondition Failed) - The server was unable to maintain the liveness of the properties listed in the propertybehavior XML element
+                     or the Overwrite header is "F" and the state of the destination resource is non-null.
+             423 (Locked) - The destination resource was locked.
+             502 (Bad Gateway) - This may occur when the destination is on another server and the destination server refuses to accept the resource.
+             507 (Insufficient Storage) - The destination resource does not have sufficient space to record the state of the resource after the
+                     execution of this method.
+          */
+                return $response['status']['status-code'];
+            }
         return false;
     }
 
@@ -523,21 +531,21 @@ class owncloud_client {
         // check http-version
         if ($response['status']['http-version'] == 'HTTP/1.1' ||
             $response['status']['http-version'] == 'HTTP/1.0') {
-            /* seems to be http ... proceed
-                just return what server gave us (as defined in rfc 2518) :
-                201 (Created) - The source resource was successfully copied. The copy operation resulted in the creation of a new resource.
-                204 (No Content) - The source resource was successfully copied to a pre-existing destination resource.
-                403 (Forbidden) - The source and destination URIs are the same.
-                409 (Conflict) - A resource cannot be created at the destination until one or more intermediate collections have been created.
-                412 (Precondition Failed) - The server was unable to maintain the liveness of the properties listed in the propertybehavior XML element
-                        or the Overwrite header is "F" and the state of the destination resource is non-null.
-                423 (Locked) - The destination resource was locked.
-                502 (Bad Gateway) - This may occur when the destination is on another server and the destination server refuses to accept the resource.
-                507 (Insufficient Storage) - The destination resource does not have sufficient space to record the state of the resource after the
-                        execution of this method.
-             */
-            return $response['status']['status-code'];
-        }
+         /* seems to be http ... proceed
+             just return what server gave us (as defined in rfc 2518) :
+             201 (Created) - The source resource was successfully copied. The copy operation resulted in the creation of a new resource.
+             204 (No Content) - The source resource was successfully copied to a pre-existing destination resource.
+             403 (Forbidden) - The source and destination URIs are the same.
+             409 (Conflict) - A resource cannot be created at the destination until one or more intermediate collections have been created.
+             412 (Precondition Failed) - The server was unable to maintain the liveness of the properties listed in the propertybehavior XML element
+                     or the Overwrite header is "F" and the state of the destination resource is non-null.
+             423 (Locked) - The destination resource was locked.
+             502 (Bad Gateway) - This may occur when the destination is on another server and the destination server refuses to accept the resource.
+             507 (Insufficient Storage) - The destination resource does not have sufficient space to record the state of the resource after the
+                     execution of this method.
+          */
+                return $response['status']['status-code'];
+            }
         return false;
     }
 
@@ -594,8 +602,8 @@ class owncloud_client {
                 415 (Unsupported Media Type)- The server does not support the request type of the body.
                 507 (Insufficient Storage) - The resource does not have sufficient space to record the state of the resource after the execution of this method.
              */
-            return $response['status']['status-code'];
-        }
+                return $response['status']['status-code'];
+            }
         return false;
     }
 
@@ -642,7 +650,7 @@ class owncloud_client {
             423 (Locked) - The resource is locked, so the method has been rejected.
              */
 
-            switch($response['status']['status-code']) {
+                switch($response['status']['status-code']) {
                 case 200:
                     // collection was successfully locked... see xml response to get lock token...
                     if (strcmp($response['header']['Content-Type'], 'text/xml; charset="utf-8"') == 0) {
@@ -680,8 +688,8 @@ class owncloud_client {
                     // someone else has to handle it.
                     $this->_lock['status'] = $response['status']['status-code'];
                     return $this->_lock;
+                }
             }
-        }
 
 
     }
@@ -709,8 +717,8 @@ class owncloud_client {
             rfc 2518 says:
             204 (OK) - The 204 (No Content) status code is used instead of 200 (OK) because there is no response entity body.
              */
-            return $response['status']['status-code'];
-        }
+                return $response['status']['status-code'];
+            }
         return false;
     }
 
@@ -735,11 +743,11 @@ class owncloud_client {
         // check http-version
         if ($response['status']['http-version'] == 'HTTP/1.1' ||
             $response['status']['http-version'] == 'HTTP/1.0') {
-            // seems to be http ... proceed
-            // We expect a 207 Multi-Status status code
-            // print 'http ok<br>';
+                // seems to be http ... proceed
+                // We expect a 207 Multi-Status status code
+                // print 'http ok<br>';
 
-            switch ($response['status']['status-code']) {
+                switch ($response['status']['status-code']) {
                 case 207:
                     // collection was NOT deleted... see xml response for reason...
                     // next there should be a Content-Type: text/xml; charset="utf-8" header line
@@ -780,8 +788,8 @@ class owncloud_client {
                     return $this->_delete;
 
 
+                }
             }
-        }
 
     }
 
@@ -801,7 +809,7 @@ class owncloud_client {
             $this->_error_log('Missing a path in method ls');
             return false;
         }
-        $this->_path = $this->translate_uri($this->pathprefix . $path);
+        $this->_path = $this->translate_uri($path);
 
         $this->header_unset();
         $this->create_basic_request('PROPFIND');
@@ -1351,7 +1359,7 @@ EOD;
             }
         } else if ($this->_auth == 'bearer') {
             // Send a bearer token if OAuth 2 is active.
-            $this->header_add(sprintf('Authorization: Bearer %s', $this->oauthclient->get_accesstoken()->token));
+            $this->header_add(sprintf('Authorization: Bearer %s', $this->oauthtoken));
         }
     }
 
@@ -1760,4 +1768,5 @@ EOD;
             error_log($err_string);
         }
     }
+}
 }

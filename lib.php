@@ -54,10 +54,18 @@ class repository_owncloud extends repository {
     const SCOPES = 'files ocs';
 
     /**
-     * owncloud_client webdav client which is used for webdav operations.
+     * ownCloud webdav client which is used for webdav operations.
+     * (Type is identical to webdav_client starting from Moodle 3.4.)
+     *
      * @var \repository_owncloud\owncloud_client
      */
     private $dav = null;
+
+    /**
+     * Basepath for WebDAV operations
+     * @var string
+     */
+    private $davbasepath;
 
     /**
      * OCS client that uses the Open Collaboration Services REST API.
@@ -84,8 +92,14 @@ class repository_owncloud extends repository {
         }
 
         try {
-            // Check the webdavendpoint.
-            $this->parse_endpoint_url('webdav');
+            // Load the webdav endpoint and parse the basepath.
+            $webdavendpoint = $this->parse_endpoint_url('webdav');
+            // Get basepath without trailing slash, because future uses will come with a leading slash.
+            $basepath = $webdavendpoint['path'];
+            if (strlen($basepath) > 0 && substr($basepath, -1) === '/') {
+                $basepath = substr($basepath, 0, -1);
+            }
+            $this->davbasepath = $basepath;
         } catch (\repository_owncloud\configuration_exception $e) {
             // A repository is marked as disabled when no webdav_endpoint is present
             // or it fails to parse, because all operations concerning files
@@ -107,8 +121,6 @@ class repository_owncloud extends repository {
             return;
         }
 
-        // Exclusively when a issuer is present and the plugin is not disabled the webdavclient is generated.
-        $this->dav = $this->initiate_webdavclient();
         $this->ocsclient = new ocs_client($this->get_user_oauth_client());
     }
 
@@ -117,6 +129,10 @@ class repository_owncloud extends repository {
      * @throws \repository_owncloud\configuration_exception If configuration is missing (endpoints).
      */
     private function initiate_webdavclient() {
+        if ($this->dav !== null) {
+            return $this->dav;
+        }
+
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
         // Selects the necessary information (port, type, server) from the path to build the webdavclient.
@@ -134,13 +150,13 @@ class repository_owncloud extends repository {
             $webdavport = $webdavendpoint['port'];
         }
 
-        // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
-        $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype,
-            $this->get_user_oauth_client(), $webdavendpoint['path']);
+        // Authentication method is `bearer` for OAuth 2. Pass token of authenticated client, too.
+        $this->dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype,
+            $this->get_user_oauth_client()->get_accesstoken()->token);
 
-        $dav->port = $webdavport;
-        $dav->debug = false;
-        return $dav;
+        $this->dav->port = $webdavport;
+        $this->dav->debug = false;
+        return $this->dav;
     }
 
     /**
@@ -186,10 +202,11 @@ class repository_owncloud extends repository {
         $url = urldecode($url);
         // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
         $path = $this->prepare_file(uniqid());
+        $this->initiate_webdavclient();
         if (!$this->dav->open()) {
             return false;
         }
-        $this->dav->get_file($url, $path);
+        $this->dav->get_file($this->davbasepath . $url, $path);
         $this->dav->close();
 
         return array('path' => $path);
@@ -212,6 +229,7 @@ class repository_owncloud extends repository {
 
         // Before any WebDAV method can be executed, a WebDAV client socket needs to be opened
         // which connects to the server.
+        $this->initiate_webdavclient();
         if (!$this->dav->open()) {
             return $ret;
         }
@@ -219,7 +237,7 @@ class repository_owncloud extends repository {
         // Since the paths which are received from the PROPFIND WebDAV method are url encoded
         // (because they depict actual web-paths), the received paths need to be decoded back
         // for the plugin to be able to work with them.
-        $ls = $this->dav->ls(urldecode($path));
+        $ls = $this->dav->ls($this->davbasepath . urldecode($path));
         $this->dav->close();
 
         // The method get_listing return all information about all child files/folders of the
