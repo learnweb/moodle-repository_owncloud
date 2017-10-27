@@ -530,13 +530,17 @@ class repository_owncloud extends repository {
         // Extracts the end of the webdavendpoint.
         $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
         $baseurl = $this->issuer->get('baseurl');
-        $path = trim($webdavendpoint, $baseurl);
+        $explodebase = explode('/', $baseurl);
+        $explodewebdav = explode('/', $webdavendpoint);
+        $diffarray = array_diff($explodewebdav, $explodebase);
+        $path = implode('/', $diffarray);
+        //$path = ltrim($webdavendpoint, $baseurl);
         $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
         // Checks whether folder exist and creates non-existent folders.
         foreach ($allfolders as $foldername) {
             $sysdav->open();
             $fullpath .= '/' . $foldername;
-            $proof = $sysdav->is_dir($fullpath);
+            $proof = $sysdav->is_dir($prefixwebdav . $fullpath);
             // Folder already exist, continue
             if ($proof) {
                 $sysdav->close();
