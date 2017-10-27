@@ -443,6 +443,7 @@ class repository_owncloud extends repository {
     private function create_share_user_sysaccount($source, $username, $temp, $direction) {
         $result = array();
         // todo: maybe set expiration date?
+        $path = $source;
         $functionsargs = null;
         $time = time();
         $expiration = $time + $temp;
@@ -584,7 +585,7 @@ class repository_owncloud extends repository {
 
         // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
         $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype,
-            $systemauth, $webdavendpoint['path']);
+            $systemauth->get_accesstoken()->token, $webdavendpoint['path']);
 
         $dav->port = $webdavport;
         $dav->debug = false;
