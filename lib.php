@@ -871,10 +871,9 @@ class repository_owncloud extends repository {
      */
     public function supported_returntypes() {
         if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
-            // TODO: decide whether extra setting for supportedreturntypes is needed
-            return FILE_CONTROLLED_LINK | FILE_INTERNAL;
+            return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_EXTERNAL;
         } else {
-            return FILE_INTERNAL;
+            return FILE_INTERNAL | FILE_EXTERNAL;
         }
     }
 
