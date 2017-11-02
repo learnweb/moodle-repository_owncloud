@@ -624,9 +624,9 @@ class repository_owncloud extends repository {
         $username = $userinfo['username'];
         $response = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
         // Path can only be generated when share was successfull.
-        if (!empty($reponse)) {
+        if (!empty($response['statuscode'])) {
             $statuscode = $response['statuscode'];
-            if ($statuscode == 100 || 403) {
+            if ($statuscode == 100 || $statuscode == 403) {
                 $baseurl = $this->issuer->get('baseurl');
                 $baseurl = rtrim($baseurl, '/');
                 if ($response['statuscode'] == 100) {
