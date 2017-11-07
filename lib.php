@@ -336,8 +336,10 @@ class repository_owncloud extends repository {
         $systemauth = \core\oauth2\api::get_system_oauth_client($this->issuer);
 
         if ($systemauth === false) {
-            $details = 'Cannot connect as system user';
-            throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+            if($systemauth->is_logged_in() === false) {
+                $details = 'Cannot connect as system user';
+                throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+            }
         }
         // Creates a owncloud_client for the system account.
         // todo: should the client be created here?
