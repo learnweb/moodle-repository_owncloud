@@ -575,91 +575,66 @@ class repository_owncloud extends repository {
      * @param array $options (ignored)
      */
     public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
-        // TODO 1. assure the user has is logged in.
+        // 1. assure the user has is logged in.
         if (empty($this->client)) {
             $details = 'Cannot connect as current user';
             throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
         }
+
         if (!$this->client->is_logged_in()) {
-            // TODO: temporary solution, works but is ugly.
-            $this->print_login_popup(['style' => 'margin-top: 250px']);
-            exit;
+            // TODO descriptive text to access the file you have to...
+            $this->print_login();
+            exit();
         }
+        $dumb = $options;
+        // 2. Check whether file is shown embedded
+        if ($options['embed'] == true) {
+            // TODO: embed file on page
+        } else {
+            // TODO Evaluate which part can be done in both cases
+            $userinfo = $this->client->get_userinfo();
+            $username = $userinfo['username'];
 
-        // TODO 2. Create private share
-        $userinfo = $this->client->get_userinfo();
-
-        $username = $userinfo['username'];
-        $response = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
-        // Path can only be generated when share was successfull.
-        if (!empty($response['statuscode'])) {
-            $statuscode = $response['statuscode'];
-            if ($statuscode == 100 || $statuscode == 403) {
-                $baseurl = $this->issuer->get('baseurl');
-                $baseurl = rtrim($baseurl, '/');
-                if ($response['statuscode'] == 100) {
-                    $path = $baseurl . $response['filetarget'];
+            // 3. In case file is not embedded create share
+            $response = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
+            // 4. check whether share could be created
+            if (!empty($response['statuscode'])) {
+                $statuscode = $response['statuscode'];
+                // 403 means the share was already created.
+                if ($statuscode == 100 || $statuscode == 403) {
+                    // Share exist create path
+                    $baseurl = $this->issuer->get('baseurl');
+                    $baseurl = rtrim($baseurl, '/');
+                    // Redirects user to his/her own page
+                    $url = $baseurl . '/index.php';
+                    header('Location: ' . $url);
+                    exit();
                 } else {
-                    // Create path without shareinformation. This is the case when old private share is still valid.
-                    $directory = $storedfile->get_filepath();
-                    $name = $storedfile->get_filename();
-                    $path = $directory . $name;
+                    send_file_not_found();
                 }
-                header('Location: ' . $baseurl . $path);
             } else {
                 send_file_not_found();
             }
-        } else {
-            send_file_not_found();
         }
     }
-    public function print_login_popup($attr = null) {
-        global $OUTPUT, $PAGE;
 
-        $url = new moodle_url($this->client->get_login_url());
-        $state = $url->get_param('state') . '&reloadparent=true';
-        $url->param('state', $state);
-
-        $PAGE->set_pagelayout('embedded');
-        echo $OUTPUT->header();
-
-        $repositoryname = get_string('pluginname', 'repository_owncloud');
-
-        $button = new single_button($url, get_string('logintoaccount', 'repository', $repositoryname), 'post', true);
-        $button->add_action(new popup_action('click', $url, 'Login'));
-        $button->class = 'mdl-align';
-        $button = $OUTPUT->render($button);
-        echo html_writer::div($button, '', $attr);
-
-        echo $OUTPUT->footer();
-    }
     /**
      * Which return type should be selected by default.
      *
      * @return int
      */
     public function default_returntype() {
+        // TODO change when not available
         return FILE_CONTROLLED_LINK;
-
     }
-    protected function add_temp_writer_to_file(\repository_googledocs\rest $client, $fileid, $email) {
-        // Expires in 7 days.
-        $expires = new DateTime();
-        $expires->add(new DateInterval("P7D"));
-
-        $updateeditor = [
-            'emailAddress' => $email,
-            'role' => 'writer',
-            'type' => 'user',
-            'expirationTime' => $expires->format(DateTime::RFC3339)
-        ];
-        $params = ['fileid' => $fileid, 'sendNotificationEmail' => 'false'];
-        $response = $client->call('create_permission', $params, json_encode($updateeditor));
-        if (empty($response->id)) {
-            $details = 'Cannot add user ' . $email . ' as a writer for document: ' . $fileid;
-            throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
-        }
-        return true;
+    /**
+     * Return names of the general options.
+     * By default: no general option name.
+     *
+     * @return array
+     */
+    public static function get_type_option_names() {
+        return array('issuerid', 'pluginname');
     }
 
     /**
