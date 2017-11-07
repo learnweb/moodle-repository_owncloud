@@ -486,13 +486,10 @@ class repository_owncloud extends repository {
     private function copy_file_to_path($srcpath, $dstpath, $sysdav) {
         $result = array();
         $sysdav->open();
-        $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
-        $baseurl = $this->issuer->get('baseurl');
-        $path = trim($webdavendpoint, $baseurl);
-        $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
+        $webdavendpoint = $this->parse_endpoint_url('webdav');
 
-        $sourcepath = $prefixwebdav . $srcpath;
-        $destinationpath = $prefixwebdav . $dstpath . '/' . $srcpath;
+        $sourcepath = $webdavendpoint['path'] . $srcpath;
+        $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
 
         $result['success'] = $sysdav->copy_file($sourcepath, $destinationpath, true);
         $sysdav->close();
@@ -529,31 +526,26 @@ class repository_owncloud extends repository {
 
         // Extracts the end of the webdavendpoint.
         $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
-        $baseurl = $this->issuer->get('baseurl');
-        $explodebase = explode('/', $baseurl);
-        $explodewebdav = explode('/', $webdavendpoint);
-        $diffarray = array_diff($explodewebdav, $explodebase);
-        $path = implode('/', $diffarray);
-        //$path = ltrim($webdavendpoint, $baseurl);
-        $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
+        $parsedwebdavurl = $this->parse_endpoint_url('webdav');
+        $webdavprefix = $parsedwebdavurl['path'];
         // Checks whether folder exist and creates non-existent folders.
         foreach ($allfolders as $foldername) {
             $sysdav->open();
             $fullpath .= '/' . $foldername;
-            $proof = $sysdav->is_dir($prefixwebdav . $fullpath);
+            $isdir = $sysdav->is_dir($webdavprefix . $fullpath);
             // Folder already exist, continue
-            if ($proof) {
+            if ($isdir) {
                 $sysdav->close();
                 continue;
             }
             $sysdav->open();
-            $response = $sysdav->mkcol($prefixwebdav . $fullpath);
+            $response = $sysdav->mkcol($webdavprefix . $fullpath);
 
             $sysdav->close();
             // todo: break/exception when status code !=201?
             if ($response != 201) {
-                    $result['success'] = false;
-                    continue;
+                $result['success'] = false;
+                continue;
             }
         }
         $result['fullpath'] = $fullpath;
