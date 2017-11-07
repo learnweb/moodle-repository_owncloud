@@ -624,8 +624,11 @@ class repository_owncloud extends repository {
      * @return int
      */
     public function default_returntype() {
-        // TODO change when not available
-        return FILE_CONTROLLED_LINK;
+        if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
+            return FILE_CONTROLLED_LINK;
+        } else {
+            return FILE_INTERNAL;
+        }
     }
     /**
      * Return names of the general options.
