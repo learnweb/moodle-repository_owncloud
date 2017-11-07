@@ -2,6 +2,9 @@ language: php
 
 sudo: false
 
+notifications:
+email: true
+
 cache:
   directories:
     - $HOME/.composer/cache
@@ -9,10 +12,6 @@ cache:
 
 addons:
   postgresql: "9.3"
-  apt:
-    packages:
-      - oracle-java8-installer
-      - oracle-java8-set-default
 
 php:
   - 5.6
@@ -51,7 +50,6 @@ before_install:
   - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^2
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
 
-
 jobs:
   include:
     # Prechecks against latest Moodle stable only.
@@ -62,18 +60,26 @@ jobs:
       - moodle-plugin-ci install --no-init
       script:
       - moodle-plugin-ci phplint
-      - moodle-plugin-ci phpcpd
+      # - moodle-plugin-ci phpcpd
       - moodle-plugin-ci phpmd
-      - moodle-plugin-ci codechecker
+      # - moodle-plugin-ci codechecker
       - moodle-plugin-ci savepoints
-      - moodle-plugin-ci mustache
+      # - moodle-plugin-ci mustache
       - moodle-plugin-ci grunt
       - moodle-plugin-ci validate
-
-install:
-  - moodle-plugin-ci install
+    # Smaller build matrix for development builds
+    - stage: develop
+      php: 7.1
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
+      install:
+      - moodle-plugin-ci install
+      script:
+      - moodle-plugin-ci phpunit --coverage-clover
+      - moodle-plugin-ci behat
 
 # Unit tests and behat tests against full matrix.
+install:
+  - moodle-plugin-ci install
 script:
   - moodle-plugin-ci phpunit --coverage-clover
   - moodle-plugin-ci behat
@@ -82,4 +88,7 @@ after_success:
 
 stages:
   - static
-  - test
+  - name: develop
+    if: branch != master AND (type != pull_request OR head_branch != master) AND (tag IS blank)
+  - name: test
+    if: branch = master OR (type = pull_request AND head_branch = master) OR (tag IS present)
