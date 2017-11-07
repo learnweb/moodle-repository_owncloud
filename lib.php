@@ -396,31 +396,6 @@ class repository_owncloud extends repository {
         return $filereturn;
     }
 
-    /** Creates a public link in the sysaccount.
-     * @param $finalshare
-     * @return array
-     */
-    private function create_private_link ($path) {
-        $result = array();
-        $createfinalshareparams = [
-            'path' => $path,
-            'shareType' => ocs_client::SHARE_TYPE_USER,
-            'publicUpload' => false,
-            'permissions' => ocs_client::SHARE_PERMISSION_READ
-        ];
-
-        // File is now shared with the system account.
-        // todo: insert check for responsecreateshare 100 success.
-        $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-
-        $responsecreateshare = $this->systemocsclient->call('create_share', $createfinalshareparams);
-        $xml = simplexml_load_string($responsecreateshare);
-        $result['success'] = $xml->meta->statuscode;
-        $result['link'] = (string) $xml->data->url;
-        $result['id'] = (string) $xml->data->id;
-        return $result;
-    }
-
     /** Deletes the share of the sysaccount and the dataowner.
      * @param $shareid
      * @return mixed
