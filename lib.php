@@ -358,8 +358,7 @@ class repository_owncloud extends repository {
         // 1. Share the File with the system account.
         $responsecreateshare = $this->create_share_user_sysaccount($source, $systemusername, 86400, true);
 
-        // todo: check statuscode also for share already exist
-        if ($responsecreateshare['statuscode'] != 100) {
+        if ($responsecreateshare['statuscode'] != 100 && $responsecreateshare['statuscode'] != 403) {
             throw new repository_exception('cannotdownload', 'repository');
         }
 
