@@ -581,8 +581,7 @@ class repository_owncloud extends repository {
         }
 
         if (!$this->client->is_logged_in()) {
-            // TODO descriptive text to access the file you have to...
-            $this->print_login();
+            redirect($this->client->get_login_url());
             exit();
         }
         // 2. Check whether user has folder for Moodlefiles otherwise create it
@@ -597,10 +596,10 @@ class repository_owncloud extends repository {
             $this->dav->close();
         } else {
             $this->dav->open();
-            $response = $this->dav->mkcol($webdavprefix . '/Moodlefiles');
+            $responsecreateshare = $this->dav->mkcol($webdavprefix . '/Moodlefiles');
 
             $this->dav->close();
-            if ($response != 201) {
+            if ($responsecreateshare != 201) {
                 throw new \repository_owncloud\request_exception('Could not copy file');
             }
         }
@@ -612,15 +611,18 @@ class repository_owncloud extends repository {
             $userinfo = $this->client->get_userinfo();
             $username = $userinfo['username'];
 
-            // TODO move to folder
-            $response = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
+            // Move the file to the Moodelfiles folder
+            $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
 
             $dstpath = '/Moodlefiles';
             $srcpath = $storedfile->get_filename();
             $this->copy_file_to_path($srcpath, $dstpath, $this->dav);
+            // Deletes the old share
+            $reponsedeleteshare = $this->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
+
             // 4. check whether share could be created
-            if (!empty($response['statuscode'])) {
-                $statuscode = $response['statuscode'];
+            if (!empty($responsecreateshare['statuscode'])) {
+                $statuscode = $responsecreateshare['statuscode'];
                 // 403 means the share was already created.
                 if ($statuscode == 100 || $statuscode == 403) {
                     // Share exist create path
