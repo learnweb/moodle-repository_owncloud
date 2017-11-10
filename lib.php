@@ -612,8 +612,12 @@ class repository_owncloud extends repository {
             $userinfo = $this->client->get_userinfo();
             $username = $userinfo['username'];
 
-            // 3. In case file is not embedded create share
+            // TODO move to folder
             $response = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
+
+            $dstpath = '/Moodlefiles';
+            $srcpath = $storedfile->get_filename();
+            $this->copy_file_to_path($srcpath, $dstpath, $this->dav);
             // 4. check whether share could be created
             if (!empty($response['statuscode'])) {
                 $statuscode = $response['statuscode'];
@@ -623,7 +627,7 @@ class repository_owncloud extends repository {
                     $baseurl = $this->issuer->get('baseurl');
                     $baseurl = rtrim($baseurl, '/');
                     // Redirects user to his/her own page
-                    $url = $baseurl . '/index.php';
+                    $url = $baseurl . '/index.php/apps/files/?dir=/Moodlefiles';
                     header('Location: ' . $url);
                     exit();
                 } else {
