@@ -501,7 +501,6 @@ class repository_owncloud extends repository {
         $allfolders[] = clean_param($itemid, PARAM_PATH);
 
         // Extracts the end of the webdavendpoint.
-        $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
         $webdavprefix = $parsedwebdavurl['path'];
         // Checks whether folder exist and creates non-existent folders.
@@ -586,7 +585,25 @@ class repository_owncloud extends repository {
             $this->print_login();
             exit();
         }
-        $dumb = $options;
+        // 2. Check whether user has folder for Moodlefiles otherwise create it
+        $parsedwebdavurl = $this->parse_endpoint_url('webdav');
+        $webdavprefix = $parsedwebdavurl['path'];
+        // Checks whether folder exist and creates non-existent folders.
+        $this->initiate_webdavclient();
+        $this->dav->open();
+        $isdir = $this->dav->is_dir($webdavprefix . '/Moodlefiles');
+        // Folder already exist, continue
+        if ($isdir) {
+            $this->dav->close();
+        } else {
+            $this->dav->open();
+            $response = $this->dav->mkcol($webdavprefix . '/Moodlefiles');
+
+            $this->dav->close();
+            if ($response != 201) {
+                throw new \repository_owncloud\request_exception('Could not copy file');
+            }
+        }
         // 2. Check whether file is shown embedded
         if ($options['embed'] == true) {
             // TODO: embed file on page
