@@ -630,9 +630,9 @@ class repository_owncloud extends repository {
                     // Share exist create path
                     $baseurl = $this->issuer->get('baseurl');
                     $baseurl = rtrim($baseurl, '/');
-                    // Redirects user to his/her own page
-                    $url = $baseurl . '/index.php/apps/files/?dir=/Moodlefiles';
-                    header('Location: ' . $url);
+                    // Forces download
+                    $webdavurl = $this->issuer->get_endpoint_url('webdav') . '/Moodlefiles/' . $storedfile->get_filename();
+                    header('Location: ' . $webdavurl);
                     exit();
                 } else {
                     send_file_not_found();
