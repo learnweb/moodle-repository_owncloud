@@ -581,7 +581,9 @@ class repository_owncloud extends repository {
         }
 
         if (!$this->client->is_logged_in()) {
-            redirect($this->client->get_login_url());
+            // TODO after login user is not redirected to Moodlepage in case of switching http https
+            $redirect = $this->client->get_login_url();
+            redirect($redirect);
             exit();
         }
         // 2. Check whether user has folder for Moodlefiles otherwise create it
