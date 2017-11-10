@@ -471,7 +471,23 @@ class repository_owncloud extends repository {
         $sysdav->close();
         return $result;
     }
+    /** Copy a file to a new place
+     * @param string $srcpath source path
+     * @param string $dstpath
+     * @return array
+     */
+    private function move_file_to_folder($srcpath, $dstpath) {
+        $result = array();
+        $this->dav->open();
+        $webdavendpoint = $this->parse_endpoint_url('webdav');
 
+        $sourcepath = $webdavendpoint['path'] . $srcpath;
+        $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
+
+        $result['success'] = $this->dav->move($sourcepath, $destinationpath, true);
+        $this->dav->close();
+        return $result;
+    }
     /** Creates a unique folder path for the access controlled link.
      * @param $context
      * @param $component
@@ -592,13 +608,13 @@ class repository_owncloud extends repository {
         // Checks whether folder exist and creates non-existent folders.
         $this->initiate_webdavclient();
         $this->dav->open();
-        $isdir = $this->dav->is_dir($webdavprefix . '/Moodlefiles');
+        $isdir = $this->dav->is_dir($webdavprefix . 'Moodlefiles');
         // Folder already exist, continue
         if ($isdir) {
             $this->dav->close();
         } else {
             $this->dav->open();
-            $responsecreateshare = $this->dav->mkcol($webdavprefix . '/Moodlefiles');
+            $responsecreateshare = $this->dav->mkcol($webdavprefix . 'Moodlefiles');
 
             $this->dav->close();
             if ($responsecreateshare != 201) {
@@ -616,11 +632,9 @@ class repository_owncloud extends repository {
             // Move the file to the Moodelfiles folder
             $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
 
-            $dstpath = '/Moodlefiles';
+            $dstpath = 'Moodlefiles';
             $srcpath = $storedfile->get_filename();
-            $this->copy_file_to_path($srcpath, $dstpath, $this->dav);
-            // Deletes the old share
-            $reponsedeleteshare = $this->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
+            $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
 
             // 4. check whether share could be created
             if (!empty($responsecreateshare['statuscode'])) {
