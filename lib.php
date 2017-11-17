@@ -449,6 +449,7 @@ class repository_owncloud extends repository {
         // todo: check statuscode also for share already exist
         $result['statuscode'] = $xml->meta->statuscode;
         $result['shareid'] = $xml->data->id;
+        $result['fileid'] = $xml->data->item_source;
         $result['filetarget'] = ((string)$xml->data[0]->file_target);
         return $result;
     }
@@ -610,9 +611,8 @@ class repository_owncloud extends repository {
         $this->dav->open();
         $isdir = $this->dav->is_dir($webdavprefix . 'Moodlefiles');
         // Folder already exist, continue
-        if ($isdir) {
-            $this->dav->close();
-        } else {
+        $this->dav->close();
+        if (!$isdir) {
             $this->dav->open();
             $responsecreateshare = $this->dav->mkcol($webdavprefix . 'Moodlefiles');
 
@@ -625,35 +625,34 @@ class repository_owncloud extends repository {
         if ($options['embed'] == true) {
             // TODO: embed file on page
         } else {
-            // TODO Evaluate which part can be done in both cases
+            // TODO Evaluate which parts are additionally necessary with options['embedded']=true
             $userinfo = $this->client->get_userinfo();
             $username = $userinfo['username'];
 
             // Move the file to the Moodelfiles folder
             $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
+            $statuscode = $responsecreateshare['statuscode'];
+
+            // TODO get id when path is already shared
+            if ($statuscode == 403) {
+
+            }
+            // 4. check whether share could be created
+            if (!($statuscode == 100 || $statuscode == 403)){
+                send_file_not_found();
+            }
 
             $dstpath = 'Moodlefiles';
             $srcpath = $storedfile->get_filename();
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
-
-            // 4. check whether share could be created
-            if (!empty($responsecreateshare['statuscode'])) {
-                $statuscode = $responsecreateshare['statuscode'];
-                // 403 means the share was already created.
-                if ($statuscode == 100 || $statuscode == 403) {
-                    // Share exist create path
-                    $baseurl = $this->issuer->get('baseurl');
-                    $baseurl = rtrim($baseurl, '/');
-                    // Forces download
-                    $webdavurl = $this->issuer->get_endpoint_url('webdav') . '/Moodlefiles/' . $storedfile->get_filename();
-                    header('Location: ' . $webdavurl);
-                    exit();
-                } else {
-                    send_file_not_found();
-                }
-            } else {
+            if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
+                // File could not be moved
                 send_file_not_found();
             }
+            $baseurl = $this->issuer->get('baseurl');
+            $webdavurl = $baseurl . '/index.php/f/' . $responsecreateshare['fileid'];
+            header('Location: ' . $webdavurl);
+            exit();
         }
     }
 
