@@ -629,6 +629,8 @@ class repository_owncloud extends repository {
             $username = $userinfo['username'];
 
             // Move the file to the Moodelfiles folder
+            $timeintervalsharing = $this->get_option('timeintervalsharing');
+
             $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 604800, false);
             $statuscode = $responsecreateshare['statuscode'];
 
@@ -684,7 +686,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_type_option_names() {
-        return array('issuerid', 'pluginname');
+        return array('issuerid', 'pluginname', 'timeintervalsharing');
     }
 
     /**
@@ -824,6 +826,9 @@ class repository_owncloud extends repository {
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
         $mform->setType('issuerid', PARAM_INT);
 
+        $mform->addElement('duration', 'timeintervalsharing', get_string('timetoshare', 'repository_owncloud'));
+        $mform->addHelpButton('timeintervalsharing', 'timetoshare', 'repository_owncloud');
+
         // All issuers that are valid are displayed seperately (if any).
         if (count($validissuers) === 0) {
             $mform->addElement('html', get_string('no_right_issuers', 'repository_owncloud'));
@@ -840,6 +845,8 @@ class repository_owncloud extends repository {
      */
     public function set_option($options = array()) {
         $options['issuerid'] = clean_param($options['issuerid'], PARAM_INT);
+        $options['timeintervalsharing'] = clean_param($options['timeintervalsharing'], PARAM_INT);
+
         $ret = parent::set_option($options);
         return $ret;
     }
@@ -850,7 +857,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_instance_option_names() {
-        return ['issuerid'];
+        return ['issuerid', 'timeintervalsharing'];
     }
 
     /**

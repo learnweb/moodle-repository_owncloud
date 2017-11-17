@@ -38,6 +38,9 @@ $string['no_right_issuers'] = 'None of the existing issuers implement all requir
 $string['chooseissuer'] = 'Issuer';
 $string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 services page. <br>
 For additional help with the OAuth 2 API please refer to the Moodle documentation.';
+$string['timetoshare'] = 'Time until a Share of a controlled link is deleted';
+$string['timetoshare_help'] = 'This repository enables controlled links. They are merely available for a limited amount of time. <br>
+The default time is one week.';
 $string['chooseissuer_link'] = 'OAuth_2_services';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
 $string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific acesstoken (called confirmation token), provided by the oauthlib, saved in the session to access files.';
