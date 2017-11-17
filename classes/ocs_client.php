@@ -106,6 +106,16 @@ class ocs_client extends rest {
                 ],
                 'response' => 'text/xml'
             ],
+            'get_shares' => [
+                'endpoint' => $this->ocsendpoint,
+                'method' => 'get',
+                'args' => [
+                    'path' => PARAM_TEXT,
+                    'reshares' => PARAM_RAW,
+                    'subfiles' => PARAM_RAW
+                ],
+                'response' => 'text/xml'
+            ],
         ];
     }
 

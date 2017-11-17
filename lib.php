@@ -485,7 +485,7 @@ class repository_owncloud extends repository {
         $sourcepath = $webdavendpoint['path'] . $srcpath;
         $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
 
-        $result['success'] = $this->dav->move($sourcepath, $destinationpath, true);
+        $result['success'] = $this->dav->move($sourcepath, $destinationpath, false);
         $this->dav->close();
         return $result;
     }
@@ -635,10 +635,20 @@ class repository_owncloud extends repository {
 
             // TODO get id when path is already shared
             if ($statuscode == 403) {
-
-            }
-            // 4. check whether share could be created
-            if (!($statuscode == 100 || $statuscode == 403)){
+                $source = $storedfile->get_reference();
+                $jsondecode = json_decode($source);
+                $path = $jsondecode->link;
+                $ocsparams = [
+                    'path' => $path,
+                    'reshares' => true
+                ];
+                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+                $response = $this->systemocsclient->call('get_shares', $ocsparams);
+                $xml = simplexml_load_string($response);
+                $fileid = $xml->data->element->item_source;
+            } else if($statuscode == 100){
+                $fileid = $responsecreateshare['fileid'];
+            } else {
                 send_file_not_found();
             }
 
@@ -646,11 +656,11 @@ class repository_owncloud extends repository {
             $srcpath = $storedfile->get_filename();
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
             if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
-                // File could not be moved
+                // TODO not error but warning?
                 send_file_not_found();
             }
             $baseurl = $this->issuer->get('baseurl');
-            $webdavurl = $baseurl . '/index.php/f/' . $responsecreateshare['fileid'];
+            $webdavurl = $baseurl . '/index.php/f/' . $fileid;
             header('Location: ' . $webdavurl);
             exit();
         }
