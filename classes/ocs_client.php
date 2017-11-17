@@ -42,7 +42,7 @@ class ocs_client extends rest {
      */
     const SHARE_TYPE_PUBLIC = 3;
     /**
-     * shareType=0 creates a public share.
+     * shareType=0 creates a private share.
      */
     const SHARE_TYPE_USER = 0;
     /**
