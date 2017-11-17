@@ -599,8 +599,7 @@ class repository_owncloud extends repository {
 
         if (!$this->client->is_logged_in()) {
             // TODO after login user is not redirected to Moodlepage in case of switching http https
-            $redirect = $this->client->get_login_url();
-            redirect($redirect);
+            $this->print_login_popup(['style' => 'margin-top: 250px']);
             exit();
         }
         // 2. Check whether user has folder for Moodlefiles otherwise create it
@@ -942,7 +941,32 @@ class repository_owncloud extends repository {
         ksort($folders);
         return array_merge($folders, $files);
     }
+    /**
+     * Print the login in a popup.
+     *
+     * @param array|null $attr Custom attributes to be applied to popup div.
+     */
+    private function print_login_popup($attr = null) {
+        global $OUTPUT, $PAGE;
 
+        $this->client = $this->get_user_oauth_client();
+        $url = new moodle_url($this->client->get_login_url());
+        $state = $url->get_param('state') . '&reloadparent=true';
+        $url->param('state', $state);
+
+        // $PAGE->set_pagelayout('embedded');
+        echo $OUTPUT->header();
+
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
+
+        $button = new single_button($url, get_string('logintoaccount', 'repository', $repositoryname), 'post', true);
+        $button->add_action(new popup_action('click', $url, 'Login'));
+        $button->class = 'mdl-align';
+        $button = $OUTPUT->render($button);
+        echo html_writer::div($button, '', $attr);
+
+        echo $OUTPUT->footer();
+    }
     /**
      * Prepare response of get_listing; namely
      * - defining setting elements,
