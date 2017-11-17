@@ -629,7 +629,7 @@ class repository_owncloud extends repository {
             $username = $userinfo['username'];
 
             // Move the file to the Moodelfiles folder
-            $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 1440, false);
+            $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 604800, false);
             $statuscode = $responsecreateshare['statuscode'];
 
             // TODO get id when path is already shared
