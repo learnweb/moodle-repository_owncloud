@@ -80,6 +80,12 @@ class repository_owncloud extends repository {
     private $timeintervalsharing;
 
     /**
+     * Name of the folder for controlled links.
+     * @var controlledlinkfoldername
+     */
+    private $controlledlinkfoldername;
+
+    /**
      * repository_owncloud constructor.
      * @param int $repositoryid
      * @param bool|int|stdClass $context
@@ -114,6 +120,7 @@ class repository_owncloud extends repository {
             return;
         }
         $this->timeintervalsharing = $this->get_option('timeintervalsharing');
+        $this->controlledlinkfoldername = $this->get_option('controlledlinkfoldername');
 
 
         if (!$this->issuer) {
@@ -693,7 +700,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_type_option_names() {
-        return array('issuerid', 'pluginname', 'timeintervalsharing');
+        return array('issuerid', 'pluginname', 'timeintervalsharing', 'controlledlinkfoldername');
     }
 
     /**
@@ -837,6 +844,11 @@ class repository_owncloud extends repository {
         $mform->addHelpButton('timeintervalsharing', 'timetoshare', 'repository_owncloud');
         $mform->setDefault('timeintervalsharing', 604800);
 
+        $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));
+        $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
+        $mform->setType('controlledlinkfoldername', PARAM_TEXT);
+        $mform->setDefault('controlledlinkfoldername', 'Moodlefiles');
+
         // All issuers that are valid are displayed seperately (if any).
         if (count($validissuers) === 0) {
             $mform->addElement('html', get_string('no_right_issuers', 'repository_owncloud'));
@@ -854,6 +866,7 @@ class repository_owncloud extends repository {
     public function set_option($options = array()) {
         $options['issuerid'] = clean_param($options['issuerid'], PARAM_INT);
         $options['timeintervalsharing'] = clean_param($options['timeintervalsharing'], PARAM_INT);
+        $options['controlledlinkfoldername'] = clean_param($options['controlledlinkfoldername'], PARAM_TEXT);
 
         $ret = parent::set_option($options);
         return $ret;
@@ -865,7 +878,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_instance_option_names() {
-        return ['issuerid', 'timeintervalsharing'];
+        return ['issuerid', 'timeintervalsharing', 'controlledlinkfoldername'];
     }
 
     /**
