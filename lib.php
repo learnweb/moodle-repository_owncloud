@@ -74,6 +74,12 @@ class repository_owncloud extends repository {
     private $ocsclient;
 
     /**
+     * Time span for controlled links.
+     * @var timeintervalsharing
+     */
+    private $timeintervalsharing;
+
+    /**
      * repository_owncloud constructor.
      * @param int $repositoryid
      * @param bool|int|stdClass $context
@@ -107,6 +113,8 @@ class repository_owncloud extends repository {
             $this->disabled = true;
             return;
         }
+        $this->timeintervalsharing = $this->get_option('timeintervalsharing');
+
 
         if (!$this->issuer) {
             $this->disabled = true;
@@ -629,9 +637,9 @@ class repository_owncloud extends repository {
             $username = $userinfo['username'];
 
             // Move the file to the Moodelfiles folder
-            $timeintervalsharing = $this->get_option('timeintervalsharing');
 
-            $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, 604800, false);
+            $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username,
+                $this->timeintervalsharing, false);
             $statuscode = $responsecreateshare['statuscode'];
 
             // TODO get id when path is already shared
@@ -828,6 +836,7 @@ class repository_owncloud extends repository {
 
         $mform->addElement('duration', 'timeintervalsharing', get_string('timetoshare', 'repository_owncloud'));
         $mform->addHelpButton('timeintervalsharing', 'timetoshare', 'repository_owncloud');
+        $mform->setDefault('timeintervalsharing', 604800);
 
         // All issuers that are valid are displayed seperately (if any).
         if (count($validissuers) === 0) {
@@ -954,19 +963,19 @@ class repository_owncloud extends repository {
      * @param array|null $attr Custom attributes to be applied to popup div.
      */
     private function print_login_popup($attr = null) {
-        global $OUTPUT, $PAGE;
+        global $OUTPUT;
 
         $this->client = $this->get_user_oauth_client();
         $url = new moodle_url($this->client->get_login_url());
         $state = $url->get_param('state') . '&reloadparent=true';
         $url->param('state', $state);
 
-        // $PAGE->set_pagelayout('embedded');
         echo $OUTPUT->header();
 
         $repositoryname = get_string('pluginname', 'repository_owncloud');
 
-        $button = new single_button($url, get_string('logintoaccount', 'repository', $repositoryname), 'post', true);
+        $button = new single_button($url, get_string('logintoaccount', 'repository', $repositoryname),
+            'post', true);
         $button->add_action(new popup_action('click', $url, 'Login'));
         $button->class = 'mdl-align';
         $button = $OUTPUT->render($button);
