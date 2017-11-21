@@ -384,6 +384,7 @@ class repository_owncloud extends repository {
             throw new repository_exception('Could not create folder path', 'repository');
         }
         // 3. Copy File to the new folder path.
+        // TODO: avoid name of file prefered id since they are unique.
         $copyfile = $this->copy_file_to_path($source, $foldercreate['fullpath'], $sysdav);
         if ($copyfile['success'] != 201) {
             throw new repository_exception('Could not copy file', 'repository');
@@ -604,6 +605,8 @@ class repository_owncloud extends repository {
      * @param int $filter (ignored)
      * @param bool $forcedownload (ignored)
      * @param array $options (ignored)
+     * @throws \repository_owncloud\request_exception
+     * @throws repository_exception
      */
     public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
         // 1. assure the client and user is logged in.
@@ -676,6 +679,7 @@ class repository_owncloud extends repository {
             $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
             $dstpath = $foldername;
             $xml = simplexml_load_string($shareinformation);
+            // TODO: adjust
             $srcpath = $xml->data->element->path;
 
             // TODO currently might select false file
@@ -685,6 +689,7 @@ class repository_owncloud extends repository {
                 // send_file_not_found();
             }
             $baseurl = $this->issuer->get('baseurl');
+            // TODO: Webdav redirect
             $webdavurl = $baseurl . '/index.php/f/' . $fileid;
             header('Location: ' . $webdavurl);
             exit();
@@ -732,7 +737,6 @@ class repository_owncloud extends repository {
         if ($this->client) {
             return $this->client;
         }
-        // TODO $overrideurl is not used currently. GDocs uses it in send_file. Evaluate whether we need it.
         if ($overrideurl) {
             $returnurl = $overrideurl;
         } else {
