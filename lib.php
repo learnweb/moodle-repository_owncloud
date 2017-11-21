@@ -665,8 +665,15 @@ class repository_owncloud extends repository {
                 $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
                 $getsharesresponse = $this->systemocsclient->call('get_shares', $ocsparams);
                 $xml = simplexml_load_string($getsharesresponse);
-                $fileid = $xml->data->element->item_source;
-                $shareid = $xml->data->element->id;
+                $validelement = array();
+                foreach ($fileid = $xml->data->element as $element) {
+                    if ($element->share_with == $username) {
+                        $validelement = $element;
+                        break;
+                    }
+                }
+                $fileid = $validelement->item_source;
+                $shareid = $validelement->id;
             } else if($statuscode == 100){
                 $fileid = $responsecreateshare['fileid'];
                 $shareid = $responsecreateshare['shareid'];
