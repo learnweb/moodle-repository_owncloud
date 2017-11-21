@@ -606,7 +606,6 @@ class repository_owncloud extends repository {
         }
 
         if (!$this->client->is_logged_in()) {
-            // TODO after login user is not redirected to Moodlepage in case of switching http https
             $this->print_login_popup(['style' => 'margin-top: 250px']);
             exit();
         }
