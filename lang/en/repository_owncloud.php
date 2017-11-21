@@ -46,6 +46,8 @@ $string['foldername_help'] = 'This repository enables controlled links. To assur
 With this setting the name of the folder can be determined. It is recommendable to chose a name associated with your Moodle instance.';
 $string['chooseissuer_link'] = 'OAuth_2_services';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
+$string['controlledlinkwarning'] = 'Changing the foldername for an existing repository will result in synchronization problems with files that were linked with an access controlled link. <br>
+It is recommended to change the name of the folder merely when initiating the repository or in case no files from the repository exist.';
 $string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific acesstoken (called confirmation token), provided by the oauthlib, saved in the session to access files.';
 
 // Exceptions.

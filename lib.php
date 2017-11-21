@@ -813,6 +813,7 @@ class repository_owncloud extends repository {
      * @param \moodleform $mform Moodle form (passed by reference)
      */
     public static function instance_config_form($mform) {
+        global $OUTPUT;
         if (!has_capability('moodle/site:config', context_system::instance())) {
             $mform->addElement('static', null, '',  get_string('nopermissions', 'error', get_string('configplugin',
                 'repository_owncloud')));
@@ -844,6 +845,9 @@ class repository_owncloud extends repository {
         $mform->addElement('duration', 'timeintervalsharing', get_string('timetoshare', 'repository_owncloud'));
         $mform->addHelpButton('timeintervalsharing', 'timetoshare', 'repository_owncloud');
         $mform->setDefault('timeintervalsharing', 604800);
+
+        $warning = $OUTPUT->notification(get_string('controlledlinkwarning', 'repository_owncloud'), 'warning');
+        $mform->addElement('static', null, '', $warning);
 
         $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));
         $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
