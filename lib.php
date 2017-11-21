@@ -616,18 +616,19 @@ class repository_owncloud extends repository {
             $this->print_login_popup(['style' => 'margin-top: 250px']);
             exit();
         }
-        // 2. Check whether user has folder for Moodlefiles otherwise create it
+        // 2. Check whether user has folder for files otherwise create it
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
         $webdavprefix = $parsedwebdavurl['path'];
         // Checks whether folder exist and creates non-existent folders.
         $this->initiate_webdavclient();
         $this->dav->open();
-        $isdir = $this->dav->is_dir($webdavprefix . 'Moodlefiles');
+        $foldername = $this->controlledlinkfoldername;
+        $isdir = $this->dav->is_dir($webdavprefix . $foldername);
         // Folder already exist, continue
         $this->dav->close();
         if (!$isdir) {
             $this->dav->open();
-            $responsecreateshare = $this->dav->mkcol($webdavprefix . 'Moodlefiles');
+            $responsecreateshare = $this->dav->mkcol($webdavprefix . $foldername);
 
             $this->dav->close();
             if ($responsecreateshare != 201) {
@@ -667,7 +668,7 @@ class repository_owncloud extends repository {
                 send_file_not_found();
             }
 
-            $dstpath = 'Moodlefiles';
+            $dstpath = $foldername;
             $srcpath = $storedfile->get_filename();
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
             if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
