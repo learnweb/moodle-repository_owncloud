@@ -53,3 +53,4 @@ $string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific a
 // Exceptions.
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
 $string['request_exception'] = 'A request to ownCloud has failed: {$a}';
+$string['requestnotexecuted'] = 'The request could not be executed. If this happens frequently please contact the course or site administrator.';

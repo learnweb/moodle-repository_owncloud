@@ -606,7 +606,7 @@ class repository_owncloud extends repository {
      * @param array $options (ignored)
      */
     public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
-        // 1. assure the user has is logged in.
+        // 1. assure the client and user is logged in.
         if (empty($this->client)) {
             $details = 'Cannot connect as current user';
             throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
@@ -632,7 +632,8 @@ class repository_owncloud extends repository {
 
             $this->dav->close();
             if ($responsecreateshare != 201) {
-                throw new \repository_owncloud\request_exception('Could not copy file');
+                // TODO copy is maybe possible
+                throw new \repository_owncloud\request_exception(get_string('requestnotexecuted', 'repository_owncloud'));
             }
         }
         // 2. Check whether file is shown embedded
@@ -659,21 +660,29 @@ class repository_owncloud extends repository {
                     'reshares' => true
                 ];
                 $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-                $response = $this->systemocsclient->call('get_shares', $ocsparams);
-                $xml = simplexml_load_string($response);
+                $getsharesresponse = $this->systemocsclient->call('get_shares', $ocsparams);
+                $xml = simplexml_load_string($getsharesresponse);
                 $fileid = $xml->data->element->item_source;
+                $shareid = $xml->data->element->id;
             } else if($statuscode == 100){
                 $fileid = $responsecreateshare['fileid'];
+                $shareid = $responsecreateshare['shareid'];
             } else {
                 send_file_not_found();
             }
-
+            $ocsparams = [
+                'share_id' => $shareid
+            ];
+            $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
             $dstpath = $foldername;
-            $srcpath = $storedfile->get_filename();
+            $xml = simplexml_load_string($shareinformation);
+            $srcpath = $xml->data->element->path;
+
+            // TODO currently might select false file
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
             if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
-                // TODO not error but warning?
-                send_file_not_found();
+                // TODO not error but warning? -- Case File already in Folder?
+                // send_file_not_found();
             }
             $baseurl = $this->issuer->get('baseurl');
             $webdavurl = $baseurl . '/index.php/f/' . $fileid;

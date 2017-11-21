@@ -116,6 +116,14 @@ class ocs_client extends rest {
                 ],
                 'response' => 'text/xml'
             ],
+            'get_information_of_share' => [
+                'endpoint' => $this->ocsendpoint . '/{share_id}',
+                'method' => 'get',
+                'args' => [
+                    'share_id' => PARAM_INT
+                ],
+                'response' => 'text/xml'
+            ],
         ];
     }
 
