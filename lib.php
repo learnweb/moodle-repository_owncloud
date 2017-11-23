@@ -687,7 +687,14 @@ class repository_owncloud extends repository {
             $dstpath = $foldername;
             $xml = simplexml_load_string($shareinformation);
             // TODO: adjust
-            $srcpath = $xml->data->element->path;
+            foreach ($fileid = $xml->data->element as $element) {
+                // TODO difference to share_with_displayname
+                if ($element->share_with == $username) {
+                    $validelement = $element;
+                    break;
+                }
+            }
+            $srcpath = $validelement->file_target;
 
             // TODO currently might select false file
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
@@ -695,9 +702,7 @@ class repository_owncloud extends repository {
                 // TODO not error but warning? -- Case File already in Folder?
                 // send_file_not_found();
             }
-            $baseurl = $this->issuer->get('baseurl');
-            // TODO: Webdav redirect
-            $webdavurl = $baseurl . '/index.php/f/' . $fileid;
+            $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
             header('Location: ' . $webdavurl);
             exit();
         }
