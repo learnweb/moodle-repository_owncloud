@@ -59,10 +59,16 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
             'visible' => 1,
             'enableuserinstances' => 0,
             'enablecourseinstances' => 0,
+            'issuerid' => $this->issuer->get('id'),
+            'pluginname' => 'ownCloud',
+            'timeintervalsharing' => 604800,
+            'controlledlinkfoldername' => 'Moodlefiles',
         ]);
 
         $instance = $generator->create_instance([
             'issuerid' => $this->issuer->get('id'),
+            'timeintervalsharing' => 604800,
+            'controlledlinkfoldername' => 'Moodlefiles',
         ]);
 
         // At last, create a repository_owncloud object from the instance id.
@@ -539,19 +545,12 @@ XML;
     }
 
     /**
-     * Test the send_file function.
+     * TODO : Test the send_file function.
      */
-    public function test_send_file() {
-        $storedfilemock = $this->createMock(stored_file::class);
-
-        // When executing send file the get_refernce methode of the stored_file object is called.
-        $storedfilemock->expects($this->exactly(1))->method('get_reference')->willReturn('/reference');
-        // Since the redirect function does not belong to a class it can not be simulated with a mock.
-        // However, since moodle throws specific exceptionsthis can be caught.
-        $this->expectException(moodle_exception::class);
-        $this->expectExceptionMessage('Unsupported redirect detected, script execution terminated');
-        $this->repo->send_file($storedfilemock);
-    }
+//    public function test_send_file() {
+//        $storedfilemock = $this->createMock(stored_file::class);
+//
+//    }
     /**
      * Test logout.
      */
@@ -693,7 +692,7 @@ XML;
      */
     public function test_supported_returntypes() {
         global $DB;
-        $this->assertEquals(FILE_INTERNAL, $this->repo->supported_returntypes());
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL, $this->repo->supported_returntypes());
         $dataobject = new stdClass();
         $dataobject->timecreated = time();
         $dataobject->timemodified = time();
@@ -706,7 +705,7 @@ XML;
 
         $DB->insert_record('oauth2_system_account', $dataobject);
         // When a system account is registered the file_type FILE_CONTROLLED_LINK is supported.
-        $this->assertEquals(FILE_INTERNAL | FILE_CONTROLLED_LINK, $this->repo->supported_returntypes());
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_CONTROLLED_LINK, $this->repo->supported_returntypes());
     }
 
     /**
@@ -777,21 +776,26 @@ XML;
  </data>
 </ocs>
 XML;
+        $dateofexpiration = (string) time() + 86400;
         $createtempshareparams = [
             'path' => '/somefile',
             'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
+            'expiration' => $dateofexpiration,
             'shareWith' => 'somename',
         ];
         $mock->expects($this->once())->method('call')->with('create_share', $createtempshareparams)->will($this->returnValue($expectedresponse));
         $this->set_private_property($mock, 'ocsclient');
-        $result = phpunit_util::call_internal_method($this->repo, "create_share_dataowner_sysaccount",
-            array('source' => "/somefile", 'systemusername' => "somename"), 'repository_owncloud');
+        $result = phpunit_util::call_internal_method($this->repo, "create_share_user_sysaccount",
+            array('source' => "/somefile", 'systemusername' => "somename", 'temp' => 86400, 'direction' => true), 'repository_owncloud');
         $xml = simplexml_load_string($expectedresponse);
 
         $myres['statuscode'] = $xml->meta->statuscode;
         $myres['shareid'] = $xml->data->id;
-        $this->assertEquals($result, $myres);
+        $myres['fileid'] = $xml->data->file_source;
+        $myres['filetarget'] = '/somefile';
+        $this->assertEquals($myres, $result);
+
     }
 
     /** The private methode copy_file_to_path takes a source-path and a destination-path and copies the file.
@@ -804,16 +808,13 @@ XML;
         $mock->expects($this->once())->method('open')->will($this->returnValue(true));
         $dstpath = '/destination';
         $srcpath = '/source';
-        $webdavendpoint = $this->issuer->get_endpoint_url('webdav');
-        $baseurl = $this->issuer->get('baseurl');
-        $path = trim($webdavendpoint, $baseurl);
-        $prefixwebdav = rtrim('/'.ltrim($path, '/ '), '/ ');
-        $sourcepath = $prefixwebdav . $srcpath;
-        $destinationpath = $prefixwebdav . $dstpath . '/' . $srcpath;
+        $webdavendpoint = parse_url($this->issuer->get_endpoint_url('webdav'));
+        $path = $webdavendpoint['path'];
+        $sourcepath = $path . $srcpath;
+        $destinationpath = $path . $dstpath . '/' . $srcpath;
 
         $mock->expects($this->once())->method('copy_file')->with($sourcepath, $destinationpath, true)->will($this->returnValue(200));
         $mock->expects($this->once())->method('close');
-
         $result = phpunit_util::call_internal_method($this->repo, "copy_file_to_path",
             array('srcpath' => "/source", 'dstpath' => "/destination", 'sysdav' => $mock), 'repository_owncloud');
         $this->assertEquals($result, array( 'success' => 200));
