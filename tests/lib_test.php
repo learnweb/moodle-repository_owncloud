@@ -708,28 +708,6 @@ XML;
         $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_CONTROLLED_LINK, $this->repo->supported_returntypes());
     }
 
-    /**
-     * The reference_file_selected() methode is called every time a FILE_CONTROLLED_LINK is chosen for upload.
-     * Since the function is very long the private function are tested separately, and merely the abortion of the
-     * function are tested.
-     *
-     */
-    public function test_reference_file_selected() {
-        $this->repo->disabled = true;
-
-        $this->expectException(\repository_exception::class);
-        // Usually the context would be context_module().
-        // However, for testing the function the specific context is not required.
-
-        $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
-
-        $this->repo->disabled = false;
-        $this->expectException(\repository_exception::class);
-        $this->expectExceptionMessage('Cannot connect as system user');
-
-        $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
-    }
-
     /** The function create_share_dataowner_sysaccount() calls for a ocs client to create a private share with between the
      * user logged in in Moodle and the currently authenticated system-account. Therefore, a ocs_client is mocked and returns
      * the answer for a successful share.

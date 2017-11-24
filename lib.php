@@ -454,12 +454,13 @@ class repository_owncloud extends repository {
         if ($direction === true) {
             $createshareresponse = $this->ocsclient->call('create_share', $createshareparams);
         } else {
-            $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            if (empty($this->systemocsclient)) {
+                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            }
             $createshareresponse = $this->systemocsclient->call('create_share', $createshareparams);
         }
         $xml = simplexml_load_string($createshareresponse);
 
-        // todo: check statuscode also for share already exist
         $result['statuscode'] = $xml->meta->statuscode;
         $result['shareid'] = $xml->data->id;
         $result['fileid'] = $xml->data->item_source;
