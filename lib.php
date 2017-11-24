@@ -214,9 +214,9 @@ class repository_owncloud extends repository {
      * @return array|bool returns either the moodle path to the file or false.
      */
     public function get_file($reference, $title = '') {
-
-        // Normal file
+        // Normal file.
         $reference = urldecode($reference);
+
         // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
         $path = $this->prepare_file(uniqid());
         $this->initiate_webdavclient();
@@ -434,31 +434,28 @@ class repository_owncloud extends repository {
      */
     private function create_share_user_sysaccount($source, $username, $temp, $direction) {
         $result = array();
-        // todo: maybe set expiration date?
         $path = $source;
-        $functionsargs = null;
-        $time = time();
-        $expiration = $time + $temp;
-        $test = (string) $expiration;
+        $expiration = time() + $temp;
+        $dateofexpiration = (string) $expiration;
         if ($direction === false) {
             $source = $source->get_reference();
             $jsondecode = json_decode($source);
             $path = $jsondecode->link;
         }
-        $createtempshareparams = [
+        $createshareparams = [
             'path' => $path,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
-            'expiration' => $test,
+            'expiration' => $dateofexpiration,
             'shareWith' => $username,
         ];
 
         // File is now shared with the system account.
         if ($direction === true) {
-            $createshareresponse = $this->ocsclient->call('create_share', $createtempshareparams);
+            $createshareresponse = $this->ocsclient->call('create_share', $createshareparams);
         } else {
             $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-            $createshareresponse = $this->systemocsclient->call('create_share', $createtempshareparams);
+            $createshareresponse = $this->systemocsclient->call('create_share', $createshareparams);
         }
         $xml = simplexml_load_string($createshareresponse);
 
@@ -617,7 +614,7 @@ class repository_owncloud extends repository {
 
         if (!$this->client->is_logged_in()) {
             $this->print_login_popup(['style' => 'margin-top: 250px']);
-            exit();
+            return;
         }
         // 2. Check whether user has folder for files otherwise create it
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
@@ -628,84 +625,72 @@ class repository_owncloud extends repository {
         $foldername = $this->controlledlinkfoldername;
         $isdir = $this->dav->is_dir($webdavprefix . $foldername);
         // Folder already exist, continue
-        $this->dav->close();
         if (!$isdir) {
-            $this->dav->open();
             $responsecreateshare = $this->dav->mkcol($webdavprefix . $foldername);
 
-            $this->dav->close();
             if ($responsecreateshare != 201) {
                 // TODO copy is maybe possible
+                $this->dav->close();
                 throw new \repository_owncloud\request_exception(get_string('requestnotexecuted', 'repository_owncloud'));
             }
         }
-        // 2. Check whether file is shown embedded
-        if ($options['embed'] == true) {
-            // TODO: embed file on page
-        } else {
-            // TODO Evaluate which parts are additionally necessary with options['embedded']=true
-            $userinfo = $this->client->get_userinfo();
-            $username = $userinfo['username'];
+        $this->dav->close();
 
-            // Move the file to the Moodelfiles folder
+        $userinfo = $this->client->get_userinfo();
+        $username = $userinfo['username'];
 
-            $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username,
-                $this->timeintervalsharing, false);
-            $statuscode = $responsecreateshare['statuscode'];
+        // Moves the file to the Moodelfiles folder
 
-            // TODO get id when path is already shared
-            if ($statuscode == 403) {
-                $source = $storedfile->get_reference();
-                $jsondecode = json_decode($source);
-                $path = $jsondecode->link;
-                $ocsparams = [
-                    'path' => $path,
-                    'reshares' => true
-                ];
-                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-                $getsharesresponse = $this->systemocsclient->call('get_shares', $ocsparams);
-                $xml = simplexml_load_string($getsharesresponse);
-                $validelement = array();
-                foreach ($fileid = $xml->data->element as $element) {
-                    if ($element->share_with == $username) {
-                        $validelement = $element;
-                        break;
-                    }
-                }
-                $fileid = $validelement->item_source;
-                $shareid = $validelement->id;
-            } else if($statuscode == 100){
-                $fileid = $responsecreateshare['fileid'];
-                $shareid = $responsecreateshare['shareid'];
-            } else {
-                send_file_not_found();
-            }
+        $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username,
+            $this->timeintervalsharing, false);
+        $statuscode = $responsecreateshare['statuscode'];
+
+        if ($statuscode == 403) {
+            $source = $storedfile->get_reference();
+            $jsondecode = json_decode($source);
+            $path = $jsondecode->link;
             $ocsparams = [
-                'share_id' => $shareid
+                'path' => $path,
+                'reshares' => true
             ];
-            $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
-            $dstpath = $foldername;
-            $xml = simplexml_load_string($shareinformation);
-            // TODO: adjust
+            $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            $getsharesresponse = $this->systemocsclient->call('get_shares', $ocsparams);
+            $xml = simplexml_load_string($getsharesresponse);
+            $validelement = array();
             foreach ($fileid = $xml->data->element as $element) {
-                // TODO difference to share_with_displayname
                 if ($element->share_with == $username) {
                     $validelement = $element;
                     break;
                 }
             }
-            $srcpath = $validelement->file_target;
-
-            // TODO currently might select false file
-            $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
-            if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
-                // TODO not error but warning? -- Case File already in Folder?
-                // send_file_not_found();
-            }
-            $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
-            header('Location: ' . $webdavurl);
-            exit();
+            $shareid = $validelement->id;
+        } else if($statuscode == 100){
+            $shareid = $responsecreateshare['shareid'];
+        } else {
+            send_file_not_found();
         }
+        $ocsparams = [
+            'share_id' => $shareid
+        ];
+        $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
+        $dstpath = $foldername;
+        $xml = simplexml_load_string($shareinformation);
+        foreach ($fileid = $xml->data->element as $element) {
+            // TODO difference to share_with_displayname
+            if ($element->share_with == $username) {
+                $validelement = $element;
+                break;
+            }
+        }
+        $srcpath = $validelement->file_target;
+
+        $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
+        if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
+            // TODO not error but warning? -- Case File already in Folder?
+            // send_file_not_found();
+        }
+        $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
+        header('Location: ' . $webdavurl);
     }
 
     /**
