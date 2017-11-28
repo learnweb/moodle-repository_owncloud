@@ -385,7 +385,7 @@ class repository_owncloud extends repository {
         }
         // 3. Copy File to the new folder path.
         // TODO: avoid name of file prefered id since they are unique.
-        $copyfile = $this->copy_file_to_path($source, $foldercreate['fullpath'], $sysdav);
+        $copyfile = $this->copy_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], $sysdav);
         if ($copyfile['success'] != 201) {
             throw new repository_exception('Could not copy file', 'repository');
         }
@@ -405,7 +405,7 @@ class repository_owncloud extends repository {
         $finalshare = $foldercreate['fullpath'] . $source;
 
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
-        $filereturn->link = $finalshare;
+        $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
         $filereturn->name = $source;
         $filereturn->usesystem = true;
         $filereturn = json_encode($filereturn);
@@ -475,10 +475,12 @@ class repository_owncloud extends repository {
      * @return array
      */
     private function copy_file_to_path($srcpath, $dstpath, $sysdav) {
+        // TODO: srcpath might be a confusing name
         $result = array();
         $sysdav->open();
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
+        $srcpath = ltrim($srcpath, '/');
         $sourcepath = $webdavendpoint['path'] . $srcpath;
         $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
 
@@ -646,6 +648,8 @@ class repository_owncloud extends repository {
             $this->timeintervalsharing, false);
         $statuscode = $responsecreateshare['statuscode'];
 
+        $dstpath = $foldername;
+
         if ($statuscode == 403) {
             $source = $storedfile->get_reference();
             $jsondecode = json_decode($source);
@@ -667,6 +671,25 @@ class repository_owncloud extends repository {
             $shareid = $validelement->id;
         } else if($statuscode == 100){
             $shareid = $responsecreateshare['shareid'];
+
+            $ocsparams = [
+                'share_id' => $shareid
+            ];
+            $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
+            $xml = simplexml_load_string($shareinformation);
+            foreach ($fileid = $xml->data->element as $element) {
+                if ($element->share_with == $username) {
+                    $validelement = $element;
+                    break;
+                }
+            }
+
+            $srcpath = $validelement->file_target;
+            $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
+            if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
+                // TODO not error but warning? -- Case File already in Folder?
+                // send_file_not_found();
+            }
         } else {
             send_file_not_found();
         }
@@ -674,22 +697,16 @@ class repository_owncloud extends repository {
             'share_id' => $shareid
         ];
         $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
-        $dstpath = $foldername;
         $xml = simplexml_load_string($shareinformation);
         foreach ($fileid = $xml->data->element as $element) {
-            // TODO difference to share_with_displayname
             if ($element->share_with == $username) {
                 $validelement = $element;
                 break;
             }
         }
-        $srcpath = $validelement->file_target;
 
-        $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
-        if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
-            // TODO not error but warning? -- Case File already in Folder?
-            // send_file_not_found();
-        }
+        $srcpath = ltrim($validelement->file_target, '/');
+
         $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
         header('Location: ' . $webdavurl);
     }
