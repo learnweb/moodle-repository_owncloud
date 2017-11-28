@@ -540,7 +540,7 @@ class repository_owncloud extends repository {
             $fullpath .= '/' . $foldername;
             $isdir = $sysdav->is_dir($webdavprefix . $fullpath);
             // Folder already exist, continue
-            if ($isdir == true) {
+            if ($isdir === true) {
                 $sysdav->close();
                 continue;
             }
