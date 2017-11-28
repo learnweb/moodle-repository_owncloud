@@ -408,10 +408,6 @@ class repository_owncloud extends repository {
             throw new repository_exception('Share is still present', 'repository');
         }
 
-        // todo: return the link to the file is not tested with a owncloud instance.
-        // 5. Create final share for access.
-        $finalshare = $foldercreate['fullpath'] . $source;
-
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
         $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
         $filereturn->name = $source;
@@ -627,7 +623,7 @@ class repository_owncloud extends repository {
             $this->print_login_popup(['style' => 'margin-top: 250px']);
             return;
         }
-        // 2. Check whether user has folder for files otherwise create it
+        // 2. Check whether user has folder for files otherwise create it.
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
         $webdavprefix = $parsedwebdavurl['path'];
         // Checks whether folder exist and creates non-existent folders.
@@ -652,8 +648,8 @@ class repository_owncloud extends repository {
 
         // Moves the file to the Moodelfiles folder
 
-        $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username,
-            $this->timeintervalsharing, false);
+        $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, $this->timeintervalsharing,
+            false);
         $statuscode = $responsecreateshare['statuscode'];
 
         $dstpath = $foldername;
