@@ -242,7 +242,6 @@ XML;
         $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
             ->disableOriginalClone()->getMock();
 
-        // Case all folders are already created, therefore mkcol is never called.
         $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
@@ -254,6 +253,27 @@ XML;
         $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
         $mocknestedcontext->method('get_context_name')->willReturn('somename');
         return array('mockcontext' => $mockcontext, 'mockclient' => $mockclient);
+    }
+
+    /**
+     * Test the copy file to path function.
+     */
+    public function test_copy_file_to_path() {
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
+            ->disableOriginalClone()->getMock();
+
+        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $webdavprefix = $parsedwebdavurl['path'];
+        $srcpath = 'sourcepath';
+        $dstpath = "destinationpath/another/path";
+
+        $mockclient->expects($this->once())->method('copy_file')
+            ->with($webdavprefix . $srcpath, $webdavprefix . $dstpath . '/' . $srcpath, true)->willReturn(201);
+        $result = phpunit_util::call_internal_method($this->repo, "copy_file_to_path",
+            array('srcpath' => $srcpath, 'dstpath' => $dstpath, 'sysdav' => $mockclient), 'repository_owncloud');
+        $expected = array();
+        $expected['success'] = 201;
+        $this->assertEquals($expected, $result);
     }
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
