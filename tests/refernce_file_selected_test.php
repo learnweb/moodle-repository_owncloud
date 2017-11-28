@@ -105,7 +105,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $this->expectExceptionMessage('cannotdownload');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
-
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
         $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
         $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('statuscode' => array('success' => 400)));
@@ -113,6 +112,37 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $this->expectExceptionMessage('cannotdownload');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
+        $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
+        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
+        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('statuscode' => array('success' => 100)));
+        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 400)));
+        $this->expectException(\repository_exception::class);
+        $this->expectExceptionMessage('Could not copy file');
+        $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
+
+        $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
+        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
+        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('statuscode' => array('success' => 100)));
+        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
+        $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 400)));
+        $this->expectException(\repository_exception::class);
+        $this->expectExceptionMessage('Share is still present');
+        $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
+
+        $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
+        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('shareid' => 2,
+            'filetarget' => 'some/target/path','statuscode' => 100));
+        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('fullpath' => 'some/fullpath',
+            'statuscode' => array('success' => 100)));
+        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
+        $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 100)));
+        $filereturn = array();
+        $filereturn->link = 'some/fullpath' . 'some/target/path';
+        $filereturn->name = 'mysource';
+        $filereturn->usesystem = true;
+        $filereturn = json_encode($filereturn);
+        $return = $this->repo->reference_file_selected('mysource', context_system::instance(), '', '', '');
+        $this->assertEquals($filereturn, $return);
     }
 
     /**
