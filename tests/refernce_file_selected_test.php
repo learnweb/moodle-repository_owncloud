@@ -181,6 +181,28 @@ XML;
 
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * Function which test that create folder path does return the adequate results (path and success).
+     */
+    public function test_create_folder_path_access_controlled_links() {
+        $mockcontext = $this->createMock(context_module::class);
+        $mocknestedcontext = $this->createMock(context_module::class);
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
+            ->disableOriginalClone()->getMock();
+        $mockclient->method('is_dir')->willReturn(201);
+        $mockclient->method('mkcol')->willReturn(201);
+        $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
+        $mocknestedcontext->method('get_context_name')->willReturn('somename');
+        $result = phpunit_util::call_internal_method($this->repo, "create_folder_path_access_controlled_links",
+            array('context' => $mockcontext, 'component' => "mod_resource", 'filearea' => 'content', 'itemid' => 0, 'sysdav' => $mockclient),
+            'repository_owncloud');
+        $expected = array();
+        $expected['success'] = true;
+        $expected['fullpath'] = '/somename/mod_resource/content/0';
+        $this->assertEquals($expected, $result);
+    }
+
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
