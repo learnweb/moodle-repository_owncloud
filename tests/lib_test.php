@@ -776,28 +776,6 @@ XML;
 
     }
 
-    /** The private methode copy_file_to_path takes a source-path and a destination-path and copies the file.
-     * In the function the methode copy_file from the webdavlib is called. Therefore, not the coping process is tested
-     * but whether the mocked client receives the right params. The way of building the required path is owncloud specific.
-     *
-     */
-    public function test_copy_file_to_path() {
-        $mock = $this->createMock(\repository_owncloud\owncloud_client::class);
-        $mock->expects($this->once())->method('open')->will($this->returnValue(true));
-        $dstpath = '/destination';
-        $srcpath = '/source';
-        $webdavendpoint = parse_url($this->issuer->get_endpoint_url('webdav'));
-        $path = $webdavendpoint['path'];
-        $sourcepath = $path . $srcpath;
-        $destinationpath = $path . $dstpath . '/' . $srcpath;
-
-        $mock->expects($this->once())->method('copy_file')->with($sourcepath, $destinationpath, true)->will($this->returnValue(200));
-        $mock->expects($this->once())->method('close');
-        $result = phpunit_util::call_internal_method($this->repo, "copy_file_to_path",
-            array('srcpath' => "/source", 'dstpath' => "/destination", 'sysdav' => $mock), 'repository_owncloud');
-        $this->assertEquals($result, array( 'success' => 200));
-    }
-
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
