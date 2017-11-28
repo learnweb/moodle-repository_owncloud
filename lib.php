@@ -74,6 +74,12 @@ class repository_owncloud extends repository {
     private $ocsclient;
 
     /**
+     * OCS systemocsclient that uses the Open Collaboration Services REST API.
+     * @var ocs_client
+     */
+    private $systemocsclient;
+
+    /**
      * Time span for controlled links.
      * @var timeintervalsharing
      */
@@ -121,7 +127,9 @@ class repository_owncloud extends repository {
         }
         $this->timeintervalsharing = $this->get_option('timeintervalsharing');
         $this->controlledlinkfoldername = $this->get_option('controlledlinkfoldername');
-
+        if ($this->issuer->is_system_account_connected()) {
+            $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+        }
 
         if (!$this->issuer) {
             $this->disabled = true;
@@ -658,7 +666,9 @@ class repository_owncloud extends repository {
                 'path' => $path,
                 'reshares' => true
             ];
-            $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            if (empty($this->systemocsclient)) {
+                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            }
             $getsharesresponse = $this->systemocsclient->call('get_shares', $ocsparams);
             $xml = simplexml_load_string($getsharesresponse);
             $validelement = array();
