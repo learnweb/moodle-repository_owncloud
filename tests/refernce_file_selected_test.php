@@ -184,14 +184,50 @@ XML;
 
     /**
      * Function which test that create folder path does return the adequate results (path and success).
+     * Additionally mock checks whether the right params are passed to the corresponding functions.
      */
-    public function test_create_folder_path_access_controlled_links() {
+    public function test_create_folder_path_folders_are_not_created() {
         $mockcontext = $this->createMock(context_module::class);
         $mocknestedcontext = $this->createMock(context_module::class);
         $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
             ->disableOriginalClone()->getMock();
-        $mockclient->method('is_dir')->willReturn(201);
-        $mockclient->method('mkcol')->willReturn(201);
+
+        // Case all folders are already created, therefore mkcol is never called.
+        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $webdavprefix = $parsedwebdavurl['path'];
+        $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
+            $this->logicalOr($webdavprefix . '/somename/mod_resource', $webdavprefix . '/somename'),
+            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))->willReturn(true);
+
+        $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
+        $mocknestedcontext->method('get_context_name')->willReturn('somename');
+        $result = phpunit_util::call_internal_method($this->repo, "create_folder_path_access_controlled_links",
+            array('context' => $mockcontext, 'component' => "mod_resource", 'filearea' => 'content', 'itemid' => 0, 'sysdav' => $mockclient),
+            'repository_owncloud');
+        $expected = array();
+        $expected['success'] = true;
+        $expected['fullpath'] = '/somename/mod_resource/content/0';
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Function which test that create folder path does return the adequate results (path and success).
+     * Additionally mock checks whether the right params are passed to the corresponding functions.
+     */
+    public function test_create_folder_path_folders_are_created() {
+        $mockcontext = $this->createMock(context_module::class);
+        $mocknestedcontext = $this->createMock(context_module::class);
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
+            ->disableOriginalClone()->getMock();
+
+        // Case all folders are already created, therefore mkcol is never called.
+        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $webdavprefix = $parsedwebdavurl['path'];
+        $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
+            $this->logicalOr($webdavprefix . '/somename/mod_resource', $webdavprefix . '/somename'),
+            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))->willReturn(false);
+
+        $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn(201);
         $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
         $mocknestedcontext->method('get_context_name')->willReturn('somename');
         $result = phpunit_util::call_internal_method($this->repo, "create_folder_path_access_controlled_links",
