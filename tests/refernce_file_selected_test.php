@@ -348,7 +348,8 @@ XML;
         $webdavprefix = $parsedwebdavurl['path'];
         $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
             $this->logicalOr($webdavprefix . '/somename/mod_resource', $webdavprefix . '/somename'),
-            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))->willReturn($returnisdir);
+            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))
+            ->willReturn($returnisdir);
         if ($callmkcol == true) {
             $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn($returnmkcol);
         }
@@ -411,6 +412,107 @@ XML;
 
         $expected = $xml->meta->statuscode;
         $this->assertEquals($expected, $result);
+    }
+    public function test_send_file_errors() {
+        $this->set_private_property('', 'client');
+        $this->expectException(\repository_exception::class);
+        $this->expectExceptionMessage('Cannot connect as current user');
+        $this->repo->send_file('', '', '', '');
+
+        // Testing whether the mock up appears is topic to behat.
+        $mock = $this->createMock(\core\oauth2\client::class);
+        $mock->expects($this->once())->method('is_logged_in')->willReturn(true);
+        $this->repo->send_file('', '', '', '');
+
+        // Checks that setting for foldername are used.
+        $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(false);
+        // In case of false as return value mkcol is called to create the folder
+        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $webdavprefix = $parsedwebdavurl['path'];
+        $mock->expects($this->once())->method('mkcol')->with($webdavprefix . 'Moodlefiles')->willReturn(400);
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->expectExceptionMessage(get_string('requestnotexecuted', 'repository_owncloud'));
+        $this->repo->send_file('', '', '', '');
+
+        $expectedresponse = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
+ </meta>
+ <data>
+  <element>
+   <id>6</id>
+   <share_type>0</share_type>
+   <uid_owner>tech</uid_owner>
+   <displayname_owner>tech</displayname_owner>
+   <permissions>19</permissions>
+   <stime>1511877999</stime>
+   <parent/>
+   <expiration/>
+   <token/>
+   <uid_file_owner>tech</uid_file_owner>
+   <displayname_file_owner>tech</displayname_file_owner>
+   <path>/System/Category Miscellaneous/Course Example Course/File morefiles/mod_resource/content/0/merge.txt</path>
+   <item_type>file</item_type>
+   <mimetype>text/plain</mimetype>
+   <storage_id>home::tech</storage_id>
+   <storage>4</storage>
+   <item_source>824</item_source>
+   <file_source>824</file_source>
+   <file_parent>823</file_parent>
+   <file_target>/merge (3).txt</file_target>
+   <share_with>user2</share_with>
+   <share_with_displayname>user1</share_with_displayname>
+   <mail_send>0</mail_send>
+  </element>
+  <element>
+   <id>5</id>
+   <share_type>0</share_type>
+   <uid_owner>tech</uid_owner>
+   <displayname_owner>tech</displayname_owner>
+   <permissions>19</permissions>
+   <stime>1511877999</stime>
+   <parent/>
+   <expiration/>
+   <token/>
+   <uid_file_owner>tech</uid_file_owner>
+   <displayname_file_owner>tech</displayname_file_owner>
+   <path>/System/Category Miscellaneous/Course Example Course/File morefiles/mod_resource/content/0/merge.txt</path>
+   <item_type>file</item_type>
+   <mimetype>text/plain</mimetype>
+   <storage_id>home::tech</storage_id>
+   <storage>4</storage>
+   <item_source>824</item_source>
+   <file_source>824</file_source>
+   <file_parent>823</file_parent>
+   <file_target>/merged (3).txt</file_target>
+   <share_with>user1</share_with>
+   <share_with_displayname>user1</share_with_displayname>
+   <mail_send>0</mail_send>
+  </element>
+ </data>
+</ocs>
+XML;
+
+        // Checks that setting for foldername are used.
+        $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(true);
+        // In case of true as return value mkcol is not called  to create the folder
+        $shareid = 5;
+        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100, 'fileid' => $shareid));
+        $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+        )->getMock();
+        $mockocsclient->expects($this->exactly(2))->method('call')->with('get_information_of_share',
+            array('share_id' => $shareid))->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)
+            ->willReturn(array('success' => 201));
+
+        $this->repo->send_file('', '', '', '');
+
+        // Create test for statuscode 403.
     }
 
     /**
