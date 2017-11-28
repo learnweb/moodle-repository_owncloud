@@ -275,6 +275,42 @@ XML;
         $expected['success'] = 201;
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * Test the delete share function.
+     */
+    public function test_delete_share_dataowner_sysaccount() {
+        $mockocsclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()
+            ->disableOriginalClone()->getMock();
+        $this->set_private_property($mockocsclient, 'ocsclient');
+
+        $shareid = 5;
+        $deleteshareparams = [
+            'share_id' => $shareid
+        ];
+        $returnxml = <<<XML
+<?xml version="1.0"?>
+<ocs>
+    <meta>
+    <status>ok</status>
+    <statuscode>100</statuscode>
+    <message/>
+    </meta>
+    <data/>
+</ocs>
+
+XML;
+        $mockocsclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)
+            ->will($this->returnValue($returnxml));
+
+        $result = phpunit_util::call_internal_method($this->repo, "delete_share_dataowner_sysaccount",
+            array('shareid' => $shareid), 'repository_owncloud');
+        $xml = simplexml_load_string($returnxml);
+
+        $expected = $xml->meta->statuscode;
+        $this->assertEquals($expected, $result);
+    }
+
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
