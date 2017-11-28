@@ -70,7 +70,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
             'timeintervalsharing' => 604800,
             'controlledlinkfoldername' => 'Moodlefiles',
         ]);
-
         // At last, create a repository_owncloud object from the instance id.
         $this->repo = new repository_owncloud($instance->id);
         $this->repo->options['typeid'] = $reptype->id;
@@ -119,7 +118,7 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
     /**
      * Function to test the private function create_share_user_sysaccount.
      */
-    public function test_create_share_user_sysaccount(){
+    public function test_create_share_user_sysaccount_user_shares(){
         $dateofexpiration = time() + 604800;
         $username = 'user1';
         $params = [
@@ -179,6 +178,79 @@ XML;
         $expected['fileid'] = $xml->data->item_source;
         $expected['filetarget'] = ((string)$xml->data[0]->file_target);
 
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Function to test the private function create_share_user_sysaccount.
+     */
+    public function test_create_share_user_sysaccount_sysaccount_shares() {
+        // 2. case share is created from the technical user account.
+
+        // Set up params
+        $dateofexpiration = time() + 604800;
+        $username = 'user1';
+        $paramssysuser = [
+            'path' => "/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/ambient.txt",
+            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
+            'publicUpload' => false,
+            'expiration' => $dateofexpiration,
+            'shareWith' => $username,
+        ];
+        $expectedresponsesysuser = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
+ </meta>
+ <data>
+  <id>231</id>
+  <share_type>0</share_type>
+  <uid_owner>user1</uid_owner>
+  <displayname_owner>user1</displayname_owner>
+  <permissions>19</permissions>
+  <stime>1511881192</stime>
+  <parent/>
+  <expiration/>
+  <token/>
+  <uid_file_owner>user1</uid_file_owner>
+  <displayname_file_owner>user1</displayname_file_owner>
+  <path>/clean80s.txt</path>
+  <item_type>file</item_type>
+  <mimetype>text/plain</mimetype>
+  <storage_id>home::user1</storage_id>
+  <storage>3</storage>
+  <item_source>553</item_source>
+  <file_source>553</file_source>
+  <file_parent>20</file_parent>
+  <file_target>/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/ambient.txt</file_target>
+  <share_with>tech</share_with>
+  <share_with_displayname>tech</share_with_displayname>
+  <mail_send>0</mail_send>
+ </data>
+</ocs>
+XML;
+        // This time the stored filed is used.
+        $storedfilemock = $this->createMock(stored_file::class);
+        $storedfilemock->expects($this->once())->method('get_reference')->will(
+            $this->returnValue('{"link":"\/System\/Category Miscellaneous\/Course Example Course\/File createconfusion\/mod_resource\/content\/0\/ambient.txt","name":"\/ambient.txt","usesystem":true}'));
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()
+            ->disableOriginalClone()->getMock();
+        $mock->expects($this->once())->method('call')->with('create_share', $paramssysuser)->will($this->returnValue($expectedresponsesysuser));
+        $this->set_private_property($mock, 'systemocsclient');
+
+        $result = phpunit_util::call_internal_method($this->repo, "create_share_user_sysaccount",
+            array('source' => $storedfilemock, 'username' => "user1", 'temp' => 604800, 'direction' => false), 'repository_owncloud');
+
+        $xml = simplexml_load_string($expectedresponsesysuser);
+
+        $expected = array();
+        $expected['statuscode'] = $xml->meta->statuscode;
+        $expected['shareid'] = $xml->data->id;
+        $expected['fileid'] = $xml->data->item_source;
+        $expected['filetarget'] = ((string)$xml->data[0]->file_target);
         $this->assertEquals($expected, $result);
     }
 
