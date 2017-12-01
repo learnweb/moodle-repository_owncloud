@@ -721,7 +721,8 @@ class repository_owncloud extends repository {
         $srcpath = ltrim($validelement->file_target, '/');
 
         $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
-        header('Location: ' . $webdavurl);
+        redirect($webdavurl, get_string('downloadfile', 'repository_owncloud',
+            ['instancename' => $repositoryname, 'foldername' => $foldername]), null, \core\output\notification::NOTIFY_SUCCESS);
     }
 
     /**
