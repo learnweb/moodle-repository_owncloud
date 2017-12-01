@@ -413,6 +413,10 @@ XML;
         $expected = $xml->meta->statuscode;
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * Test the send_file function.
+     */
     public function test_send_file_errors() {
         $this->set_private_property('', 'client');
         $this->expectException(\repository_exception::class);
@@ -513,6 +517,22 @@ XML;
         $this->repo->send_file('', '', '', '');
 
         // Create test for statuscode 403.
+
+        // Checks that setting for foldername are used.
+        $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(true);
+        // In case of true as return value mkcol is not called to create the folder
+        $shareid = 5;
+        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 403, 'fileid' => $shareid));
+        $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
+        )->getMock();
+        $mockocsclient->expects($this->exactly(1))->method('call')->with('get_shares',
+            array('path' => '/merged (3).txt', 'reshares' => true))->will($this->returnValue($expectedresponse));
+        $mockocsclient->expects($this->exactly(1))->method('call')->with('get_information_of_share',
+            array('share_id' => $shareid))->will($this->returnValue($expectedresponse));
+        $this->set_private_property($mock, 'ocsclient');
+        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)
+            ->willReturn(array('success' => 201));
+        $this->repo->send_file('', '', '', '');
     }
 
     /**
