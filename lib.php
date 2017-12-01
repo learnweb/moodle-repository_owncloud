@@ -383,14 +383,14 @@ class repository_owncloud extends repository {
         $responsecreateshare = $this->create_share_user_sysaccount($source, $systemusername, 86400, true);
 
         if ($responsecreateshare['statuscode'] != 100 && $responsecreateshare['statuscode'] != 403) {
-            throw new repository_exception('cannotdownload', 'repository');
+            throw new repository_exception('The file can not be accessed.', 'repository');
         }
 
         // 2. Create a unique path in the system account.
         // todo: now generated as Google. Check expedience.
         $foldercreate = $this->create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav);
         if ($foldercreate['success'] != true) {
-            throw new repository_exception('Could not create folder path', 'repository');
+            throw new repository_exception('Could not create folder path.', 'repository');
         }
         // 3. Copy File to the new folder path.
         // TODO: avoid name of file prefered id since they are unique.
@@ -403,10 +403,8 @@ class repository_owncloud extends repository {
         $reponsedeleteshare = $this->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
 
         if ($reponsedeleteshare != 100) {
-            // todo: react in some way, however, this becomes difficult since:
-            // 1. Throwing an exception might be misunderstood, since the file was successfully created.
-            // 2. However, we do not want to see the share in the user account.
-            throw new repository_exception('Share is still present', 'repository');
+            \core\notification::warning('You just shared a file with a access control link. 
+            However, the share between you and the systemaccount could not be deleted.');
         }
 
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
@@ -651,7 +649,6 @@ class repository_owncloud extends repository {
         $username = $userinfo['username'];
 
         // Moves the file to the Moodelfiles folder
-
         $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, $this->timeintervalsharing,
             false);
         $statuscode = $responsecreateshare['statuscode'];
@@ -722,7 +719,7 @@ class repository_owncloud extends repository {
 
         $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
         redirect($webdavurl, get_string('downloadfile', 'repository_owncloud',
-            ['instancename' => $repositoryname, 'foldername' => $foldername]), null, \core\output\notification::NOTIFY_SUCCESS);
+            ['instancename' => $repositoryname, 'foldername' => $foldername]), null, \core\output\notification::NOTIFY_INFO);
     }
 
     /**
