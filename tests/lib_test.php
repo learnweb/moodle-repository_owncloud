@@ -441,8 +441,9 @@ XML;
 
         // Method get_link correctly raises an exception that contains error code and message.
         $this->expectException(\repository_owncloud\request_exception::class);
-        $this->expectExceptionMessage(get_string('request_exception', 'repository_owncloud',
-            sprintf('(%s) %s', '404', 'Msg')));
+        $this->expectExceptionMessage(get_string('request_exception', 'repository_owncloud', array('instance' => 'ownCloud',
+            'errormessage' =>
+            sprintf('(%s) %s', '404', 'Msg'))));
         $this->repo->get_link($file);
     }
 

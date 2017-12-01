@@ -296,14 +296,15 @@ class repository_owncloud extends repository {
 
         $response = $this->ocsclient->call('create_share', $ocsparams);
         $xml = simplexml_load_string($response);
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
 
         if ($xml === false ) {
-            throw new \repository_owncloud\request_exception('Invalid response');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => 'Invalid response'));
         }
 
         if ((string)$xml->meta->status !== 'ok') {
-            throw new \repository_owncloud\request_exception(
-                sprintf('(%s) %s', $xml->meta->statuscode, $xml->meta->message));
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' =>
+                sprintf('(%s) %s', $xml->meta->statuscode, $xml->meta->message)));
         }
 
         // Take the share link and convert it into a download link.
@@ -613,6 +614,8 @@ class repository_owncloud extends repository {
      * @throws repository_exception
      */
     public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
+
         // 1. assure the client and user is logged in.
         if (empty($this->client)) {
             $details = 'Cannot connect as current user';
@@ -638,7 +641,8 @@ class repository_owncloud extends repository {
             if ($responsecreateshare != 201) {
                 // TODO copy is maybe possible
                 $this->dav->close();
-                throw new \repository_owncloud\request_exception(get_string('requestnotexecuted', 'repository_owncloud'));
+                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' =>
+                    get_string('requestnotexecuted', 'repository_owncloud')));
             }
         }
         $this->dav->close();
@@ -696,6 +700,9 @@ class repository_owncloud extends repository {
                 // TODO not error but warning? -- Case File already in Folder?
                 // send_file_not_found();
             }
+        } else if($statuscode == 997){
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
+                'errormessage' => get_string('notauthorized', 'repository_owncloud')));
         } else {
             send_file_not_found();
         }
