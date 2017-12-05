@@ -52,7 +52,12 @@ $string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific a
 
 // Exceptions.
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
-$string['request_exception'] = 'A request to {$a->instance} has failed: {$a->errormessage}';
+$string['request_exception'] = 'A request to {$a->instance} has failed. {$a->errormessage}';
 $string['requestnotexecuted'] = 'The request could not be executed. If this happens frequently please contact the course or site administrator.';
-$string['downloadpopup'] = 'The requested file should have been automatically downloaded. Additionally, the file is stored in your {$a->instancename} instance in the {$a->foldername} folder.';
+$string['downloadpopup'] = 'The requested file is additionally stored in your {$a->instancename} instance in the {$a->foldername} folder.';
 $string['notauthorized'] = 'You are not authorized to execute the demanded request please ensure you are authenticated with the right account.';
+$string['contactadminwith'] = 'In case this happens frequently please contact the side administrator with the following additional information:<br>"<i>{$a}</i>"';
+$string['cannotconnect'] = 'The user could not be authenticated, please log in again and then upload the file.';
+$string['filenotaccessed'] = 'The requested file could not be accessed. Please check whether you have chosen a valid file and you
+are authenticated with the right account.';
+$string['couldnotcopy'] = 'The requested file could not be copied in the requested folder.';

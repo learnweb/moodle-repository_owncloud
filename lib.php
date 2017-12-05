@@ -303,8 +303,8 @@ class repository_owncloud extends repository {
         }
 
         if ((string)$xml->meta->status !== 'ok') {
-            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' =>
-                sprintf('(%s) %s', $xml->meta->statuscode, $xml->meta->message)));
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => sprintf(
+                '(%s) %s', $xml->meta->statuscode, $xml->meta->message)));
         }
 
         // Take the share link and convert it into a download link.
@@ -346,6 +346,7 @@ class repository_owncloud extends repository {
      * @param string $itemid the target itemid for this new file.
      * @return string updated reference (final one before it's saved to db).
      * @throws repository_exception
+     * @throws \repository_owncloud\request_exception
      */
     public function reference_file_selected($reference, $context, $component, $filearea, $itemid) {
         // todo: Check if file already exist
@@ -358,15 +359,16 @@ class repository_owncloud extends repository {
         }
         // Get the system oauth client.
         $systemauth = \core\oauth2\api::get_system_oauth_client($this->issuer);
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
 
         if ($systemauth === false) {
-            if($systemauth->is_logged_in() === false) {
-                $details = 'Cannot connect as system user';
-                throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+            if ($systemauth->is_logged_in() === false) {
+                $details = get_string('contactadminwith', 'repository_owncloud',
+                    'The systemaccount could not be connected.');
+                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
             }
         }
         // Creates a owncloud_client for the system account.
-        // todo: should the client be created here?
         $sysdav = $this->create_system_dav($systemauth);
 
         // Get the system user email so we can share the file with this user.
@@ -376,35 +378,39 @@ class repository_owncloud extends repository {
         // Get the current user.
         $userauth = $this->get_user_oauth_client();
         if ($userauth === false) {
-            $details = 'Cannot connect as current user';
-            throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+            $details = get_string('cannotconnect', 'repository_owncloud');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
         // 1. Share the File with the system account.
         $responsecreateshare = $this->create_share_user_sysaccount($source, $systemusername, 86400, true);
 
         if ($responsecreateshare['statuscode'] != 100 && $responsecreateshare['statuscode'] != 403) {
-            throw new repository_exception('The file can not be accessed.', 'repository');
+            $details = get_string('filenotaccessed', 'repository_owncloud');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
 
         // 2. Create a unique path in the system account.
-        // todo: now generated as Google. Check expedience.
         $foldercreate = $this->create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav);
         if ($foldercreate['success'] != true) {
-            throw new repository_exception('Could not create folder path.', 'repository');
+            $details = get_string('contactadminwith', 'repository_owncloud',
+                'Folder path in the systemaccount could not be created.');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
         // 3. Copy File to the new folder path.
         // TODO: avoid name of file prefered id since they are unique.
         $copyfile = $this->copy_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], $sysdav);
         if ($copyfile['success'] != 201) {
-            throw new repository_exception('Could not copy file', 'repository');
+            $details = get_string('contactadminwith', 'repository_owncloud',
+                'A webdav request to copy a file to the systemaccount failed.');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
 
         // 4. Delete the share.
         $reponsedeleteshare = $this->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
 
         if ($reponsedeleteshare != 100) {
-            \core\notification::warning('You just shared a file with a access control link. 
-            However, the share between you and the systemaccount could not be deleted.');
+            \core\notification::warning('You just shared a file with a access controlled link.
+             However, the share between you and the systemaccount could not be deleted and is still present in your instance.');
         }
 
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
@@ -639,8 +645,8 @@ class repository_owncloud extends repository {
             if ($responsecreateshare != 201) {
                 // TODO copy is maybe possible
                 $this->dav->close();
-                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' =>
-                    get_string('requestnotexecuted', 'repository_owncloud')));
+                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => get_string(
+                    'requestnotexecuted', 'repository_owncloud')));
             }
         }
         $this->dav->close();
@@ -676,7 +682,7 @@ class repository_owncloud extends repository {
                 }
             }
             $shareid = $validelement->id;
-        } else if($statuscode == 100){
+        } else if ($statuscode == 100) {
             $shareid = $responsecreateshare['shareid'];
 
             $ocsparams = [
@@ -694,10 +700,10 @@ class repository_owncloud extends repository {
             $srcpath = $validelement->file_target;
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
             if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
-                // TODO not error but warning? -- Case File already in Folder?
-                // send_file_not_found();
+                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
+                    'errormessage' => get_string('couldnotcopy', 'repository_owncloud')));
             }
-        } else if($statuscode == 997){
+        } else if ($statuscode == 997) {
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
                 'errormessage' => get_string('notauthorized', 'repository_owncloud')));
         } else {
@@ -718,7 +724,7 @@ class repository_owncloud extends repository {
         $srcpath = ltrim($validelement->file_target, '/');
 
         $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
-        redirect($webdavurl, get_string('downloadfile', 'repository_owncloud',
+        redirect($webdavurl, get_string('downloadpopup', 'repository_owncloud',
             ['instancename' => $repositoryname, 'foldername' => $foldername]), null, \core\output\notification::NOTIFY_INFO);
     }
 
