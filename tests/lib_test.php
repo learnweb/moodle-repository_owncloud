@@ -442,8 +442,7 @@ XML;
         // Method get_link correctly raises an exception that contains error code and message.
         $this->expectException(\repository_owncloud\request_exception::class);
         $this->expectExceptionMessage(get_string('request_exception', 'repository_owncloud', array('instance' => 'ownCloud',
-            'errormessage' =>
-            sprintf('(%s) %s', '404', 'Msg'))));
+            'errormessage' => sprintf('(%s) %s', '404', 'Msg'))));
         $this->repo->get_link($file);
     }
 
@@ -545,13 +544,6 @@ XML;
         $this->assertEquals('https://www.default.test' . $filename . '/download', $this->repo->get_file_reference($filename));
     }
 
-    /**
-     * TODO : Test the send_file function.
-     */
-//    public function test_send_file() {
-//        $storedfilemock = $this->createMock(stored_file::class);
-//
-//    }
     /**
      * Test logout.
      */

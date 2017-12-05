@@ -131,7 +131,7 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
         $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('shareid' => 2,
-            'filetarget' => 'some/target/path','statuscode' => 100));
+            'filetarget' => 'some/target/path', 'statuscode' => 100));
         $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('fullpath' => 'some/fullpath',
             'statuscode' => array('success' => 100)));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
@@ -148,7 +148,7 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
     /**
      * Function to test the private function create_share_user_sysaccount.
      */
-    public function test_create_share_user_sysaccount_user_shares(){
+    public function test_create_share_user_sysaccount_user_shares() {
         $dateofexpiration = time() + 604800;
         $username = 'user1';
         $params = [
@@ -221,7 +221,7 @@ XML;
         $dateofexpiration = time() + 604800;
         $username = 'user1';
         $paramssysuser = [
-            'path' => "/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/ambient.txt",
+            'path' => "/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/a",
             'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
             'expiration' => $dateofexpiration,
@@ -255,7 +255,7 @@ XML;
   <item_source>553</item_source>
   <file_source>553</file_source>
   <file_parent>20</file_parent>
-  <file_target>/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/ambient.txt</file_target>
+  <file_target>/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/a</file_target>
   <share_with>tech</share_with>
   <share_with_displayname>tech</share_with_displayname>
   <mail_send>0</mail_send>
@@ -265,9 +265,9 @@ XML;
         // This time the stored filed is used.
         $storedfilemock = $this->createMock(stored_file::class);
         $storedfilemock->expects($this->once())->method('get_reference')->will(
-            $this->returnValue('{"link":"\/System\/Category Miscellaneous\/Course Example Course\/File createconfusion\/mod_resource\/content\/0\/ambient.txt","name":"\/ambient.txt","usesystem":true}'));
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()
-            ->disableOriginalClone()->getMock();
+            $this->returnValue(
+                '{"link":"\/System\/Category Miscellaneous\/Course Example Course\/File createconfusion\/mod_resource\/content\/0\/a","name":"\/a","usesystem":true}'));
+        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $mock->expects($this->once())->method('call')->with('create_share', $paramssysuser)->will($this->returnValue($expectedresponsesysuser));
         $this->set_private_property($mock, 'systemocsclient');
 
@@ -341,15 +341,13 @@ XML;
     protected function set_up_mocks_for_create_folder_path($returnisdir, $callmkcol = false, $returnmkcol = 201) {
         $mockcontext = $this->createMock(context_module::class);
         $mocknestedcontext = $this->createMock(context_module::class);
-        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
-            ->disableOriginalClone()->getMock();
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
 
-        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
             $this->logicalOr($webdavprefix . '/somename/mod_resource', $webdavprefix . '/somename'),
-            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))
-            ->willReturn($returnisdir);
+            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))->willReturn($returnisdir);
         if ($callmkcol == true) {
             $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn($returnmkcol);
         }
@@ -362,16 +360,15 @@ XML;
      * Test the copy file to path function.
      */
     public function test_copy_file_to_path() {
-        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()
-            ->disableOriginalClone()->getMock();
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
 
-        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $srcpath = 'sourcepath';
         $dstpath = "destinationpath/another/path";
 
-        $mockclient->expects($this->once())->method('copy_file')
-            ->with($webdavprefix . $srcpath, $webdavprefix . $dstpath . '/' . $srcpath, true)->willReturn(201);
+        $mockclient->expects($this->once())->method('copy_file')->with($webdavprefix . $srcpath,
+            $webdavprefix . $dstpath . '/' . $srcpath, true)->willReturn(201);
         $result = phpunit_util::call_internal_method($this->repo, "copy_file_to_path",
             array('srcpath' => $srcpath, 'dstpath' => $dstpath, 'sysdav' => $mockclient), 'repository_owncloud');
         $expected = array();
@@ -383,8 +380,7 @@ XML;
      * Test the delete share function.
      */
     public function test_delete_share_dataowner_sysaccount() {
-        $mockocsclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()
-            ->disableOriginalClone()->getMock();
+        $mockocsclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $this->set_private_property($mockocsclient, 'ocsclient');
 
         $shareid = 5;
@@ -403,8 +399,7 @@ XML;
 </ocs>
 
 XML;
-        $mockocsclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)
-            ->will($this->returnValue($returnxml));
+        $mockocsclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)->will($this->returnValue($returnxml));
 
         $result = phpunit_util::call_internal_method($this->repo, "delete_share_dataowner_sysaccount",
             array('shareid' => $shareid), 'repository_owncloud');
@@ -431,7 +426,7 @@ XML;
         // Checks that setting for foldername are used.
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(false);
         // In case of false as return value mkcol is called to create the folder
-        $parsedwebdavurl =parse_url($this->issuer->get_endpoint_url('webdav'));
+        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $mock->expects($this->once())->method('mkcol')->with($webdavprefix . 'Moodlefiles')->willReturn(400);
         $this->expectException(\repository_owncloud\request_exception::class);
@@ -511,8 +506,7 @@ XML;
         $mockocsclient->expects($this->exactly(2))->method('call')->with('get_information_of_share',
             array('share_id' => $shareid))->will($this->returnValue($expectedresponse));
         $this->set_private_property($mock, 'ocsclient');
-        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)
-            ->willReturn(array('success' => 201));
+        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)->willReturn(array('success' => 201));
 
         $this->repo->send_file('', '', '', '');
 
@@ -530,8 +524,7 @@ XML;
         $mockocsclient->expects($this->exactly(1))->method('call')->with('get_information_of_share',
             array('share_id' => $shareid))->will($this->returnValue($expectedresponse));
         $this->set_private_property($mock, 'ocsclient');
-        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)
-            ->willReturn(array('success' => 201));
+        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)->willReturn(array('success' => 201));
         $this->repo->send_file('', '', '', '');
     }
 
