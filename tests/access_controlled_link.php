@@ -217,7 +217,7 @@ XML;
     public function test_create_share_user_sysaccount_sysaccount_shares() {
         // 2. case share is created from the technical user account.
 
-        // Set up params
+        // Set up params.
         $dateofexpiration = time() + 604800;
         $username = 'user1';
         $paramssysuser = [
@@ -414,8 +414,9 @@ XML;
      */
     public function test_send_file_errors() {
         $this->set_private_property('', 'client');
-        $this->expectException(\repository_exception::class);
-        $this->expectExceptionMessage('Cannot connect as current user');
+        $this->expectException(repository_owncloud\request_exception::class);
+        $this->expectExceptionMessage(get_string('contactadminwith', 'repository_owncloud',
+            'The OAuth client could not be connected.'));
         $this->repo->send_file('', '', '', '');
 
         // Testing whether the mock up appears is topic to behat.
@@ -425,7 +426,7 @@ XML;
 
         // Checks that setting for foldername are used.
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(false);
-        // In case of false as return value mkcol is called to create the folder
+        // In case of false as return value mkcol is called to create the folder.
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $mock->expects($this->once())->method('mkcol')->with($webdavprefix . 'Moodlefiles')->willReturn(400);
