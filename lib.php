@@ -299,7 +299,8 @@ class repository_owncloud extends repository {
         $repositoryname = get_string('pluginname', 'repository_owncloud');
 
         if ($xml === false ) {
-            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => 'Invalid response'));
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
+                'errormessage' => 'Invalid response'));
         }
 
         if ((string)$xml->meta->status !== 'ok') {
@@ -349,7 +350,7 @@ class repository_owncloud extends repository {
      * @throws \repository_owncloud\request_exception
      */
     public function reference_file_selected($reference, $context, $component, $filearea, $itemid) {
-        // todo: Check if file already exist
+        // Todo: Check if file already exist.
         $source = $reference;
         $filereturn = json_decode($reference);
 
@@ -484,7 +485,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     private function copy_file_to_path($srcpath, $dstpath, $sysdav) {
-        // TODO: srcpath might be a confusing name
+        // TODO: srcpath might be a confusing name.
         $result = array();
         $sysdav->open();
         $webdavendpoint = $this->parse_endpoint_url('webdav');
@@ -550,7 +551,7 @@ class repository_owncloud extends repository {
             $sysdav->open();
             $fullpath .= '/' . $foldername;
             $isdir = $sysdav->is_dir($webdavprefix . $fullpath);
-            // Folder already exist, continue
+            // Folder already exist, continue.
             if ($isdir === true) {
                 $sysdav->close();
                 continue;
@@ -559,7 +560,7 @@ class repository_owncloud extends repository {
             $response = $sysdav->mkcol($webdavprefix . $fullpath);
 
             $sysdav->close();
-            // todo: break/exception when status code !=201?
+            // Todo: break/exception when status code !=201?
             if ($response != 201) {
                 $result['success'] = false;
                 continue;
@@ -622,8 +623,9 @@ class repository_owncloud extends repository {
 
         // 1. assure the client and user is logged in.
         if (empty($this->client)) {
-            $details = 'Cannot connect as current user';
-            throw new repository_exception('errorwhilecommunicatingwith', 'repository', '', $details);
+            $details = get_string('contactadminwith', 'repository_owncloud',
+                'The OAuth client could not be connected.');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
 
         if (!$this->client->is_logged_in()) {
@@ -638,15 +640,16 @@ class repository_owncloud extends repository {
         $this->dav->open();
         $foldername = $this->controlledlinkfoldername;
         $isdir = $this->dav->is_dir($webdavprefix . $foldername);
-        // Folder already exist, continue
+        // Folder already exist, continue.
         if (!$isdir) {
             $responsecreateshare = $this->dav->mkcol($webdavprefix . $foldername);
 
             if ($responsecreateshare != 201) {
-                // TODO copy is maybe possible
+                // TODO copy is maybe possible.
                 $this->dav->close();
                 throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => get_string(
-                    'requestnotexecuted', 'repository_owncloud')));
+                    'contactadminwith', 'repository_owncloud',
+                    'The folder to store files in the user account could not be created.')));
             }
         }
         $this->dav->close();
@@ -654,7 +657,7 @@ class repository_owncloud extends repository {
         $userinfo = $this->client->get_userinfo();
         $username = $userinfo['username'];
 
-        // Moves the file to the Moodelfiles folder
+        // Creates a share between the systemaccount and the user.
         $responsecreateshare = $this->create_share_user_sysaccount($storedfile, $username, $this->timeintervalsharing,
             false);
         $statuscode = $responsecreateshare['statuscode'];
@@ -701,13 +704,14 @@ class repository_owncloud extends repository {
             $copyresult = $this->move_file_to_folder($srcpath, $dstpath, $this->dav);
             if (!($copyresult['success'] == 201 || $copyresult['success'] == 412)) {
                 throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
-                    'errormessage' => get_string('couldnotcopy', 'repository_owncloud')));
+                    'errormessage' => get_string('couldnotmove', 'repository_owncloud', $foldername)));
             }
         } else if ($statuscode == 997) {
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
                 'errormessage' => get_string('notauthorized', 'repository_owncloud')));
         } else {
-            send_file_not_found();
+            $details = get_string('filenotaccessed', 'repository_owncloud');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
         $ocsparams = [
             'share_id' => $shareid
