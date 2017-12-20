@@ -352,29 +352,16 @@ class repository_owncloud extends repository {
     public function reference_file_selected($reference, $context, $component, $filearea, $itemid) {
         // Todo: Check if file already exist.
         $source = $reference;
+        // $file = get_file($contextid, $component, $filearea, $itemid, $filepath, $source);
         $filereturn = json_decode($reference);
 
         // Check this issuer is enabled.
         if ($this->disabled) {
             throw new repository_exception('cannotdownload', 'repository');
         }
-        // Get the system oauth client.
-        $systemauth = \core\oauth2\api::get_system_oauth_client($this->issuer);
         $repositoryname = get_string('pluginname', 'repository_owncloud');
 
-        if ($systemauth === false) {
-            if ($systemauth->is_logged_in() === false) {
-                $details = get_string('contactadminwith', 'repository_owncloud',
-                    'The systemaccount could not be connected.');
-                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-            }
-        }
-        // Creates a owncloud_client for the system account.
-        $sysdav = $this->create_system_dav($systemauth);
-
-        // Get the system user email so we can share the file with this user.
-        $systemuserinfo = $systemauth->get_userinfo();
-        $systemusername = $systemuserinfo['username'];
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->issuer, $repositoryname);
 
         // Get the current user.
         $userauth = $this->get_user_oauth_client();
@@ -383,56 +370,25 @@ class repository_owncloud extends repository {
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
         // 1. Share the File with the system account.
-        $responsecreateshare = $this->create_share_user_sysaccount($source, $systemusername, 86400, true);
-
-        if ($responsecreateshare['statuscode'] != 100 && $responsecreateshare['statuscode'] != 403) {
-            $details = get_string('filenotaccessed', 'repository_owncloud');
-            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-        }
+        $responsecreateshare = $linkmanager->create_share_user_sysaccount($source, 86400, true, $repositoryname);
 
         // 2. Create a unique path in the system account.
-        $foldercreate = $this->create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav);
-        if ($foldercreate['success'] != true) {
-            $details = get_string('contactadminwith', 'repository_owncloud',
-                'Folder path in the systemaccount could not be created.');
-            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-        }
+        $foldercreate = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $repositoryname);
+
         // 3. Copy File to the new folder path.
         // TODO: avoid name of file prefered id since they are unique.
-        $copyfile = $this->copy_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], $sysdav);
-        if ($copyfile['success'] != 201) {
-            $details = get_string('contactadminwith', 'repository_owncloud',
-                'A webdav request to copy a file to the systemaccount failed.');
-            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-        }
+        $linkmanager->copy_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], $repositoryname);
 
         // 4. Delete the share.
-        $reponsedeleteshare = $this->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
-
-        if ($reponsedeleteshare != 100) {
-            \core\notification::warning('You just shared a file with a access controlled link.
-             However, the share between you and the systemaccount could not be deleted and is still present in your instance.');
-        }
+        $linkmanager->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
 
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
         $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
         $filereturn->name = $source;
-        $filereturn->usesystem = true;
+        $filereturn->usesystem = false;
         $filereturn = json_encode($filereturn);
-        return $filereturn;
-    }
 
-    /** Deletes the share of the sysaccount and the dataowner.
-     * @param $shareid
-     * @return mixed
-     */
-    private function delete_share_dataowner_sysaccount($shareid) {
-        $deleteshareparams = [
-            'share_id' => $shareid
-        ];
-        $deleteshareresponse = $this->ocsclient->call('delete_share', $deleteshareparams);
-        $xml = simplexml_load_string($deleteshareresponse);
-        return $xml->meta->statuscode;
+        return $filereturn;
     }
 
     /** Creates a share between the dataowner and the sysaccount.
@@ -481,26 +437,6 @@ class repository_owncloud extends repository {
     /** Copy a file to a new place
      * @param string $srcpath source path
      * @param string $dstpath
-     * @param /repository/owncloud/owncloud_client $sysdav
-     * @return array
-     */
-    private function copy_file_to_path($srcpath, $dstpath, $sysdav) {
-        // TODO: srcpath might be a confusing name.
-        $result = array();
-        $sysdav->open();
-        $webdavendpoint = $this->parse_endpoint_url('webdav');
-
-        $srcpath = ltrim($srcpath, '/');
-        $sourcepath = $webdavendpoint['path'] . $srcpath;
-        $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
-
-        $result['success'] = $sysdav->copy_file($sourcepath, $destinationpath, true);
-        $sysdav->close();
-        return $result;
-    }
-    /** Copy a file to a new place
-     * @param string $srcpath source path
-     * @param string $dstpath
      * @return array
      */
     private function move_file_to_folder($srcpath, $dstpath) {
@@ -514,96 +450,6 @@ class repository_owncloud extends repository {
         $result['success'] = $this->dav->move($sourcepath, $destinationpath, false);
         $this->dav->close();
         return $result;
-    }
-    /** Creates a unique folder path for the access controlled link.
-     * @param $context
-     * @param $component
-     * @param $filearea
-     * @param int $itemid
-     * @return array $result success for the http status code and fullpath for the generated path.
-     */
-    private function create_folder_path_access_controlled_links($context, $component, $filearea, $itemid, $sysdav) {
-        // Initialize the return array.
-        $result = array();
-        $result['success'] = true;
-
-        // The fullpath to store the file is generated from the context.
-        $fullpath = '';
-        $allfolders = [];
-
-        $contextlist = array_reverse($context->get_parent_contexts(true));
-
-        foreach ($contextlist as $context) {
-            // Make sure a folder exists here.
-            $foldername = clean_param($context->get_context_name(), PARAM_PATH);
-            $allfolders[] = $foldername;
-        }
-
-        $allfolders[] = clean_param($component, PARAM_PATH);
-        $allfolders[] = clean_param($filearea, PARAM_PATH);
-        $allfolders[] = clean_param($itemid, PARAM_PATH);
-
-        // Extracts the end of the webdavendpoint.
-        $parsedwebdavurl = $this->parse_endpoint_url('webdav');
-        $webdavprefix = $parsedwebdavurl['path'];
-        // Checks whether folder exist and creates non-existent folders.
-        foreach ($allfolders as $foldername) {
-            $sysdav->open();
-            $fullpath .= '/' . $foldername;
-            $isdir = $sysdav->is_dir($webdavprefix . $fullpath);
-            // Folder already exist, continue.
-            if ($isdir === true) {
-                $sysdav->close();
-                continue;
-            }
-            $sysdav->open();
-            $response = $sysdav->mkcol($webdavprefix . $fullpath);
-
-            $sysdav->close();
-            // Todo: break/exception when status code !=201?
-            if ($response != 201) {
-                $result['success'] = false;
-                continue;
-            }
-        }
-        $result['fullpath'] = $fullpath;
-
-        return $result;
-    }
-
-    /** Creates a new owncloud_client for the system account.
-     * todo: check whether instead a change_client method should be provided in the owncloud_client class.
-     * Advantages to insert method: more modular, create less overhead
-     * Disadvantage: diff to original class gets bigger
-     *
-     * @param $systemauth
-     * @return \repository_owncloud\owncloud_client
-     */
-    private function create_system_dav($systemauth) {
-        $webdavendpoint = $this->parse_endpoint_url('webdav');
-
-        // Selects the necessary information (port, type, server) from the path to build the webdavclient.
-        $server = $webdavendpoint['host'];
-        if ($webdavendpoint['scheme'] === 'https') {
-            $webdavtype = 'ssl://';
-            $webdavport = 443;
-        } else if ($webdavendpoint['scheme'] === 'http') {
-            $webdavtype = '';
-            $webdavport = 80;
-        }
-
-        // Override default port, if a specific one is set.
-        if (isset($webdavendpoint['port'])) {
-            $webdavport = $webdavendpoint['port'];
-        }
-
-        // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
-        $dav = new repository_owncloud\owncloud_client($server, '', '', 'bearer', $webdavtype,
-            $systemauth->get_accesstoken()->token, $webdavendpoint['path']);
-
-        $dav->port = $webdavport;
-        $dav->debug = false;
-        return $dav;
     }
 
     /**

@@ -107,14 +107,12 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
         $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
-        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('statuscode' => array('success' => 400)));
         $this->expectException(\repository_exception::class);
         $this->expectExceptionMessage('cannotdownload');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
         $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
-        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('statuscode' => array('success' => 100)));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 400)));
         $this->expectException(\repository_exception::class);
         $this->expectExceptionMessage('Could not copy file');
@@ -122,7 +120,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
         $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
-        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('statuscode' => array('success' => 100)));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
         $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 400)));
         $this->expectException(\repository_exception::class);
@@ -132,8 +129,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
         $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('shareid' => 2,
             'filetarget' => 'some/target/path', 'statuscode' => 100));
-        $this->repo->expects($this->once())->method('create_folder_path_access_controlled_links')->willReturn(array('fullpath' => 'some/fullpath',
-            'statuscode' => array('success' => 100)));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
         $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 100)));
         $filereturn = array();
@@ -143,72 +138,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $filereturn = json_encode($filereturn);
         $return = $this->repo->reference_file_selected('mysource', context_system::instance(), '', '', '');
         $this->assertEquals($filereturn, $return);
-    }
-
-    /**
-     * Function to test the private function create_share_user_sysaccount.
-     */
-    public function test_create_share_user_sysaccount_user_shares() {
-        $dateofexpiration = time() + 604800;
-        $username = 'user1';
-        $params = [
-            'path' => "/ambient.txt",
-            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
-            'publicUpload' => false,
-            'expiration' => $dateofexpiration,
-            'shareWith' => $username,
-        ];
-        $expectedresponse = <<<XML
-<?xml version="1.0"?>
-<ocs>
- <meta>
-  <status>ok</status>
-  <statuscode>100</statuscode>
-  <message/>
- </meta>
- <data>
-  <id>207</id>
-  <share_type>0</share_type>
-  <uid_owner>user1</uid_owner>
-  <displayname_owner>user1</displayname_owner>
-  <permissions>19</permissions>
-  <stime>1511532198</stime>
-  <parent/>
-  <expiration/>
-  <token/>
-  <uid_file_owner>user1</uid_file_owner>
-  <displayname_file_owner>user1</displayname_file_owner>
-  <path>/ambient.txt</path>
-  <item_type>file</item_type>
-  <mimetype>text/plain</mimetype>
-  <storage_id>home::user1</storage_id>
-  <storage>3</storage>
-  <item_source>545</item_source>
-  <file_source>545</file_source>
-  <file_parent>20</file_parent>
-  <file_target>/ambient.txt</file_target>
-  <share_with>tech</share_with>
-  <share_with_displayname>tech</share_with_displayname>
-  <mail_send>0</mail_send>
- </data>
-</ocs>
-
-XML;
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
-        )->getMock();
-        $mock->expects($this->once())->method('call')->with('create_share', $params)->will($this->returnValue($expectedresponse));
-        $this->set_private_property($mock, 'ocsclient');
-        $result = phpunit_util::call_internal_method($this->repo, "create_share_user_sysaccount",
-            array('source' => "/ambient.txt", 'username' => "user1", 'temp' => 604800, 'direction' => true), 'repository_owncloud');
-        $xml = simplexml_load_string($expectedresponse);
-
-        $expected = array();
-        $expected['statuscode'] = $xml->meta->statuscode;
-        $expected['shareid'] = $xml->data->id;
-        $expected['fileid'] = $xml->data->item_source;
-        $expected['filetarget'] = ((string)$xml->data[0]->file_target);
-
-        $this->assertEquals($expected, $result);
     }
 
     /**
@@ -285,53 +214,6 @@ XML;
     }
 
     /**
-     * Function which test that create folder path does return the adequate results (path and success).
-     * Additionally mock checks whether the right params are passed to the corresponding functions.
-     */
-    public function test_create_folder_path_folders_are_not_created() {
-        $mocks = $this->set_up_mocks_for_create_folder_path(true);
-
-        $result = phpunit_util::call_internal_method($this->repo, "create_folder_path_access_controlled_links",
-            array($mocks['mockcontext'], 'component' => "mod_resource", 'filearea' => 'content', 'itemid' => 0,
-                'sysdav' => $mocks['mockclient']), 'repository_owncloud');
-        $expected = array();
-        $expected['success'] = true;
-        $expected['fullpath'] = '/somename/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
-    }
-
-    /**
-     * Function which test that create folder path does return the adequate results (path and success).
-     * Additionally mock checks whether the right params are passed to the corresponding functions.
-     */
-    public function test_create_folder_path_folders_are_created() {
-        $mocks = $this->set_up_mocks_for_create_folder_path(false, true, 201);
-
-        $result = phpunit_util::call_internal_method($this->repo, "create_folder_path_access_controlled_links",
-            array($mocks['mockcontext'], 'component' => "mod_resource", 'filearea' => 'content', 'itemid' => 0,
-                'sysdav' => $mocks['mockclient']), 'repository_owncloud');
-        $expected = array();
-        $expected['success'] = true;
-        $expected['fullpath'] = '/somename/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
-    }
-
-    /**
-     * Function which test that create folder path does return the adequate results (path and success).
-     * Additionally mock checks whether the right params are passed to the corresponding functions.
-     */
-    public function test_create_folder_path_folder_creation_fails() {
-        $mocks = $this->set_up_mocks_for_create_folder_path(false, true, 400);
-        $result = phpunit_util::call_internal_method($this->repo, "create_folder_path_access_controlled_links",
-            array('context' => $mocks['mockcontext'], 'component' => "mod_resource", 'filearea' => 'content', 'itemid' => 0,
-                'sysdav' => $mocks['mockclient']), 'repository_owncloud');
-        $expected = array();
-        $expected['success'] = false;
-        $expected['fullpath'] = '/somename/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
-    }
-
-    /**
      * Helper function to generate mocks for testing create folder path.
      * @param bool $returnisdir
      * @param bool $callmkcol
@@ -354,59 +236,6 @@ XML;
         $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
         $mocknestedcontext->method('get_context_name')->willReturn('somename');
         return array('mockcontext' => $mockcontext, 'mockclient' => $mockclient);
-    }
-
-    /**
-     * Test the copy file to path function.
-     */
-    public function test_copy_file_to_path() {
-        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-
-        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
-        $webdavprefix = $parsedwebdavurl['path'];
-        $srcpath = 'sourcepath';
-        $dstpath = "destinationpath/another/path";
-
-        $mockclient->expects($this->once())->method('copy_file')->with($webdavprefix . $srcpath,
-            $webdavprefix . $dstpath . '/' . $srcpath, true)->willReturn(201);
-        $result = phpunit_util::call_internal_method($this->repo, "copy_file_to_path",
-            array('srcpath' => $srcpath, 'dstpath' => $dstpath, 'sysdav' => $mockclient), 'repository_owncloud');
-        $expected = array();
-        $expected['success'] = 201;
-        $this->assertEquals($expected, $result);
-    }
-
-    /**
-     * Test the delete share function.
-     */
-    public function test_delete_share_dataowner_sysaccount() {
-        $mockocsclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $this->set_private_property($mockocsclient, 'ocsclient');
-
-        $shareid = 5;
-        $deleteshareparams = [
-            'share_id' => $shareid
-        ];
-        $returnxml = <<<XML
-<?xml version="1.0"?>
-<ocs>
-    <meta>
-    <status>ok</status>
-    <statuscode>100</statuscode>
-    <message/>
-    </meta>
-    <data/>
-</ocs>
-
-XML;
-        $mockocsclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)->will($this->returnValue($returnxml));
-
-        $result = phpunit_util::call_internal_method($this->repo, "delete_share_dataowner_sysaccount",
-            array('shareid' => $shareid), 'repository_owncloud');
-        $xml = simplexml_load_string($returnxml);
-
-        $expected = $xml->meta->statuscode;
-        $this->assertEquals($expected, $result);
     }
 
     /**
