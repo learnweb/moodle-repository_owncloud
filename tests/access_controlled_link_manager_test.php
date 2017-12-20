@@ -64,7 +64,6 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
         $mock = $this->createMock(\core\oauth2\client::class);
         $mock->expects($this->once())->method('get_system_oauth_client')->with($this->issuer)->willReturn(true);
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
-        $this->assertEquals($this->issuer, $this->linkmanager->get_issuer());
     }
     /**
      * Function to test the private function create_share_user_sysaccount.
