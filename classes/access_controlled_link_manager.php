@@ -67,12 +67,11 @@ class access_controlled_link_manager{
         $this->ocsclient = $ocsclient;
         $this->systemoauthclient = \core\oauth2\api::get_system_oauth_client($issuer);
         $this->repositoryname = $repositoryname;
-        if ($this->systemoauthclient === false) {
-            if ($this->systemoauthclient->is_logged_in() === false) {
-                $details = get_string('contactadminwith', 'repository_owncloud',
-                    'The systemaccount could not be connected.');
-                throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-            }
+        if ($this->systemoauthclient === false || $this->systemoauthclient->is_logged_in() === false) {
+            $details = get_string('contactadminwith', 'repository_owncloud',
+                'The systemaccount could not be connected.');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
+
         }
         $this->issuer = $issuer;
         $this->systemwebdavclient = $this->create_system_dav();
@@ -92,10 +91,13 @@ class access_controlled_link_manager{
              However, the share between you and the systemaccount could not be deleted and is still present in your instance.');
         }
     }
+    public function get_issuer(){
+        return $this->issuer;
+    }
 
     /** Creates a share between the dataowner and the sysaccount.
      * @param $source
-     * @param $temp Time until the share expires
+     * @param $temp int Time until the share expires
      * @param $direction true for sharing with the sysaccount, false for sharing with the secondperson
      * @return array statuscode and shareid
      * @throws \coding_exception
