@@ -381,7 +381,7 @@ class repository_owncloud extends repository {
 
         // 3. Copy File to the new folder path.
         // TODO: avoid name of file prefered id since they are unique.
-        $linkmanager->copy_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath']);
+        $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], 'copy');
 
         // 4. Delete the share.
         $linkmanager->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
@@ -443,7 +443,8 @@ class repository_owncloud extends repository {
             $shareid = $linkmanager->get_shares_from_path($storedfile, $username);
         } else if ($statuscode == 100) {
             $filetarget = $linkmanager->get_share_information_from_shareid($responsecreateshare['shareid'], $username);
-            $copyresult = $linkmanager->move_file_to_folder($filetarget, $this->controlledlinkfoldername, $this->dav);
+            $copyresult = $linkmanager->transfer_file_to_path($filetarget, $this->controlledlinkfoldername,
+                'move', $this->dav);
             if (!($copyresult == 201 || $copyresult == 412)) {
                 throw new \repository_owncloud\request_exception(array('instance' => $this->repositoryname,
                     'errormessage' => get_string('couldnotmove', 'repository_owncloud', $this->controlledlinkfoldername)));

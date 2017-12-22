@@ -37,30 +37,30 @@ class access_controlled_link_manager{
 
     /**
      * Client to manage oauth2 features from the systemaccount.
-     * @var systemoauthclient
+     * @var \core\oauth2\client
      */
     private $systemoauthclient;
     /**
      * Client to manage webdav request from the systemaccount..
-     * @var systemwebdavclient
+     * @var ocs_client
      */
     private $systemwebdavclient;
     /**
      * Issuer from the oauthclient.
-     * @var issuer
+     * @var \core\oauth2\issuer
      */
     private $issuer;
     /**
      * Name of the related repository.
-     * @var repositoryname
+     * @var string
      */
     private $repositoryname;
 
     /**
-     * access_controlled_link_manager constructor.
-     * @param $ocsclient
-     * @param $issuer
-     * @param $repositoryname
+     * Access_controlled_link_manager constructor.
+     * @param ocs_client $ocsclient
+     * @param \core\oauth2\issuer $issuer
+     * @param string $repositoryname
      * @throws \coding_exception
      * @throws \moodle_exception
      * @throws configuration_exception
@@ -79,7 +79,8 @@ class access_controlled_link_manager{
         $this->issuer = $issuer;
         $this->systemwebdavclient = $this->create_system_dav();
     }
-    /** Deletes the share of the sysaccount and the dataowner.
+    /** Deletes the share of the systemaccount and a user. In case the share could not be deleted a notification is
+     * displayed.
      * @param $shareid
      */
     public function delete_share_dataowner_sysaccount($shareid) {
@@ -98,7 +99,7 @@ class access_controlled_link_manager{
     /** Creates a share between a user and the systemaccount. If the variable username is set the file is shared with the
      * corresponding user otherwise with the systemaccount.
      * @param $source
-     * @param $temp int Time until the share expires
+     * @param int $timespan miliseconds until the share expires
      * @param string $username optional when set the file is shared with the corresponding user otherwise with
      * the systemaccount.
      * @return array statuscode, shareid, and filetarget
@@ -106,10 +107,10 @@ class access_controlled_link_manager{
      * @throws \moodle_exception
      * @throws \repository_owncloud\request_exception
      */
-    public function create_share_user_sysaccount($source, $temp, $username = null) {
+    public function create_share_user_sysaccount($source, $timespan, $username = null) {
         $result = array();
         $path = $source;
-        $expiration = time() + $temp;
+        $expiration = time() + $timespan;
         // Expiration need to be in 'YYYY-MM-DD' format.
         $dateofexpiration = (string) $expiration;
 
@@ -134,9 +135,7 @@ class access_controlled_link_manager{
         if ($username === null) {
             $createshareresponse = $this->ocsclient->call('create_share', $createshareparams);
         } else {
-
             $systemoauthclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-
             $createshareresponse = $systemoauthclient->call('create_share', $createshareparams);
         }
         $xml = simplexml_load_string($createshareresponse);
@@ -157,48 +156,36 @@ class access_controlled_link_manager{
     /** Copy a file to a new path.
      * @param string $srcpath source path
      * @param string $dstpath
+     * @param string $operation move or copy
      * @throws configuration_exception
      * @throws \coding_exception
      * @throws \moodle_exception
      * @throws \repository_owncloud\request_exception
      */
-    public function copy_file_to_path($srcpath, $dstpath) {
-        // TODO: srcpath might be a confusing name.
+    public function transfer_file_to_path($srcpath, $dstpath, $operation, $webdavclient = null) {
         $this->systemwebdavclient->open();
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
         $srcpath = ltrim($srcpath, '/');
         $sourcepath = $webdavendpoint['path'] . $srcpath;
+        $dstpath = ltrim($dstpath, '/');
         $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
 
-        $result = $this->systemwebdavclient->copy_file($sourcepath, $destinationpath, true);
+        if ($operation === 'copy') {
+            $result = $this->systemwebdavclient->copy_file($sourcepath, $destinationpath, true);
+        } else if ($operation === 'move') {
+            $result = $webdavclient->move($sourcepath, $destinationpath, false);
+        }
         $this->systemwebdavclient->close();
-        if ($result != 201) {
+        if (!($result == 201 || $result == 412)) {
             $details = get_string('contactadminwith', 'repository_owncloud',
-                'A webdav request to copy a file to the systemaccount failed.');
+                'A webdav request to ' . $operation . ' a file failed.');
             throw new request_exception(array('instance' => $this->repositoryname,
                 'errormessage' => $details));
         }
+        return $result;
     }
-    /** Moves a file to a new place. A separate variable for the webdavclient is used since it is the webdavclient
-     * from the user not from the systemaccount.
-     * @param string $srcpath source path
-     * @param string $dstpath
-     * @param string $webdavclient
-     * @return int status code (look at rfc 2518). false on error.
-     * @throws configuration_exception
-     */
-    public function move_file_to_folder($srcpath, $dstpath, $webdavclient) {
-        $webdavclient->open();
-        $webdavendpoint = $this->parse_endpoint_url('webdav');
 
-        $sourcepath = $webdavendpoint['path'] . $srcpath;
-        $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
-
-        $success = $webdavclient->move($sourcepath, $destinationpath, false);
-        $webdavclient->close();
-        return $success;
-    }
     /** Creates a unique folder path for the access controlled link.
      * @param $context
      * @param $component
@@ -288,8 +275,7 @@ class access_controlled_link_manager{
 
         // Authentication method is `bearer` for OAuth 2. Pass oauth client from which WebDAV obtains the token when needed.
         $dav = new owncloud_client($server, '', '', 'bearer', $webdavtype,
-            $this->systemoauthclient->get_accesstoken()->token,
-            $webdavendpoint['path']);
+            $this->systemoauthclient->get_accesstoken()->token, $webdavendpoint['path']);
 
         $dav->port = $webdavport;
         $dav->debug = false;
@@ -392,6 +378,6 @@ class access_controlled_link_manager{
                 'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
 
         }
-        return $validelement->file_target;
+        return (string) $validelement->file_target;
     }
 }
