@@ -23,7 +23,10 @@
  */
 namespace repository_owncloud;
 
+use \core\oauth2\api;
+use \core\notification;
 
+defined('MOODLE_INTERNAL') || die();
 
 class access_controlled_link_manager{
     /**
@@ -65,12 +68,12 @@ class access_controlled_link_manager{
      */
     public function __construct($ocsclient, $issuer, $repositoryname) {
         $this->ocsclient = $ocsclient;
-        $this->systemoauthclient = \core\oauth2\api::get_system_oauth_client($issuer);
+        $this->systemoauthclient = api::get_system_oauth_client($issuer);
         $this->repositoryname = $repositoryname;
         if ($this->systemoauthclient === false || $this->systemoauthclient->is_logged_in() === false) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'The systemaccount could not be connected.');
-            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
+            throw new request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
 
         }
         $this->issuer = $issuer;
@@ -87,68 +90,71 @@ class access_controlled_link_manager{
         $xml = simplexml_load_string($deleteshareresponse);
 
         if ($xml->meta->statuscode != 100) {
-            \core\notification::warning('You just shared a file with a access controlled link.
+            notification::warning('You just shared a file with a access controlled link.
              However, the share between you and the systemaccount could not be deleted and is still present in your instance.');
         }
     }
-    public function get_issuer(){
-        return $this->issuer;
-    }
 
-    /** Creates a share between the dataowner and the sysaccount.
+    /** Creates a share between a user and the systemaccount. If the variable username is set the file is shared with the
+     * corresponding user otherwise with the systemaccount.
      * @param $source
      * @param $temp int Time until the share expires
-     * @param $direction true for sharing with the sysaccount, false for sharing with the secondperson
-     * @return array statuscode and shareid
+     * @param string $username optional when set the file is shared with the corresponding user otherwise with
+     * the systemaccount.
+     * @return array statuscode, shareid, and filetarget
      * @throws \coding_exception
      * @throws \moodle_exception
      * @throws \repository_owncloud\request_exception
      */
-    public function create_share_user_sysaccount($source, $temp, $direction) {
+    public function create_share_user_sysaccount($source, $temp, $username = null) {
         $result = array();
         $path = $source;
         $expiration = time() + $temp;
+        // Expiration need to be in 'YYYY-MM-DD' format.
         $dateofexpiration = (string) $expiration;
 
-        if ($direction === false) {
+        if ($username != null) {
             $source = $source->get_reference();
             $jsondecode = json_decode($source);
             $path = $jsondecode->link;
+            $shareusername = $username;
         } else {
             $systemuserinfo = $this->systemoauthclient->get_userinfo();
-            $username = $systemuserinfo['username'];
+            $shareusername = $systemuserinfo['username'];
         }
         $createshareparams = [
             'path' => $path,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
             'expiration' => $dateofexpiration,
-            'shareWith' => $username,
+            'shareWith' => $shareusername,
         ];
 
         // File is now shared with the system account.
-        if ($direction === true) {
+        if ($username === null) {
             $createshareresponse = $this->ocsclient->call('create_share', $createshareparams);
         } else {
-            if (empty($this->systemoauthclient)) {
-                $this->systemoauthclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-            }
-            $createshareresponse = $this->systemoauthclient->call('create_share', $createshareparams);
+
+            $systemoauthclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+
+            $createshareresponse = $systemoauthclient->call('create_share', $createshareparams);
         }
         $xml = simplexml_load_string($createshareresponse);
 
-        $result['statuscode'] = $xml->meta->statuscode;
-        $result['shareid'] = $xml->data->id;
-        $result['fileid'] = $xml->data->item_source;
-        $result['filetarget'] = ((string)$xml->data[0]->file_target);
-        if ($result['statuscode'] != 100 && $result['statuscode'] != 403) {
+        $statuscode = $xml->meta->statuscode;
+        if ($statuscode != 100 && $statuscode != 403) {
             $details = get_string('filenotaccessed', 'repository_owncloud');
-            throw new \repository_owncloud\request_exception(array('instance' => $this->repositoryname, 'errormessage' => $details));
+            throw new request_exception(get_string('request_exception',
+                'repository_owncloud', array('instance' => $this->repositoryname, 'errormessage' => $details)));
         }
+        $result['shareid'] = $xml->data->id;
+        $result['statuscode'] = $statuscode;
+        $result['filetarget'] = ((string)$xml->data[0]->file_target);
+
         return $result;
     }
 
-    /** Copy a file to a new place
+    /** Copy a file to a new path.
      * @param string $srcpath source path
      * @param string $dstpath
      * @throws configuration_exception
@@ -158,7 +164,6 @@ class access_controlled_link_manager{
      */
     public function copy_file_to_path($srcpath, $dstpath) {
         // TODO: srcpath might be a confusing name.
-        $result = array();
         $this->systemwebdavclient->open();
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
@@ -171,28 +176,28 @@ class access_controlled_link_manager{
         if ($result != 201) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'A webdav request to copy a file to the systemaccount failed.');
-            throw new \repository_owncloud\request_exception(array('instance' => $this->repositoryname, 'errormessage' => $details));
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => $details));
         }
     }
-    /** Copy a file to a new place - uses a separate variable for webdavclient since it is the one from the user not
-     * from the systemaccount.
+    /** Moves a file to a new place. A separate variable for the webdavclient is used since it is the webdavclient
+     * from the user not from the systemaccount.
      * @param string $srcpath source path
      * @param string $dstpath
      * @param string $webdavclient
-     * @return array
+     * @return int status code (look at rfc 2518). false on error.
      * @throws configuration_exception
      */
     public function move_file_to_folder($srcpath, $dstpath, $webdavclient) {
-        $result = array();
         $webdavclient->open();
         $webdavendpoint = $this->parse_endpoint_url('webdav');
 
         $sourcepath = $webdavendpoint['path'] . $srcpath;
         $destinationpath = $webdavendpoint['path'] . $dstpath . '/' . $srcpath;
 
-        $result['success'] = $webdavclient->move($sourcepath, $destinationpath, false);
+        $success = $webdavclient->move($sourcepath, $destinationpath, false);
         $webdavclient->close();
-        return $result;
+        return $success;
     }
     /** Creates a unique folder path for the access controlled link.
      * @param $context
@@ -243,7 +248,6 @@ class access_controlled_link_manager{
             $response = $this->systemwebdavclient->mkcol($webdavprefix . $fullpath);
 
             $this->systemwebdavclient->close();
-            // Todo: break/exception when status code !=201?
             if ($response != 201) {
                 $result['success'] = false;
                 continue;
@@ -252,7 +256,8 @@ class access_controlled_link_manager{
         if ($result['success'] != true) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'Folder path in the systemaccount could not be created.');
-            throw new \repository_owncloud\request_exception(array('instance' => $this->repositoryname, 'errormessage' => $details));
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => $details));
         }
         $result['fullpath'] = $fullpath;
 
@@ -299,9 +304,94 @@ class access_controlled_link_manager{
     public function parse_endpoint_url($endpointname) {
         $url = $this->issuer->get_endpoint_url($endpointname);
         if (empty($url)) {
-            throw new \repository_owncloud\configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
+            throw new configuration_exception(sprintf('Endpoint %s not defined.', $endpointname));
         }
         return parse_url($url);
     }
 
+    /** Creates a folder to store access controlled links.
+     * @param string $controlledlinkfoldername
+     * @param /repository/owncloud/owncloud_client $webdavclient
+     * @throws \coding_exception
+     * @throws configuration_exception
+     * @throws request_exception
+     */
+    public function create_storage_folder($controlledlinkfoldername, $webdavclient) {
+        $parsedwebdavurl = $this->parse_endpoint_url('webdav');
+        $webdavprefix = $parsedwebdavurl['path'];
+        // Checks whether folder exist and creates non-existent folders.
+        $webdavclient->open();
+        $isdir = $webdavclient->is_dir($webdavprefix . $controlledlinkfoldername);
+        // Folder already exist, continue.
+        if (!$isdir) {
+            $responsecreateshare = $webdavclient->mkcol($webdavprefix . $controlledlinkfoldername);
+
+            if ($responsecreateshare != 201) {
+                // TODO copy is maybe possible.
+                $webdavclient->close();
+                throw new request_exception(array('instance' => $this->repositoryname,
+                    'errormessage' => get_string('contactadminwith', 'repository_owncloud',
+                    'The folder to store files in the user account could not be created.')));
+            }
+        }
+        $webdavclient->close();
+    }
+
+    /** Gets all shares from a path (the path is file specific) and extracts the share of a specific user. In case
+     * multiple shares exist the first one is taken. Multiple shares can only appear when shares are created outside
+     * of this plugin, therefore this case is not handled.
+     * @param stored_file $storedfile
+     * @param string $username
+     * @return \SimpleXMLElement
+     * @throws \moodle_exception
+     */
+    public function get_shares_from_path($storedfile, $username) {
+        $source = $storedfile->get_reference();
+        $jsondecode = json_decode($source);
+        $path = $jsondecode->link;
+        $ocsparams = [
+            'path' => $path,
+            'reshares' => true
+        ];
+        $systemocsclient = new ocs_client(api::get_system_oauth_client($this->issuer));
+
+        $getsharesresponse = $systemocsclient->call('get_shares', $ocsparams);
+        $xml = simplexml_load_string($getsharesresponse);
+        $validelement = array();
+        foreach ($fileid = $xml->data->element as $element) {
+            if ($element->share_with == $username) {
+                $validelement = $element;
+                break;
+            }
+        }
+        return $validelement->id;
+    }
+
+    /** This method can only be used if the response is from a newly created share. In this case there is more information
+     * in the response. For a reference visit https://doc.owncloud.org/server/10.0/developer_manual/core/ocs-share-api.html.
+     * @param int $shareid
+     * @param string $username
+     * @return mixed the id of the share
+     * @throws \coding_exception
+     * @throws \repository_owncloud\request_exception
+     */
+    public function get_share_information_from_shareid($shareid, $username) {
+        $ocsparams = [
+            'share_id' => $shareid
+        ];
+        $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
+        $xml = simplexml_load_string($shareinformation);
+        foreach ($fileid = $xml->data->element as $element) {
+            if ($element->share_with == $username) {
+                $validelement = $element;
+                break;
+            }
+        }
+        if (empty($validelement)) {
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
+
+        }
+        return $validelement->file_target;
+    }
 }
