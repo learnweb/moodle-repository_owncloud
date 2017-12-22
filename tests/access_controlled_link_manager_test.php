@@ -52,6 +52,9 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
         $generator->test_create_endpoints($this->issuer->get('id'));
     }
 
+    /**
+     * Tests whether class can be constructed.
+     */
     public function test_construction() {
         $mockclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
         )->getMock();
@@ -123,8 +126,8 @@ XML;
 
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
 
-        $mockclient->expects($this->once())->method('call')->with('create_share', $params)
-            ->will($this->returnValue($expectedresponse));
+        $mockclient->expects($this->once())->method('call')->with('create_share', $params)->will(
+            $this->returnValue($expectedresponse));
         $result = $this->linkmanager->create_share_user_sysaccount("/ambient.txt", 604800, true, 'owncloud');
         $xml = simplexml_load_string($expectedresponse);
         $expected = array();

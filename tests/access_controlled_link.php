@@ -106,20 +106,17 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
         $this->expectException(\repository_exception::class);
         $this->expectExceptionMessage('cannotdownload');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 400)));
         $this->expectException(\repository_exception::class);
         $this->expectExceptionMessage('Could not copy file');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
         $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 400)));
         $this->expectException(\repository_exception::class);
@@ -127,8 +124,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('shareid' => 2,
-            'filetarget' => 'some/target/path', 'statuscode' => 100));
         $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
         $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 100)));
         $filereturn = array();
@@ -138,79 +133,6 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $filereturn = json_encode($filereturn);
         $return = $this->repo->reference_file_selected('mysource', context_system::instance(), '', '', '');
         $this->assertEquals($filereturn, $return);
-    }
-
-    /**
-     * Function to test the private function create_share_user_sysaccount.
-     */
-    public function test_create_share_user_sysaccount_sysaccount_shares() {
-        // 2. case share is created from the technical user account.
-
-        // Set up params.
-        $dateofexpiration = time() + 604800;
-        $username = 'user1';
-        $paramssysuser = [
-            'path' => "/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/a",
-            'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
-            'publicUpload' => false,
-            'expiration' => $dateofexpiration,
-            'shareWith' => $username,
-        ];
-        $expectedresponsesysuser = <<<XML
-<?xml version="1.0"?>
-<ocs>
- <meta>
-  <status>ok</status>
-  <statuscode>100</statuscode>
-  <message/>
- </meta>
- <data>
-  <id>231</id>
-  <share_type>0</share_type>
-  <uid_owner>user1</uid_owner>
-  <displayname_owner>user1</displayname_owner>
-  <permissions>19</permissions>
-  <stime>1511881192</stime>
-  <parent/>
-  <expiration/>
-  <token/>
-  <uid_file_owner>user1</uid_file_owner>
-  <displayname_file_owner>user1</displayname_file_owner>
-  <path>/clean80s.txt</path>
-  <item_type>file</item_type>
-  <mimetype>text/plain</mimetype>
-  <storage_id>home::user1</storage_id>
-  <storage>3</storage>
-  <item_source>553</item_source>
-  <file_source>553</file_source>
-  <file_parent>20</file_parent>
-  <file_target>/System/Category Miscellaneous/Course Example Course/File createconfusion/mod_resource/content/0/a</file_target>
-  <share_with>tech</share_with>
-  <share_with_displayname>tech</share_with_displayname>
-  <mail_send>0</mail_send>
- </data>
-</ocs>
-XML;
-        // This time the stored filed is used.
-        $storedfilemock = $this->createMock(stored_file::class);
-        $storedfilemock->expects($this->once())->method('get_reference')->will(
-            $this->returnValue(
-                '{"link":"\/System\/Category Miscellaneous\/Course Example Course\/File createconfusion\/mod_resource\/content\/0\/a","name":"\/a","usesystem":true}'));
-        $mock = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $mock->expects($this->once())->method('call')->with('create_share', $paramssysuser)->will($this->returnValue($expectedresponsesysuser));
-        $this->set_private_property($mock, 'systemocsclient');
-
-        $result = phpunit_util::call_internal_method($this->repo, "create_share_user_sysaccount",
-            array('source' => $storedfilemock, 'username' => "user1", 'temp' => 604800, 'direction' => false), 'repository_owncloud');
-
-        $xml = simplexml_load_string($expectedresponsesysuser);
-
-        $expected = array();
-        $expected['statuscode'] = $xml->meta->statuscode;
-        $expected['shareid'] = $xml->data->id;
-        $expected['fileid'] = $xml->data->item_source;
-        $expected['filetarget'] = ((string)$xml->data[0]->file_target);
-        $this->assertEquals($expected, $result);
     }
 
     /**
@@ -330,7 +252,7 @@ XML;
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(true);
         // In case of true as return value mkcol is not called  to create the folder
         $shareid = 5;
-        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 100, 'fileid' => $shareid));
+
         $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
         )->getMock();
         $mockocsclient->expects($this->exactly(2))->method('call')->with('get_information_of_share',
@@ -346,7 +268,6 @@ XML;
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(true);
         // In case of true as return value mkcol is not called to create the folder
         $shareid = 5;
-        $this->repo->expects($this->once())->method('create_share_user_sysaccount')->willReturn(array('statuscode' => 403, 'fileid' => $shareid));
         $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
         )->getMock();
         $mockocsclient->expects($this->exactly(1))->method('call')->with('get_shares',
