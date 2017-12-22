@@ -37,7 +37,6 @@ class repository_owncloud_ocs_testcase extends advanced_testcase {
      */
     private $issuer;
 
-
     /**
      * SetUp to create issuer and endpoints for OCS testing.
      */
