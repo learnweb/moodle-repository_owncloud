@@ -110,9 +110,9 @@ class access_controlled_link_manager{
     public function create_share_user_sysaccount($source, $timespan, $username = null) {
         $result = array();
         $path = $source;
-        $expiration = time() + $timespan;
+        $expirationunix = time() + $timespan;
+        $expiration = (string) date('Y-m-d', $expirationunix);
         // Expiration need to be in 'YYYY-MM-DD' format.
-        $dateofexpiration = (string) $expiration;
 
         if ($username != null) {
             $source = $source->get_reference();
@@ -127,7 +127,7 @@ class access_controlled_link_manager{
             'path' => $path,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
-            'expiration' => $dateofexpiration,
+            'expireDate' => $expiration,
             'shareWith' => $shareusername,
         ];
 

@@ -94,7 +94,7 @@ class ocs_client extends rest {
                     'publicUpload' => PARAM_RAW, // Actually Boolean, but neither String-Boolean ('false') nor PARAM_BOOL (0/1).
                     'permissions' => PARAM_INT,
                     'shareWith' => PARAM_TEXT,
-                    'expiration' => PARAM_TEXT
+                    'expireDate' => PARAM_TEXT
                 ],
                 'response' => 'text/xml'
             ],
