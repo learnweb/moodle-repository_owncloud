@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Class repository_owncloud_testcase
  * @group repo_owncloud
+ * @group repo_owncloud_manager
  * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -171,6 +172,48 @@ XML;
         $expected = $xml->meta->statuscode;
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     *
+     * @throws \repository_owncloud\configuration_exception
+     * @throws \repository_owncloud\request_exception
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    public function test_transfer_file_to_path() {
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
+        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
+        $webdavprefix = $parsedwebdavurl['path'];
+        $srcpath = 'sourcepath';
+        $dstpath = "destinationpath/another/path";
+        $this->expectException('repository_owncloud\request_exception');
+        $this->expectExceptionMessage('A request to owncloud has failed. The requested action could not be executed.' .
+            ' In case this happens frequently please contact the side administrator with the following additional information:'
+            . '<br>"<i>The systemaccount could not be connected.</i>"');
+        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
+
+        $fakeaccesstoken = new stdClass();
+        $fakeaccesstoken->token = "fake access token";
+        $oauthmock = $this->createMock(\core\oauth2\client::class);
+        $oauthmock->expects($this->once())->method('get_accesstoken')->will($this->returnValue($fakeaccesstoken));
+        $this->set_private_property($oauthmock, 'client', \repository_owncloud\access_controlled_link_manager::class);
+
+        $this->linkmanager->create_system_dav();
+        $mockclient->expects($this->once())->method('copy_file')->with($webdavprefix . $srcpath,
+            $webdavprefix . $dstpath . '/' . $srcpath, true)->willReturn(201);
+        $result = $this->linkmanager->transfer_file_to_path($srcpath, $dstpath, 'copy');
+        $expected = array();
+        $expected['success'] = 201;
+        $this->assertEquals($expected, $result);
+        $mockclient->expects($this->once())->method('move')->with($webdavprefix . $srcpath,
+            $webdavprefix . $dstpath . '/' . $srcpath, false)->willReturn(201);
+        $result = $this->linkmanager->transfer_file_to_path($srcpath, $dstpath, 'move');
+        $expected = array();
+        $expected['success'] = 201;
+        $this->assertEquals($expected, $result);
+}
 
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
