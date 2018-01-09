@@ -224,7 +224,7 @@ XML;
     public function test_create_folder_path_folders_are_not_created() {
         $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
 
-        $mocks = $this->set_up_mocks_for_create_folder_path(true, 0,4);
+        $mocks = $this->set_up_mocks_for_create_folder_path(true, 0, 4);
         // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
         // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
         // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
@@ -233,7 +233,7 @@ XML;
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
 
-        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'],"mod_resource",
+        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
         $expected = array();
         $expected['success'] = true;
@@ -255,7 +255,7 @@ XML;
 
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
-        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'],"mod_resource",
+        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
         $expected = array();
         $expected['success'] = true;
@@ -278,7 +278,7 @@ XML;
         $mocks = $this->set_up_mocks_for_create_folder_path(false, 4, 0, true, 400);
 
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
-        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'],"mod_resource",
+        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
         $expected = array();
         $expected['success'] = false;
@@ -308,6 +308,68 @@ XML;
         $mocknestedcontext->method('get_context_name')->willReturn('somename');
         return array('mockcontext' => $mockcontext, 'mockclient' => $mockclient);
     }
+
+    /** Test whether the systemwebdav client is constructed correctly. Port is set to 443 in case of https, to 80 in
+     * case of http and exception is thrown when endpoint does not exist.
+     * @throws \repository_owncloud\configuration_exception
+     * @throws coding_exception
+     */
+    public function test_create_system_dav() {
+        $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $oauthclientmock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $fakeaccesstoken = new stdClass();
+        $fakeaccesstoken->token = "fake access token";
+
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
+        $this->expectException('repository_owncloud\request_exception');
+
+        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
+        $oauthclientmock->expects($this->once())->method('get_accesstoken')->willReturn($fakeaccesstoken);
+        $this->set_private_property($oauthclientmock, 'systemoauthclient', $this->linkmanager);
+        $dav = $this->linkmanager->create_system_dav();
+
+        $this->assertEquals($dav->port, 443);
+        $this->assertEquals($dav->debug, false);
+
+        $endpoints = \core\oauth2\api::get_endpoints($this->issuer);
+        $ids = array();
+        foreach ($endpoints as $endpoint) {
+            $name = $endpoint->get('name');
+            if ($name === 'webdav') {
+                $ids[$endpoint->get('id')] = $endpoint->get('id');
+            }
+        }
+        foreach ($ids as $id) {
+            core\oauth2\api::delete_endpoint($id);
+        }
+
+        $endpoint = new stdClass();
+        $endpoint->name = "webdav_endpoint";
+        $endpoint->url = 'http://www.default.test/webdav/index.php';
+        $endpoint->issuerid = $this->issuer->get('id');
+        \core\oauth2\api::create_endpoint($endpoint);
+        $oauthclientmock->expects($this->once())->method('get_accesstoken')->willReturn($fakeaccesstoken);
+        $dav = $this->linkmanager->create_system_dav();
+        $this->assertEquals($dav->port, 80);
+        $this->assertEquals($dav->debug, false);
+
+        $endpoints = \core\oauth2\api::get_endpoints($this->issuer);
+        $ids = array();
+        foreach ($endpoints as $endpoint) {
+            $name = $endpoint->get('name');
+            if ($name === 'webdav') {
+                $ids[$endpoint->get('id')] = $endpoint->get('id');
+            }
+        }
+        foreach ($ids as $id) {
+            core\oauth2\api::delete_endpoint($id);
+        }
+        $this->expectException(\repository_owncloud\configuration_exception::class);
+        $this->linkmanager->create_system_dav();
+    }
+
 
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
