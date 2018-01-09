@@ -59,10 +59,10 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
     public function test_construction() {
         $mockclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
         )->getMock();
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
         $this->expectException('repository_owncloud\request_exception');
-        $this->expectExceptionMessage('A request to owncloud has failed. The requested action could not be executed.' .
-            ' In case this happens frequently please contact the side administrator with the following additional information:'
-            . '<br>"<i>The systemaccount could not be connected.</i>"');
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
 
         $mock = $this->createMock(\core\oauth2\client::class);
@@ -120,10 +120,10 @@ XML;
 
         $mockclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
         )->getMock();
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
         $this->expectException('repository_owncloud\request_exception');
-        $this->expectExceptionMessage('A request to owncloud has failed. The requested action could not be executed.' .
-            ' In case this happens frequently please contact the side administrator with the following additional information:'
-            . '<br>"<i>The systemaccount could not be connected.</i>"');
 
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
 
@@ -158,12 +158,11 @@ XML;
     <data/>
 </ocs>
 XML;
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
 
         $this->expectException('repository_owncloud\request_exception');
-        $this->expectExceptionMessage('A request to owncloud has failed. The requested action could not be executed.' .
-            ' In case this happens frequently please contact the side administrator with the following additional information:'
-            . '<br>"<i>The systemaccount could not be connected.</i>"');
-
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
         $mockclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)->will($this->returnValue($returnxml));
 
@@ -174,6 +173,7 @@ XML;
     }
 
     /**
+     * Test whether the webdav client gets the right params and whether function differentiates between move and copy.
      *
      * @throws \repository_owncloud\configuration_exception
      * @throws \repository_owncloud\request_exception
@@ -188,15 +188,17 @@ XML;
         $webdavprefix = $parsedwebdavurl['path'];
         $srcpath = 'sourcepath';
         $dstpath = "destinationpath/another/path";
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
         $this->expectException('repository_owncloud\request_exception');
-        $this->expectExceptionMessage('A request to owncloud has failed. The requested action could not be executed.' .
-            ' In case this happens frequently please contact the side administrator with the following additional information:'
-            . '<br>"<i>The systemaccount could not be connected.</i>"');
+
         $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
 
         $fakeaccesstoken = new stdClass();
         $fakeaccesstoken->token = "fake access token";
         $oauthmock = $this->createMock(\core\oauth2\client::class);
+
         $oauthmock->expects($this->once())->method('get_accesstoken')->will($this->returnValue($fakeaccesstoken));
         $this->set_private_property($oauthmock, 'client', \repository_owncloud\access_controlled_link_manager::class);
 
