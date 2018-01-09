@@ -215,7 +215,99 @@ XML;
         $expected = array();
         $expected['success'] = 201;
         $this->assertEquals($expected, $result);
-}
+    }
+
+    /**
+     * Function which test that create folder path does return the adequate results (path and success).
+     * Additionally mock checks whether the right params are passed to the corresponding functions.
+     */
+    public function test_create_folder_path_folders_are_not_created() {
+        $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
+        $mocks = $this->set_up_mocks_for_create_folder_path(true, 0,4);
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
+        $this->expectException('repository_owncloud\request_exception');
+
+        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
+        $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
+
+        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'],"mod_resource",
+            'content', 0);
+        $expected = array();
+        $expected['success'] = true;
+        $expected['fullpath'] = '/somename/mod_resource/content/0';
+        $this->assertEquals($expected, $result);
+    }
+    /**
+     * Function which test that create folder path does return the adequate results (path and success).
+     * Additionally mock checks whether the right params are passed to the corresponding functions.
+     */
+    public function test_create_folder_path_folders_are_created() {
+        $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
+        $mocks = $this->set_up_mocks_for_create_folder_path(false, 0, 0, true, 201);
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
+        $this->expectException('repository_owncloud\request_exception');
+
+        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
+        $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
+        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'],"mod_resource",
+            'content', 0);
+        $expected = array();
+        $expected['success'] = true;
+        $expected['fullpath'] = '/somename/mod_resource/content/0';
+        $this->assertEquals($expected, $result);
+    }
+    /**
+     * Function which test that create folder path does return the adequate results (path and success).
+     * Additionally mock checks whether the right params are passed to the corresponding functions.
+     */
+    public function test_create_folder_path_folder_creation_fails() {
+        $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
+        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
+        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
+        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
+        $this->expectException('repository_owncloud\request_exception');
+
+        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
+        $mocks = $this->set_up_mocks_for_create_folder_path(false, 4, 0, true, 400);
+
+        $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
+        $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'],"mod_resource",
+            'content', 0);
+        $expected = array();
+        $expected['success'] = false;
+        $expected['fullpath'] = '/somename/mod_resource/content/0';
+        $this->assertEquals($expected, $result);
+    }
+    /**
+     * Helper function to generate mocks for testing create folder path.
+     * @param bool $returnisdir
+     * @param bool $callmkcol
+     * @param int $returnmkcol
+     * @return array
+     */
+    protected function set_up_mocks_for_create_folder_path($returnisdir, $firstcount, $secondcount, $callmkcol = false, $returnmkcol = 201) {
+        $mockcontext = $this->createMock(context_module::class);
+        $mocknestedcontext = $this->createMock(context_module::class);
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
+        $webdavprefix = $parsedwebdavurl['path'];
+        $mockclient->expects($this->exactly($firstcount))->method('is_dir')->with($this->logicalOr(
+            $this->logicalOr($webdavprefix . '/somename/mod_resource', $webdavprefix . '/somename'),
+            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))->willReturn($returnisdir);
+        if ($callmkcol == true) {
+            $mockclient->expects($this->exactly($secondcount))->method('mkcol')->willReturn($returnmkcol);
+        }
+        $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
+        $mocknestedcontext->method('get_context_name')->willReturn('somename');
+        return array('mockcontext' => $mockcontext, 'mockclient' => $mockclient);
+    }
 
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
