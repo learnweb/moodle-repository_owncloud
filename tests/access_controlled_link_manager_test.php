@@ -370,6 +370,47 @@ XML;
         $this->linkmanager->create_system_dav();
     }
 
+    /**
+     * Test whether the right methods from the webdavclient are called when the storage_folder is created.
+     * This testcase might grow when owncloud has default folder to store downloaded files.
+     * 1. Directory already exist -> no further action needed.
+     * 2. Directory does not exist. It is created with mkcol and returns a success.
+     * 3. Last case Directory does not exist. It is created with mkcol and returns an error. An Exception is thrown.
+     * @throws \repository_owncloud\configuration_exception
+     * @throws \repository_owncloud\request_exception
+     * @throws coding_exception
+     */
+    public function test_create_storage_folder() {
+        $ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
+        // Replace with webdav_client when 3.3 is not longer supported.
+        $mockwebdavclient = $this->createMock(\repository_owncloud\owncloud_client::class);
+        $url = $this->issuer->get_endpoint_url('webdav');
+
+        $parsedwebdavurl = parse_url($url);
+        $webdavprefix = $parsedwebdavurl['path'];
+
+        $this->expectException('repository_owncloud\request_exception');
+
+        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($ocsmockclient, $this->issuer, 'owncloud');
+
+        $mockwebdavclient->expects($this->once())->method('open')->willReturn(true);
+        $mockwebdavclient->expects($this->once())->method('is_dir')->with($webdavprefix . 'myname')->willReturn(true);
+        $mockwebdavclient->expects($this->once())->method('close');
+        $this->linkmanager->create_storage_folder('myname', $mockwebdavclient);
+
+        $mockwebdavclient->expects($this->once())->method('open')->willReturn(true);
+        $mockwebdavclient->expects($this->once())->method('is_dir')->with($webdavprefix . 'myname')->willReturn(false);
+        $mockwebdavclient->expects($this->once())->method('mkcol')->with($webdavprefix . 'myname')->willReturn(201);
+        $mockwebdavclient->expects($this->once())->method('close');
+        $this->linkmanager->create_storage_folder('myname', $mockwebdavclient);
+
+        $mockwebdavclient->expects($this->once())->method('open')->willReturn(true);
+        $mockwebdavclient->expects($this->once())->method('is_dir')->with($webdavprefix . 'myname')->willReturn(false);
+        $mockwebdavclient->expects($this->once())->method('mkcol')->with($webdavprefix . 'myname')->willReturn(400);
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->linkmanager->create_storage_folder('myname', $mockwebdavclient);
+    }
 
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
