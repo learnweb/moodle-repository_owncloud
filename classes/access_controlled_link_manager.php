@@ -99,7 +99,6 @@ class access_controlled_link_manager{
     /** Creates a share between a user and the systemaccount. If the variable username is set the file is shared with the
      * corresponding user otherwise with the systemaccount.
      * @param $source
-     * @param int $timespan miliseconds until the share expires
      * @param string $username optional when set the file is shared with the corresponding user otherwise with
      * the systemaccount.
      * @return array statuscode, shareid, and filetarget
@@ -107,12 +106,9 @@ class access_controlled_link_manager{
      * @throws \moodle_exception
      * @throws \repository_owncloud\request_exception
      */
-    public function create_share_user_sysaccount($source, $timespan, $username = null) {
+    public function create_share_user_sysaccount($source, $username = null) {
         $result = array();
         $path = $source;
-        $expirationunix = time() + $timespan;
-        $expiration = (string) date('Y-m-d', $expirationunix);
-        // Expiration need to be in 'YYYY-MM-DD' format.
 
         if ($username != null) {
             $source = $source->get_reference();
@@ -127,7 +123,6 @@ class access_controlled_link_manager{
             'path' => $path,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
-            'expireDate' => $expiration,
             'shareWith' => $shareusername,
         ];
 

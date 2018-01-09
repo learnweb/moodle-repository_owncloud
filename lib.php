@@ -373,7 +373,7 @@ class repository_owncloud extends repository {
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
         // 1. Share the File with the system account.
-        $responsecreateshare = $linkmanager->create_share_user_sysaccount($source, 86400);
+        $responsecreateshare = $linkmanager->create_share_user_sysaccount($source);
 
         // 2. Create a unique path in the system account.
         $foldercreate = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea,
@@ -435,7 +435,7 @@ class repository_owncloud extends repository {
         $username = $userinfo['username'];
 
         // Creates a share between the systemaccount and the user.
-        $responsecreateshare = $linkmanager->create_share_user_sysaccount($storedfile, 86400, $username);
+        $responsecreateshare = $linkmanager->create_share_user_sysaccount($storedfile, $username);
 
         $statuscode = $responsecreateshare['statuscode'];
 
