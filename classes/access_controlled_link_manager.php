@@ -33,28 +33,28 @@ class access_controlled_link_manager{
      * OCS client that uses the Open Collaboration Services REST API.
      * @var ocs_client
      */
-    private $ocsclient;
+    protected $ocsclient;
 
     /**
      * Client to manage oauth2 features from the systemaccount.
      * @var \core\oauth2\client
      */
-    private $systemoauthclient;
+    protected $systemoauthclient;
     /**
      * Client to manage webdav request from the systemaccount..
      * @var ocs_client
      */
-    private $systemwebdavclient;
+    protected $systemwebdavclient;
     /**
      * Issuer from the oauthclient.
      * @var \core\oauth2\issuer
      */
-    private $issuer;
+    protected $issuer;
     /**
      * Name of the related repository.
      * @var string
      */
-    private $repositoryname;
+    protected $repositoryname;
 
     /**
      * Access_controlled_link_manager constructor.
@@ -175,8 +175,8 @@ class access_controlled_link_manager{
         if (!($result == 201 || $result == 412)) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'A webdav request to ' . $operation . ' a file failed.');
-            throw new request_exception(array('instance' => $this->repositoryname,
-                'errormessage' => $details));
+            throw new request_exception($this->repositoryname,
+                $details);
         }
         return $result;
     }
@@ -344,6 +344,11 @@ class access_controlled_link_manager{
                 $validelement = $element;
                 break;
             }
+        }
+        if (empty($validelement)) {
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
+
         }
         return $validelement->id;
     }
