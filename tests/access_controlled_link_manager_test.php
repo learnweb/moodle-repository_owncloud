@@ -311,7 +311,8 @@ XML;
         $this->assertEquals(201, $result);
     }
     /**
-     * Test whether the webdav client gets the right params and whether function differentiates between move and copy.
+     * This function tests whether the function transfer_file_to_path() moves or copies a given file to a given path
+     * It tests whether the webdav_client gets the right parameter and whether function distinguishes between move and copy.
      *
      */
     public function test_transfer_file_to_path_copyfile_movefile() {
@@ -333,8 +334,104 @@ XML;
         $this->assertEquals(201, $result);
     }
 
+    /**
+     * Test the get_shares_from path() function. This function extracts from an list of shares the share of a given user
+     * (the username is a parameter in the function call) and returns the id. The test firstly test whether the right fileid
+     * for user1 is extracted then for user2 and last but least whether an error is thrown if the user does not have a share.
+     * @throws moodle_exception
+     */
+    public function test_get_shares_from_path() {
+        $params = [
+            'path' => '/Kernsystem/Kursbereich Miscellaneous/Kurs Example Course/Datei zet/mod_resource/content/0/picture.png',
+            'reshares' => true
+        ];
+        $jsonobject = <<<JSON
+{"link":"\/Kernsystem\/Kursbereich Miscellaneous\/Kurs Example Course\/Datei zet\/mod_resource\/content\/0\/picture.png","name":"\/f\u00fcrdennis.png","usesystem":false}
+JSON;
+        $storedfile = $this->createMock(stored_file::class);
+        $storedfile->expects($this->exactly(3))->method('get_reference')->willReturn($jsonobject);
+        $expectedresponse = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
+ </meta>
+ <data>
+  <element>
+   <id>292</id>
+   <share_type>0</share_type>
+   <uid_owner>tech</uid_owner>
+   <displayname_owner>tech</displayname_owner>
+   <permissions>19</permissions>
+   <stime>1515752494</stime>
+   <parent/>
+   <expiration/>
+   <token/>
+   <uid_file_owner>tech</uid_file_owner>
+   <displayname_file_owner>tech</displayname_file_owner>
+   <path>some/path/of/some/file.pdf</path>
+   <item_type>file</item_type>
+   <mimetype>image/png</mimetype>
+   <storage_id>home::tech</storage_id>
+   <storage>4</storage>
+   <item_source>1085</item_source>
+   <file_source>1085</file_source>
+   <file_parent>1084</file_parent>
+   <file_target>/fehler (3).png</file_target>
+   <share_with>user1</share_with>
+   <share_with_displayname>user1</share_with_displayname>
+   <mail_send>0</mail_send>
+  </element>
+  <element>
+   <id>293</id>
+   <share_type>0</share_type>
+   <uid_owner>tech</uid_owner>
+   <displayname_owner>tech</displayname_owner>
+   <permissions>19</permissions>
+   <stime>1515752494</stime>
+   <parent/>
+   <expiration/>
+   <token/>
+   <uid_file_owner>tech</uid_file_owner>
+   <displayname_file_owner>tech</displayname_file_owner>
+   <path>some/path/of/some/file.pdf</path>
+   <item_type>file</item_type>
+   <mimetype>image/png</mimetype>
+   <storage_id>home::tech</storage_id>
+   <storage>4</storage>
+   <item_source>1085</item_source>
+   <file_source>1085</file_source>
+   <file_parent>1084</file_parent>
+   <file_target>/fehler (3).png</file_target>
+   <share_with>user2</share_with>
+   <share_with_displayname>user2</share_with_displayname>
+   <mail_send>0</mail_send>
+  </element>
+ </data>
+</ocs>
+XML;
+        $this->set_private_property($this->ocsmockclient, 'systemocsclient', $this->linkmanager);
+
+        $this->ocsmockclient->expects($this->exactly(3))->method('call')->with('get_shares', $params)->will(
+            $this->returnValue($expectedresponse));
+        $xmlobjuser1 = (int) $this->linkmanager->get_shares_from_path($storedfile, 'user2');
+        $xmlobjuser2 = (int) $this->linkmanager->get_shares_from_path($storedfile, 'user1');
+
+        $this->assertEquals(293, $xmlobjuser1);
+        $this->assertEquals(292, $xmlobjuser2);
+
+        $this->expectException(\repository_owncloud\request_exception::class);
+
+        $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
+are authenticated with the right account.');
+        $this->linkmanager->get_shares_from_path($storedfile, 'user3');
+
+    }
+
     // TODO missing functions : test_create_system_dav() test_get_share_information_from_shareid(),
-    // TODO get_shares_from_path($storedfile, $username) test_get_shares_from_path()
+    // TODO test_get_shares_from_path()
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *

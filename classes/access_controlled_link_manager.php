@@ -34,7 +34,11 @@ class access_controlled_link_manager{
      * @var ocs_client
      */
     protected $ocsclient;
-
+    /**
+     * ocsclient of the systemaccount.
+     * @var ocs_client
+     */
+    protected $systemocsclient;
     /**
      * Client to manage oauth2 features from the systemaccount.
      * @var \core\oauth2\client
@@ -42,7 +46,7 @@ class access_controlled_link_manager{
     protected $systemoauthclient;
     /**
      * Client to manage webdav request from the systemaccount..
-     * @var ocs_client
+     * @var owncloud_client
      */
     protected $systemwebdavclient;
     /**
@@ -69,12 +73,15 @@ class access_controlled_link_manager{
     public function __construct($ocsclient, $issuer, $repositoryname) {
         $this->ocsclient = $ocsclient;
         $this->systemoauthclient = api::get_system_oauth_client($issuer);
+
         $this->repositoryname = $repositoryname;
         if ($this->systemoauthclient === false || $this->systemoauthclient->is_logged_in() === false) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'The systemaccount could not be connected.');
             throw new request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
 
+        } else {
+            $this->systemocsclient = new ocs_client($this->systemoauthclient);
         }
         $this->issuer = $issuer;
         $this->systemwebdavclient = $this->create_system_dav();
@@ -130,8 +137,7 @@ class access_controlled_link_manager{
         if ($username === null) {
             $createshareresponse = $this->ocsclient->call('create_share', $createshareparams);
         } else {
-            $systemoauthclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-            $createshareresponse = $systemoauthclient->call('create_share', $createshareparams);
+            $createshareresponse = $this->systemocsclient->call('create_share', $createshareparams);
         }
         $xml = simplexml_load_string($createshareresponse);
 
@@ -334,9 +340,8 @@ class access_controlled_link_manager{
             'path' => $path,
             'reshares' => true
         ];
-        $systemocsclient = new ocs_client(api::get_system_oauth_client($this->issuer));
 
-        $getsharesresponse = $systemocsclient->call('get_shares', $ocsparams);
+        $getsharesresponse = $this->systemocsclient->call('get_shares', $ocsparams);
         $xml = simplexml_load_string($getsharesresponse);
         $validelement = array();
         foreach ($fileid = $xml->data->element as $element) {
