@@ -18,7 +18,7 @@
  * Manages the creation and usage of access controlled links.
  *
  * @package    repository_owncloud
- * @copyright  2017 Nina Herrmann (Learnweb, University of Münster)
+ * @copyright  2018 Nina Herrmann (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace repository_owncloud\test;
@@ -32,7 +32,6 @@ class access_controlled_link_manager_test extends access_controlled_link_manager
      * @param ocs_client $ocsclient
      * @param \core\oauth2\issuer $issuer
      * @param string $repositoryname
-     * @throws \moodle_exception
      */
 
     public function __construct($ocsclient, \core\oauth2\issuer $issuer, $repositoryname, $systemdav) {
