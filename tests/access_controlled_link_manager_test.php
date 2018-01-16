@@ -429,9 +429,54 @@ are authenticated with the right account.');
         $this->linkmanager->get_shares_from_path($storedfile, 'user3');
 
     }
+    /** Test whether the systemwebdav client is constructed correctly. Port is set to 443 in case of https, to 80 in
+     * case of http and exception is thrown when endpoint does not exist.
+     * @throws \repository_owncloud\configuration_exception
+     * @throws coding_exception
+     */
+    public function test_create_system_dav() {
+        // Initialize mock and params
+        $oauthclientmock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $fakeaccesstoken = new stdClass();
+        $fakeaccesstoken->token = "fake access token";
+        $oauthclientmock->expects($this->exactly(2))->method('get_accesstoken')->willReturn($fakeaccesstoken);
+        $this->set_private_property($oauthclientmock, 'systemoauthclient', $this->linkmanager);
+        $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
 
-    // TODO missing functions : test_create_system_dav() test_get_share_information_from_shareid(),
-    // TODO test_get_shares_from_path()
+        // Call function and create own client.
+        $dav = $this->linkmanager->create_system_dav();
+        $mydav = new \repository_owncloud\owncloud_client($parsedwebdavurl['host'], '', '', 'bearer', 'ssl://',
+            "fake access token", $parsedwebdavurl['path']);
+        $mydav->port = 443;
+        $mydav->debug = false;
+        $this->assertEquals($mydav, $dav);
+
+        // Deletes the old webdav endpoint and ...
+        $this->delete_endpoints('webdav_endpoint');
+        // Creates a new one which requires different ports.
+        $endpoint = new stdClass();
+        $endpoint->name = "webdav_endpoint";
+        $endpoint->url = 'http://www.default.test/webdav/index.php';
+        $endpoint->issuerid = $this->issuer->get('id');
+        \core\oauth2\api::create_endpoint($endpoint);
+
+        // Call function and create own client.
+        $dav = $this->linkmanager->create_system_dav();
+        $mydav = new \repository_owncloud\owncloud_client($parsedwebdavurl['host'], '', '', 'bearer', '',
+            "fake access token", $parsedwebdavurl['path']);
+        $mydav->port = 80;
+        $mydav->debug = false;
+        $this->assertEquals($mydav, $dav);
+
+        // Delte endpoints and ...
+        $this->delete_endpoints('webdav_endpoint');
+
+        // Do not insert new ones, therefore exception is thrown.
+        $this->expectException(\repository_owncloud\configuration_exception::class);
+        $this->linkmanager->create_system_dav();
+    }
+
+    // TODO missing functions : test_get_share_information_from_shareid()
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
@@ -445,6 +490,42 @@ are authenticated with the right account.');
         $private->setAccessible(true);
         $private->setValue($class, $value);
         return $private;
+    }
+    /**
+     * Helper method, which gets a private property of a given class.
+     *
+     * @param mixed $value mock value that will be inserted.
+     * @param string $propertyname name of the private property.
+     * @return ReflectionProperty the resulting reflection property.
+     */
+    protected function get_private_property($propertyname, $class) {
+        $refclient = new ReflectionClass($class);
+        $private = $refclient->getProperty($propertyname);
+        $private->setAccessible(true);
+        $property = $private->getValue($private);
+        return $property;
+    }
+    /**
+     * Deletes all endpoint with the given name.
+     * @param string $endpointname
+     * @return array|null
+     * @throws moodle_exception
+     */
+    protected function delete_endpoints($endpointname) {
+        $endpoints = \core\oauth2\api::get_endpoints($this->issuer);
+        $arrayofids = array();
+        foreach ($endpoints as $endpoint) {
+            $name = $endpoint->get('name');
+            if ($name === $endpointname) {
+                $arrayofids[$endpoint->get('id')] = $endpoint->get('id');
+            }
+        }
+        if (empty($arrayofids)) {
+            return;
+        }
+        foreach ($arrayofids as $id) {
+            core\oauth2\api::delete_endpoint($id);
+        }
     }
 
 }
