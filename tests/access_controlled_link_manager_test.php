@@ -454,29 +454,130 @@ are authenticated with the right account.');
         // Deletes the old webdav endpoint and ...
         $this->delete_endpoints('webdav_endpoint');
         // Creates a new one which requires different ports.
-        $endpoint = new stdClass();
-        $endpoint->name = "webdav_endpoint";
-        $endpoint->url = 'http://www.default.test/webdav/index.php';
-        $endpoint->issuerid = $this->issuer->get('id');
-        \core\oauth2\api::create_endpoint($endpoint);
+        try {
+            $endpoint = new stdClass();
+            $endpoint->name = "webdav_endpoint";
+            $endpoint->url = 'http://www.default.test/webdav/index.php';
+            $endpoint->issuerid = $this->issuer->get('id');
+            \core\oauth2\api::create_endpoint($endpoint);
 
-        // Call function and create own client.
-        $dav = $this->linkmanager->create_system_dav();
-        $mydav = new \repository_owncloud\owncloud_client($parsedwebdavurl['host'], '', '', 'bearer', '',
-            "fake access token", $parsedwebdavurl['path']);
-        $mydav->port = 80;
-        $mydav->debug = false;
-        $this->assertEquals($mydav, $dav);
+            // Call function and create own client.
+            $dav = $this->linkmanager->create_system_dav();
+            $mydav = new \repository_owncloud\owncloud_client($parsedwebdavurl['host'], '', '', 'bearer', '',
+                "fake access token", $parsedwebdavurl['path']);
+            $mydav->port = 80;
+            $mydav->debug = false;
+            $this->assertEquals($mydav, $dav);
+        } catch (core\invalid_persistent_exception $e) {
+            // In some cases Moodle does not allow to create http connections. In those cases the exception
+            // is catched here and the test are executed.
+            $this->expectException(\core\invalid_persistent_exception::class);
+            $this->linkmanager->create_system_dav();
+        } finally {
 
-        // Delte endpoints and ...
-        $this->delete_endpoints('webdav_endpoint');
+            // Delte endpoints and ...
+            $this->delete_endpoints('webdav_endpoint');
 
-        // Do not insert new ones, therefore exception is thrown.
-        $this->expectException(\repository_owncloud\configuration_exception::class);
-        $this->linkmanager->create_system_dav();
+            // Do not insert new ones, therefore exception is thrown.
+            $this->expectException(\repository_owncloud\configuration_exception::class);
+            $this->linkmanager->create_system_dav();
+        }
     }
 
-    // TODO missing functions : test_get_share_information_from_shareid()
+    /**
+     * Tests the function get_share_information_from_shareid(). From a response with two element it is tested
+     * whether the right file_target is extracted and lastly it is checked whether an error is thrown in case no suitable
+     * element exists.
+     * @throws \repository_owncloud\request_exception
+     * @throws coding_exception
+     */
+    public function test_get_share_information_from_shareid() {
+        $params303 = [
+            'share_id' => 303,
+        ];
+        $params302 = [
+            'share_id' => 302,
+        ];
+        $expectedresponse = <<<XML
+<?xml version="1.0"?>
+<ocs>
+ <meta>
+  <status>ok</status>
+  <statuscode>100</statuscode>
+  <message/>
+ </meta>
+ <data>
+  <element>
+   <id>302</id>
+   <share_type>0</share_type>
+   <uid_owner>tech</uid_owner>
+   <displayname_owner>tech</displayname_owner>
+   <permissions>19</permissions>
+   <stime>1516096325</stime>
+   <parent/>
+   <expiration/>
+   <token/>
+   <uid_file_owner>tech</uid_file_owner>
+   <displayname_file_owner>tech</displayname_file_owner>
+     <path>/some/target (2).png</path>
+   <item_type>file</item_type>
+   <mimetype>image/png</mimetype>
+   <storage_id>shared::/some/target.png</storage_id>
+   <storage>4</storage>
+   <item_source>1125</item_source>
+   <file_source>1125</file_source>
+   <file_parent>20</file_parent>
+   <file_target>/some/target.png</file_target>
+   <share_with>user1</share_with>
+   <share_with_displayname>user1</share_with_displayname>
+   <mail_send>0</mail_send>
+  </element>
+  <element>
+   <id>303</id>
+   <share_type>0</share_type>
+   <uid_owner>tech</uid_owner>
+   <displayname_owner>tech</displayname_owner>
+   <permissions>19</permissions>
+   <stime>1516096325</stime>
+   <parent/>
+   <expiration/>
+   <token/>
+   <uid_file_owner>tech</uid_file_owner>
+   <displayname_file_owner>tech</displayname_file_owner>
+   <path>/some/target (2).pdf</path>
+   <item_type>file</item_type>
+   <mimetype>image/png</mimetype>
+   <storage_id>shared::/some/target.pdf</storage_id>
+   <storage>4</storage>
+   <item_source>1125</item_source>
+   <file_source>1125</file_source>
+   <file_parent>20</file_parent>
+   <file_target>/some/target.pdf</file_target>
+   <share_with>user2</share_with>
+   <share_with_displayname>user1</share_with_displayname>
+   <mail_send>0</mail_send>
+  </element>
+ </data>
+</ocs>
+XML;
+        $this->set_private_property($this->ocsmockclient, 'systemocsclient', $this->linkmanager);
+
+        $this->ocsmockclient->expects($this->exactly(3))->method('call')->with('get_information_of_share',
+            $this->logicalOr($params303, $params302))->will($this->returnValue($expectedresponse));
+
+        // Test function for two different users.
+        $filetarget = $this->linkmanager->get_share_information_from_shareid(303, 'user2');
+        $this->assertEquals('/some/target.pdf', $filetarget);
+
+        $filetarget = $this->linkmanager->get_share_information_from_shareid(302, 'user1');
+        $this->assertEquals('/some/target.png', $filetarget);
+
+        // Expect exception in case no suitable elemtn exist in the response.
+        $this->expectException(\repository_owncloud\request_exception::class);
+        $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
+are authenticated with the right account.');
+        $this->linkmanager->get_share_information_from_shareid(302, 'user2');
+    }
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.
      *
