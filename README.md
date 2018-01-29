@@ -3,20 +3,26 @@
 [![Build Status](https://travis-ci.org/learnweb/moodle-repository_owncloud.svg?branch=master)](https://travis-ci.org/learnweb/moodle-repository_owncloud)
 [![Coverage Status](https://coveralls.io/repos/github/learnweb/moodle-repository_owncloud/badge.svg)](https://coveralls.io/github/learnweb/moodle-repository_owncloud)
 
-This plugin enables Moodle users to have direct access to their private files from ownCloud in the *Moodle file picker* and the *URL resource module*,
-enabling to upload files into Moodle directly from their ownCloud,
-without having to download it to their local machine first.  
+This plugin enables Moodle users to have direct access to their private files from ownCloud/Nextcloud in the *Moodle file picker* and the *URL resource module*,
+enabling to upload files into Moodle directly from their ownCloud/Nextcloud,
+without having to download it to their local machine first.
 
 Is your institution using multiple ownCloud servers? Don't worry, 
   a Moodle administrator can connect multiple ownCloud servers that are
     then presented separately to the users. They can't add their own ownCloud servers, though.
 
+This plugin has originally been developed for ownCloud, but works with Nextcloud just as well. For simplicity we will refer to both as "ownCloud".
 
-This plugin was originally created by Information Systems students of the project seminar sciebo@Learnweb 
+
+**Acknowledgement:** This plugin was originally created by Information Systems students of the project seminar sciebo@Learnweb 
 at the University of Münster in 2016-17; see https://github.com/pssl16 for an archive(!) of their great work.
 Learnweb (University of Münster) took over maintenance in 2017.
 
 ## Installation
+
+Installing this plugin is a relatively technical endeavour.
+If you run into problems, please have a look at the [Moodle Wiki page of this plugin](https://docs.moodle.org/en/ownCloud_Repository#Troubleshooting).
+Maybe your issue is documented there.
 
 This plugin requires configuration in ownCloud (add Moodle as an allowed client)
   as well as in Moodle (add ownCloud servers to which users will be able to connect).
@@ -64,12 +70,13 @@ Afterwards, your issuer is listed in a table.
 There, click `Configure endpoints` to configure the services that we want to use, as ownCloud does not support auto discovery.
 For the ownCloud Repository plugin four endpoints have to be registered that are ownCloud-specific: 
    
-| Endpoint name             | Endpoint URL                                              |
-| ------------------------- | --------------------------------------------------------- |
-| `token_endpoint`          | Base URL + `/index.php/apps/oauth2/api/v1/token`          |
-| `authorization_endpoint`  | Base URL + `/index.php/apps/oauth2/authorize`             |
-| `webdav_endpoint`         | Base URL + `/remote.php/webdav/`                          |
-| `ocs_endpoint`            | Base URL + `/ocs/v1.php/apps/files_sharing/api/v1/shares` |
+| Endpoint name             | Endpoint URL                                                         |
+| ------------------------- | -------------------------------------------------------------------- |
+| `token_endpoint`          | Base URL + `/index.php/apps/oauth2/api/v1/token`                     |
+| `authorization_endpoint`  | Base URL + `/index.php/apps/oauth2/authorize`                        |
+| `webdav_endpoint`         | Base URL + `/remote.php/webdav/`                                     |
+| `ocs_endpoint`            | Base URL + `/ocs/v1.php/apps/files_sharing/api/v1/shares?format=xml` |
+| `userinfo_endpoint`       | Base URL + `/ocs/v2.php/cloud/user?format=json`                      |
 
 Given the Base URL example above, an exemplary `token_endpoint` URL is `https://owncloud.example.com:8000/oc/index.php/apps/oauth2/api/v1/token`.
 
