@@ -62,6 +62,7 @@ There, select `Create custom service`.
 
 Choose the name freely; it will only be shown to you.
 Enter ClientID and Secret from the ownCloud settings of step 1.
+Enable the "Authenticate token requests via HTTP headers" checkbox (if present).
 As Service base URL, enter the full URL to your ownCloud installation, including a custom port (if any).
 For example, if the ownCloud installation is at `https://owncloud.example.com:8000/oc/`, then this is the base URL.
 Ignore the other settings and click `Save changes`.
