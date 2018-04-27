@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Class repository_owncloud_ocs_testcase
+ * @group repo_owncloud
  * @copyright  2017 Jan Dageförde (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

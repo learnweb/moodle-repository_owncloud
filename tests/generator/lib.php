@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Data generator for repository plugin.
  *
+ * @group repo_owncloud
  * @package    repository_owncloud
  * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
