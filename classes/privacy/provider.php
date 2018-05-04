@@ -30,9 +30,11 @@ use core_privacy\local\metadata\collection;
 class provider implements \core_privacy\local\metadata\provider {
     public static function get_metadata(collection $collection) : collection {
         $collection->add_subsystem_link(
-            // TODO add core oauth 2
+            'oauthlib',
+            [],
+            // TODO: is stored in the SESSION see lib/oauthlib.php l. 679 --> however, there exist no privacy class. 
+            'privacy:metadata:oauthlib'
         );
-
         return $collection;
     }
 }

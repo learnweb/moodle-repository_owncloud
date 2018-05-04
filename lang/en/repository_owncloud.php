@@ -40,6 +40,7 @@ $string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 serv
 For additional help with the OAuth 2 API please refer to the Moodle documentation.';
 $string['chooseissuer_link'] = 'OAuth_2_services';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
+$string['privacy:metadata:auth_oauth2'] = 'The repository uses a acesstoken, provided by the oauthlib, saved in the Session to access files.';
 
 // Exceptions.
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
