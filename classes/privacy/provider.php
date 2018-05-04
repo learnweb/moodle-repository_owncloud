@@ -29,6 +29,7 @@ use core_privacy\local\metadata\collection;
 
 class provider implements \core_privacy\local\metadata\provider {
     public static function get_metadata(collection $collection) : collection {
+        // The repository uses a user specific acesstoken (called confirmation token), provided by the oauthlib, saved in the session to access files.
         $collection->add_subsystem_link(
             'auth_oauth2',
             [],
