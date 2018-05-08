@@ -26,8 +26,7 @@ namespace repository_owncloud\privacy;
 defined('MOODLE_INTERNAL') || die();
 use core_privacy\local\metadata\collection;
 class provider implements
-    \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider {
+    \core_privacy\local\metadata\provider {
     use \core_privacy\local\legacy_polyfill;
     public static function _get_metadata(collection $collection) {
         // The repository uses a user specific acesstoken (called confirmation token), provided by the oauthlib, ...
