@@ -71,13 +71,14 @@ Afterwards, your issuer is listed in a table.
 There, click `Configure endpoints` to configure the services that we want to use, as ownCloud does not support auto discovery.
 For the ownCloud Repository plugin four endpoints have to be registered that are ownCloud-specific: 
    
-| Endpoint name             | Endpoint URL                                                         |
-| ------------------------- | -------------------------------------------------------------------- |
-| `token_endpoint`          | Base URL + `/index.php/apps/oauth2/api/v1/token`                     |
-| `authorization_endpoint`  | Base URL + `/index.php/apps/oauth2/authorize`                        |
-| `webdav_endpoint`         | Base URL + `/remote.php/webdav/`                                     |
-| `ocs_endpoint`            | Base URL + `/ocs/v1.php/apps/files_sharing/api/v1/shares?format=xml` |
-| `userinfo_endpoint`       | Base URL + `/ocs/v2.php/cloud/user?format=json`                      |
+| Endpoint name             | Endpoint URL                                               |
+| ------------------------- | ---------------------------------------------------------- |
+| `token_endpoint`          | Base URL + `/index.php/apps/oauth2/api/v1/token`           |
+| `authorization_endpoint`  | Base URL + `/index.php/apps/oauth2/authorize`              |
+| `webdav_endpoint`         | Base URL + `/remote.php/webdav/`                           |
+| `ocs_endpoint`            | Base URL + `/ocs/v1.php/apps/files_sharing/api/v1/shares`  |
+| `userinfo_endpoint`       | Base URL + `/ocs/v2.php/cloud/user?format=json`            |
+Remark: Previously, an additional parameter in the ocs_endpoint URL was listed (?format=xml). This is no longer necessary, however, having the parameter set will not result in any problems. 
 
 Given the Base URL example above, an exemplary `token_endpoint` URL is `https://owncloud.example.com:8000/oc/index.php/apps/oauth2/api/v1/token`.
 
