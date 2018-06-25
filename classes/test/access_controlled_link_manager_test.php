@@ -23,6 +23,8 @@
  */
 namespace repository_owncloud\test;
 
+defined('MOODLE_INTERNAL') || die();
+
 use repository_owncloud\access_controlled_link_manager;
 
 class access_controlled_link_manager_test extends access_controlled_link_manager {

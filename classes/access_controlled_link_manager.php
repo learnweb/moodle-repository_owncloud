@@ -91,13 +91,14 @@ class access_controlled_link_manager{
      * @param $shareid
      */
     public function delete_share_dataowner_sysaccount($shareid) {
+        $shareid = (int) $shareid;
         $deleteshareparams = [
             'share_id' => $shareid
         ];
         $deleteshareresponse = $this->ocsclient->call('delete_share', $deleteshareparams);
         $xml = simplexml_load_string($deleteshareresponse);
 
-        if ($xml->meta->statuscode != 100) {
+        if (empty($xml->meta->statuscode) || $xml->meta->statuscode != 100 ) {
             notification::warning('You just shared a file with a access controlled link.
              However, the share between you and the systemaccount could not be deleted and is still present in your instance.');
         }
@@ -154,10 +155,12 @@ class access_controlled_link_manager{
         return $result;
     }
 
-    /** Copy a file to a new path.
+    /** Copy or moves a file to a new path.
      * @param string $srcpath source path
      * @param string $dstpath
      * @param string $operation move or copy
+     * @param  \webdav_client $webdavclient needed when moving files.
+     * @return String Http-status of the request
      * @throws configuration_exception
      * @throws \coding_exception
      * @throws \moodle_exception
@@ -181,8 +184,7 @@ class access_controlled_link_manager{
         if (!($result == 201 || $result == 412)) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'A webdav request to ' . $operation . ' a file failed.');
-            throw new request_exception($this->repositoryname,
-                $details);
+            throw new request_exception(array('instance' => $this->repositoryname, 'errormessage' => $details));
         }
         return $result;
     }
@@ -368,8 +370,9 @@ class access_controlled_link_manager{
      */
     public function get_share_information_from_shareid($shareid, $username) {
         $ocsparams = [
-            'share_id' => $shareid
+            'share_id' => (int) $shareid
         ];
+
         $shareinformation = $this->ocsclient->call('get_information_of_share', $ocsparams);
         $xml = simplexml_load_string($shareinformation);
         foreach ($fileid = $xml->data->element as $element) {

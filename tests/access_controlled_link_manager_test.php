@@ -26,14 +26,14 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Class repository_owncloud_testcase
- * @group repo_owncloud
+ * @group repository_owncloud
  * @group repo_owncloud_manager
  * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_owncloud_access_controlled_link_manager_testcase extends advanced_testcase {
 
-    /** @var null|\repository_owncloud\test\access_controlled_link_manager_test test class for the access_controlled_link_manager. */
+    /** @var null|\repository_owncloud\test\access_controlled_link_manager_test class for the access_controlled_link_manager. */
     public $linkmanager = null;
 
     /** @var null|\repository_owncloud\ocs_client The ocs_client used to send requests. */
@@ -54,8 +54,10 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
         $this->issuer = $generator->test_create_issuer();
         $generator->test_create_endpoints($this->issuer->get('id'));
-        $this->ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        $systemwebdavclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $this->ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $systemwebdavclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
 
         $this->linkmanager = new \repository_owncloud\test\access_controlled_link_manager_test($this->ocsmockclient,
             $this->issuer, 'owncloud', $systemwebdavclient);
@@ -66,7 +68,8 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
      * Tests whether class can be constructed.
      */
     public function test_construction() {
-        $mockclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mockclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
         // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
         // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
@@ -159,7 +162,8 @@ XML;
     <data/>
 </ocs>
 XML;
-        $this->ocsmockclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)->will($this->returnValue($returnxml));
+        $this->ocsmockclient->expects($this->once())->method('call')->with('delete_share', $deleteshareparams)->will(
+            $this->returnValue($returnxml));
         $this->linkmanager->delete_share_dataowner_sysaccount($shareid, 'repository_owncloud');
 
     }
@@ -185,7 +189,7 @@ XML;
      */
     public function test_create_folder_path_folders_are_created() {
 
-        // / in Contest is okay, number of context counts for number of iterations.
+        // In Context is okay, number of context counts for number of iterations.
         $mocks = $this->set_up_mocks_for_create_folder_path(false, 'somename/more', true, 201);
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
         $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
@@ -213,17 +217,20 @@ XML;
      * @param int $returnmkcol
      * @return array
      */
-    protected function set_up_mocks_for_create_folder_path($returnisdir, $returnestedcontext, $callmkcol = false, $returnmkcol = 201) {
+    protected function set_up_mocks_for_create_folder_path($returnisdir, $returnestedcontext, $callmkcol = false,
+                                                           $returnmkcol = 201) {
         $mockcontext = $this->createMock(context_module::class);
         $mocknestedcontext = $this->createMock(context_module::class);
 
-        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $dirstring = $webdavprefix . '/' . $returnestedcontext;
         $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
             $this->logicalOr($dirstring . '/mod_resource', $dirstring),
-            $this->logicalOr($dirstring . '/mod_resource/content/0', $dirstring . '/mod_resource/content')))->willReturn($returnisdir);
+            $this->logicalOr($dirstring . '/mod_resource/content/0', $dirstring . '/mod_resource/content')
+        ))->willReturn($returnisdir);
         if ($callmkcol == true) {
             $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn($returnmkcol);
         }
@@ -424,7 +431,8 @@ XML;
 
         $this->expectException(\repository_owncloud\request_exception::class);
 
-        $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
+        $this->expectExceptionMessage(
+        'A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
 are authenticated with the right account.');
         $this->linkmanager->get_shares_from_path($storedfile, 'user3');
 
@@ -435,8 +443,9 @@ are authenticated with the right account.');
      * @throws coding_exception
      */
     public function test_create_system_dav() {
-        // Initialize mock and params
-        $oauthclientmock = $this->getMockBuilder(\core\oauth2\client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        // Initialize mock and params.
+        $oauthclientmock = $this->getMockBuilder(\core\oauth2\client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $fakeaccesstoken = new stdClass();
         $fakeaccesstoken->token = "fake access token";
         $oauthclientmock->expects($this->exactly(2))->method('get_accesstoken')->willReturn($fakeaccesstoken);
@@ -565,7 +574,8 @@ XML;
         $this->ocsmockclient->expects($this->exactly(3))->method('call')->with('get_information_of_share',
             $this->logicalOr($params303, $params302))->will($this->returnValue($expectedresponse));
 
-        // Test function for two different users.
+        // Test function for two different users. Setting the id is just a dummy value since always $expectedresponse ...
+        // ... is returned.
         $filetarget = $this->linkmanager->get_share_information_from_shareid(303, 'user2');
         $this->assertEquals('/some/target.pdf', $filetarget);
 
@@ -576,7 +586,7 @@ XML;
         $this->expectException(\repository_owncloud\request_exception::class);
         $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
 are authenticated with the right account.');
-        $this->linkmanager->get_share_information_from_shareid(302, 'user2');
+        $this->linkmanager->get_share_information_from_shareid(302, 'user3');
     }
     /**
      * Helper method, which inserts a given mock value into the repository_owncloud object.

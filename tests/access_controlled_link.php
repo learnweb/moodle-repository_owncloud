@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Class repository_owncloud_testcase
- * @group repo_owncloud
+ * @group repository_owncloud
  * @copyright  2017 Project seminar (Learnweb, University of Münster)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -111,21 +111,26 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 400)));
+        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' =>
+            array('success' => 400)));
         $this->expectException(\repository_exception::class);
         $this->expectExceptionMessage('Could not copy file');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
-        $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 400)));
+        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' =>
+            array('success' => 201)));
+        $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(
+            array('statuscode' => array('success' => 400)));
         $this->expectException(\repository_exception::class);
         $this->expectExceptionMessage('Share is still present');
         $this->repo->reference_file_selected('', context_system::instance(), '', '', '');
 
         $this->repo->expects($this->once())->method('get_user_oauth_client')->willReturn(true);
-        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' => array('success' => 201)));
-        $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(array('statuscode' => array('success' => 100)));
+        $this->repo->expects($this->once())->method('copy_file_to_path')->willReturn(array('statuscode' =>
+            array('success' => 201)));
+        $this->repo->expects($this->once())->method('delete_share_dataowner_sysaccount')->willReturn(
+            array('statuscode' => array('success' => 100)));
         $filereturn = array();
         $filereturn->link = 'some/fullpath' . 'some/target/path';
         $filereturn->name = 'mysource';
@@ -145,13 +150,15 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
     protected function set_up_mocks_for_create_folder_path($returnisdir, $callmkcol = false, $returnmkcol = 201) {
         $mockcontext = $this->createMock(context_module::class);
         $mocknestedcontext = $this->createMock(context_module::class);
-        $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $mockclient = $this->getMockBuilder(
+            repository_owncloud\owncloud_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
 
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
             $this->logicalOr($webdavprefix . '/somename/mod_resource', $webdavprefix . '/somename'),
-            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix . '/somename/mod_resource/content')))->willReturn($returnisdir);
+            $this->logicalOr($webdavprefix . '/somename/mod_resource/content/0', $webdavprefix .
+                '/somename/mod_resource/content')))->willReturn($returnisdir);
         if ($callmkcol == true) {
             $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn($returnmkcol);
         }
@@ -180,7 +187,8 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
         // In case of false as return value mkcol is called to create the folder.
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
-        $mock->expects($this->once())->method('mkcol')->with($webdavprefix . 'Moodlefiles')->willReturn(400);
+        $mock->expects($this->once())->method('mkcol')->with(
+            $webdavprefix . 'Moodlefiles')->willReturn(400);
         $this->expectException(\repository_owncloud\request_exception::class);
         $this->expectExceptionMessage(get_string('requestnotexecuted', 'repository_owncloud'));
         $this->repo->send_file('', '', '', '');
@@ -250,15 +258,16 @@ XML;
 
         // Checks that setting for foldername are used.
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(true);
-        // In case of true as return value mkcol is not called  to create the folder
+        // In case of true as return value mkcol is not called  to create the folder.
         $shareid = 5;
 
-        $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
-        )->getMock();
+        $mockocsclient = $this->getMockBuilder(
+            \repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $mockocsclient->expects($this->exactly(2))->method('call')->with('get_information_of_share',
             array('share_id' => $shareid))->will($this->returnValue($expectedresponse));
         $this->set_private_property($mock, 'ocsclient');
-        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)->willReturn(array('success' => 201));
+        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles',
+            $mock)->willReturn(array('success' => 201));
 
         $this->repo->send_file('', '', '', '');
 
@@ -266,16 +275,17 @@ XML;
 
         // Checks that setting for foldername are used.
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(true);
-        // In case of true as return value mkcol is not called to create the folder
+        // In case of true as return value mkcol is not called to create the folder.
         $shareid = 5;
-        $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class)->disableOriginalConstructor()->disableOriginalClone(
-        )->getMock();
+        $mockocsclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $mockocsclient->expects($this->exactly(1))->method('call')->with('get_shares',
             array('path' => '/merged (3).txt', 'reshares' => true))->will($this->returnValue($expectedresponse));
         $mockocsclient->expects($this->exactly(1))->method('call')->with('get_information_of_share',
             array('share_id' => $shareid))->will($this->returnValue($expectedresponse));
         $this->set_private_property($mock, 'ocsclient');
-        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles', $mock)->willReturn(array('success' => 201));
+        $this->repo->expects($this->once())->method('move_file_to_folder')->with('/merged (3).txt', 'Moodlefiles',
+            $mock)->willReturn(array('success' => 201));
         $this->repo->send_file('', '', '', '');
     }
 

@@ -38,7 +38,7 @@ $shortparams = array(
     'b' => 'baseurl',
 );
 
-// now get cli options
+// Now get cli options.
 list($options, $unrecognized) = cli_get_params($longparams, $shortparams);
 
 if ($unrecognized) {

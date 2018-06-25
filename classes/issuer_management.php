@@ -99,8 +99,7 @@ class issuer_management {
      * @param \core\oauth2\issuer $issuer An issuer.
      * @return bool True, if all endpoints exist; false otherwise.
      */
-    public static function is_valid_issuer(\core\oauth2\issuer $issuer)
-    {
+    public static function is_valid_issuer(\core\oauth2\issuer $issuer) {
         $endpointwebdav = false;
         $endpointocs = false;
         $endpointtoken = false;

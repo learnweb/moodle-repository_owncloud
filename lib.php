@@ -380,13 +380,13 @@ class repository_owncloud extends repository {
             $itemid);
 
         // 3. Copy File to the new folder path.
-        // TODO: avoid name of file prefered id since they are unique.
         $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], 'copy');
 
         // 4. Delete the share.
         $linkmanager->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
 
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
+        $filereturn = new stdClass();
         $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
         $filereturn->name = $source;
         $filereturn->usesystem = false;
