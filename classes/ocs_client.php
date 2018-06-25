@@ -65,20 +65,19 @@ class ocs_client extends rest {
      * Get endpoint URLs from the used issuer to use them in get_api_functions().
      * @param client $oauthclient OAuth-authenticated ownCloud client
      * @throws configuration_exception Exception if critical endpoints are missing.
-     * @throws \coding_exception
-     * @throws \moodle_exception
+     * @throws \moodle_exception when trying to construct a moodleurl
      */
     public function __construct(client $oauthclient) {
         parent::__construct($oauthclient);
 
         $issuer = $oauthclient->get_issuer();
-        $this->ocsendpoint = $issuer->get_endpoint_url('ocs');
-        $this->ocsendpoint = new \moodle_url($issuer->get_endpoint_url('ocs'));
+        $ocsendpoint = $issuer->get_endpoint_url('ocs');
+        if ($ocsendpoint === false) {
+            throw new configuration_exception('Endpoint ocs_endpoint not defined.');
+        }
+        $this->ocsendpoint = new \moodle_url($ocsendpoint);
         if (empty($this->ocsendpoint->get_param('format'))) {
             $this->ocsendpoint->params(array('format' => 'xml'));
-        }
-        if ($this->ocsendpoint === false) {
-            throw new configuration_exception('Endpoint ocs_endpoint not defined.');
         }
     }
 
