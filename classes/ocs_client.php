@@ -56,21 +56,27 @@ class ocs_client extends rest {
 
     /**
      * OCS endpoint as configured for the used issuer.
-     * @var string
+     * @var \moodle_url
      */
     private $ocsendpoint;
+
 
     /**
      * Get endpoint URLs from the used issuer to use them in get_api_functions().
      * @param client $oauthclient OAuth-authenticated ownCloud client
      * @throws configuration_exception Exception if critical endpoints are missing.
+     * @throws \coding_exception
+     * @throws \moodle_exception
      */
     public function __construct(client $oauthclient) {
         parent::__construct($oauthclient);
 
         $issuer = $oauthclient->get_issuer();
         $this->ocsendpoint = $issuer->get_endpoint_url('ocs');
-
+        $this->ocsendpoint = new \moodle_url($issuer->get_endpoint_url('ocs'));
+        if (empty($this->ocsendpoint->get_param('format'))) {
+            $this->ocsendpoint->params(array('format' => 'xml'));
+        }
         if ($this->ocsendpoint === false) {
             throw new configuration_exception('Endpoint ocs_endpoint not defined.');
         }
@@ -79,6 +85,9 @@ class ocs_client extends rest {
     /**
      * Define relevant functions of the OCS API.
      *
+     * Previously, the instruction to create a oauthclient recommended the user to enter the return format (format=xml).
+     * However, in this case the shareid is appended at the wrong place. Therefore, a new url is build which inserts the
+     * shareid at the suitable place for delete_share and get_information_of_share.
      * Docs:
      * create_share: https://doc.owncloud.org/server/10.0/developer_manual/core/ocs-share-api.html#create-a-new-share
      *
@@ -86,7 +95,7 @@ class ocs_client extends rest {
     public function get_api_functions() {
         return [
             'create_share' => [
-                'endpoint' => $this->ocsendpoint,
+                'endpoint' => $this->ocsendpoint->out(),
                 'method' => 'post',
                 'args' => [
                     'path' => PARAM_TEXT, // Could be PARAM_PATH, we really don't want to enforce a Moodle understanding of paths.
@@ -99,7 +108,7 @@ class ocs_client extends rest {
                 'response' => 'text/xml'
             ],
             'delete_share' => [
-                'endpoint' => $this->ocsendpoint . '/{share_id}',
+                'endpoint' => $this->build_share_url(),
                 'method' => 'delete',
                 'args' => [
                     'share_id' => PARAM_INT
@@ -107,7 +116,7 @@ class ocs_client extends rest {
                 'response' => 'text/xml'
             ],
             'get_shares' => [
-                'endpoint' => $this->ocsendpoint,
+                'endpoint' => $this->ocsendpoint->out(),
                 'method' => 'get',
                 'args' => [
                     'path' => PARAM_TEXT,
@@ -117,7 +126,7 @@ class ocs_client extends rest {
                 'response' => 'text/xml'
             ],
             'get_information_of_share' => [
-                'endpoint' => $this->ocsendpoint . '/{share_id}',
+                'endpoint' => $this->build_share_url(),
                 'method' => 'get',
                 'args' => [
                     'share_id' => PARAM_INT
@@ -125,6 +134,19 @@ class ocs_client extends rest {
                 'response' => 'text/xml'
             ],
         ];
+    }
+
+    /**
+     * Private Function to return a url with the shareid in the path.
+     * @return string
+     */
+    private function build_share_url() {
+        // Out_omit_querystring() in combination with ocsendpoint->get_path() is not used since both function include
+        // /ocs/v1.php.
+        $shareurl = $this->ocsendpoint->get_scheme() . '://' . $this->ocsendpoint->get_host() . ':' .
+            $this->ocsendpoint->get_port() . $this->ocsendpoint->get_path() . '/{share_id}?' .
+            $this->ocsendpoint->get_query_string();
+        return $shareurl;
     }
 
     /**
@@ -141,6 +163,8 @@ class ocs_client extends rest {
      * @param bool|string $rawpost Optional param to include in the body of a post
      * @param bool|string $contenttype Content type of the request body. Default: multipart/form-data if !$rawpost, JSON otherwise
      * @return object|string
+     * @throws \coding_exception
+     * @throws \core\oauth2\rest_exception
      */
     public function call($functionname, $functionargs, $rawpost = false, $contenttype = false) {
         if ($rawpost === false && $contenttype === false) {
