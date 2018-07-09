@@ -94,7 +94,7 @@ class ocs_client extends rest {
     public function get_api_functions() {
         return [
             'create_share' => [
-                'endpoint' => $this->ocsendpoint->out(),
+                'endpoint' => $this->ocsendpoint->out(false),
                 'method' => 'post',
                 'args' => [
                     'path' => PARAM_TEXT, // Could be PARAM_PATH, we really don't want to enforce a Moodle understanding of paths.
@@ -115,7 +115,7 @@ class ocs_client extends rest {
                 'response' => 'text/xml'
             ],
             'get_shares' => [
-                'endpoint' => $this->ocsendpoint->out(),
+                'endpoint' => $this->ocsendpoint->out(false),
                 'method' => 'get',
                 'args' => [
                     'path' => PARAM_TEXT,
@@ -144,7 +144,7 @@ class ocs_client extends rest {
         // /ocs/v1.php.
         $shareurl = $this->ocsendpoint->get_scheme() . '://' . $this->ocsendpoint->get_host() . ':' .
             $this->ocsendpoint->get_port() . $this->ocsendpoint->get_path() . '/{share_id}?' .
-            $this->ocsendpoint->get_query_string();
+            $this->ocsendpoint->get_query_string(false);
         return $shareurl;
     }
 
