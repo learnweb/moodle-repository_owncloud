@@ -127,9 +127,6 @@ class repository_owncloud extends repository {
         }
         $this->timeintervalsharing = $this->get_option('timeintervalsharing');
         $this->controlledlinkfoldername = $this->get_option('controlledlinkfoldername');
-        if ($this->issuer->is_system_account_connected()) {
-            $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
-        }
 
         if (!$this->issuer) {
             $this->disabled = true;
@@ -142,6 +139,14 @@ class repository_owncloud extends repository {
             // Check if necessary endpoints are present.
             $this->disabled = true;
             return;
+        }
+
+        if ($this->issuer->is_system_account_connected()) {
+            try {
+                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            } catch (\moodle_exception $e) {
+                $this->systemocsclient = null;
+            }
         }
 
         $this->ocsclient = new ocs_client($this->get_user_oauth_client());
