@@ -46,14 +46,12 @@ class ocs_client extends rest {
      * shareType=3 creates a public share.
      */
     const SHARE_TYPE_PUBLIC = 3;
-    /**
-     * shareType=0 creates a private share.
-     */
-    const SHARE_TYPE_USER = 0;
+
     /**
      * permissions=1 gives read permission for a share.
      */
     const SHARE_PERMISSION_READ = 1;
+
     /**
      * permissions=1 gives read permission for a share.
      */
