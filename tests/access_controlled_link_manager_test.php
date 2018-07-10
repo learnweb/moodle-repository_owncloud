@@ -448,7 +448,8 @@ are authenticated with the right account.');
         )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $fakeaccesstoken = new stdClass();
         $fakeaccesstoken->token = "fake access token";
-        $oauthclientmock->expects($this->exactly(2))->method('get_accesstoken')->willReturn($fakeaccesstoken);
+        // Use `atLeastOnce` instead of `exactly(2)` because it is only called a second time on dev systems that allow http://.
+        $oauthclientmock->expects($this->atLeastOnce())->method('get_accesstoken')->willReturn($fakeaccesstoken);
         $this->set_private_property($oauthclientmock, 'systemoauthclient', $this->linkmanager);
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
 
