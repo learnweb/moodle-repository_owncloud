@@ -426,6 +426,7 @@ class repository_owncloud extends repository {
 
         if (!$this->client->is_logged_in()) {
             $this->print_login_popup(['style' => 'margin-top: 250px']);
+            return;
 
         }
         $this->initiate_webdavclient();
