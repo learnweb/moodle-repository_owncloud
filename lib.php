@@ -644,9 +644,6 @@ class repository_owncloud extends repository {
         $mform->addHelpButton('timeintervalsharing', 'timetoshare', 'repository_owncloud');
         $mform->setDefault('timeintervalsharing', 604800);
 
-        $warning = $OUTPUT->notification(get_string('controlledlinkwarning', 'repository_owncloud'), 'warning');
-        $mform->addElement('static', null, '', $warning);
-
         $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));
         $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
         $mform->setType('controlledlinkfoldername', PARAM_TEXT);
