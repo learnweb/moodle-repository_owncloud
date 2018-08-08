@@ -471,12 +471,14 @@ class repository_owncloud extends repository {
      * @return int
      */
     public function default_returntype() {
-        if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
-            return FILE_CONTROLLED_LINK;
-        } else {
+        $setting = $this->get_option('defaultreturntype');
+        $supported = $this->get_option('supportedreturntypes');
+        if (($setting == FILE_INTERNAL && $supported !== 'external') || $supported === 'internal') {
             return FILE_INTERNAL;
         }
+        return FILE_CONTROLLED_LINK;
     }
+
     /**
      * Return names of the general options.
      * By default: no general option name.
@@ -643,6 +645,20 @@ class repository_owncloud extends repository {
         $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
         $mform->setType('controlledlinkfoldername', PARAM_TEXT);
         $mform->setDefault('controlledlinkfoldername', 'Moodlefiles');
+
+        $mform->addElement('static', null, '', get_string('fileoptions', 'repository_owncloud'));
+        $choices = [
+            'internal' => get_string('internal', 'repository_owncloud'),
+            'external' => get_string('external', 'repository_owncloud'),
+            'both' => get_string('both', 'repository_owncloud')
+        ];
+        $mform->addElement('select', 'supportedreturntypes', get_string('supportedreturntypes', 'repository_owncloud'), $choices);
+
+        $choices = [
+            FILE_INTERNAL => get_string('internal', 'repository_owncloud'),
+            FILE_CONTROLLED_LINK => get_string('external', 'repository_owncloud'),
+        ];
+        $mform->addElement('select', 'defaultreturntype', get_string('defaultreturntype', 'repository_owncloud'), $choices);
     }
 
     /**
@@ -665,7 +681,8 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_instance_option_names() {
-        return ['issuerid', 'controlledlinkfoldername'];
+        return ['issuerid', 'controlledlinkfoldername',
+            'defaultreturntype', 'supportedreturntypes'];
     }
 
     /**
@@ -673,12 +690,21 @@ class repository_owncloud extends repository {
      * By default FILE_INTERNAL is supported. In case a system account is connected and an issuer exist,
      * FILE_CONTROLLED_LINK is supported.
      * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system.
-     * FILE_CONTROLLED_LINK - creates a controlled version of the file at the determined place.
-     * The file itself can not be changed any longer by the owner.
+     * FILE_CONTROLLED_LINK - creates a copy of the file in ownCloud from which private shares to permitted users will be
+     * created. The file itself can not be changed any longer by the owner.
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
+        // We can only support references if the system account is connected.
         if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
+            $setting = $this->get_option('supportedreturntypes');
+            if ($setting === 'internal') {
+                return FILE_INTERNAL | FILE_EXTERNAL;
+            }
+            if ($setting === 'external') {
+                return FILE_CONTROLLED_LINK | FILE_EXTERNAL;
+            }
+            // Otherwise all of them are supported.
             return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_EXTERNAL;
         } else {
             return FILE_INTERNAL | FILE_EXTERNAL;
@@ -799,6 +825,7 @@ class repository_owncloud extends repository {
                 'name' => $this->get_meta()->name,
                 'path' => '',
             ]),
+            'defaultreturntype' => $this->default_returntype(),
             'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
         ];
 

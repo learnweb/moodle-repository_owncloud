@@ -24,6 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->dirroot . '/repository/lib.php');
+
 /**
  * Class repository_owncloud_testcase
  * @group repository_owncloud
@@ -65,6 +68,8 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
             'issuerid' => $this->issuer->get('id'),
             'pluginname' => 'ownCloud',
             'controlledlinkfoldername' => 'Moodlefiles',
+            'supportedreturntypes' => 'both',
+            'defaultreturntype' => FILE_INTERNAL,
         ]);
 
         // At last, create a repository_owncloud object from the instance id.
@@ -728,6 +733,7 @@ XML;
                 'path' => '',
             ]
         ];
+        $ret['defaultreturntype'] = FILE_INTERNAL;
         $ret['list'] = array();
 
         return $ret;
