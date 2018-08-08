@@ -80,12 +80,6 @@ class repository_owncloud extends repository {
     private $systemocsclient;
 
     /**
-     * Time span for controlled links.
-     * @var timeintervalsharing
-     */
-    private $timeintervalsharing;
-
-    /**
      * Name of the folder for controlled links.
      * @var controlledlinkfoldername
      */
@@ -125,7 +119,6 @@ class repository_owncloud extends repository {
             $this->disabled = true;
             return;
         }
-        $this->timeintervalsharing = $this->get_option('timeintervalsharing');
         $this->controlledlinkfoldername = $this->get_option('controlledlinkfoldername');
 
         if (!$this->issuer) {
@@ -491,7 +484,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_type_option_names() {
-        return array('issuerid', 'pluginname', 'timeintervalsharing', 'controlledlinkfoldername');
+        return array();
     }
 
     /**
@@ -640,10 +633,6 @@ class repository_owncloud extends repository {
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
         $mform->setType('issuerid', PARAM_INT);
 
-        $mform->addElement('duration', 'timeintervalsharing', get_string('timetoshare', 'repository_owncloud'));
-        $mform->addHelpButton('timeintervalsharing', 'timetoshare', 'repository_owncloud');
-        $mform->setDefault('timeintervalsharing', 604800);
-
         $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));
         $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
         $mform->setType('controlledlinkfoldername', PARAM_TEXT);
@@ -665,7 +654,6 @@ class repository_owncloud extends repository {
      */
     public function set_option($options = array()) {
         $options['issuerid'] = clean_param($options['issuerid'], PARAM_INT);
-        $options['timeintervalsharing'] = clean_param($options['timeintervalsharing'], PARAM_INT);
         $options['controlledlinkfoldername'] = clean_param($options['controlledlinkfoldername'], PARAM_TEXT);
 
         $ret = parent::set_option($options);
@@ -678,7 +666,7 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_instance_option_names() {
-        return ['issuerid', 'timeintervalsharing', 'controlledlinkfoldername'];
+        return ['issuerid', 'controlledlinkfoldername'];
     }
 
     /**

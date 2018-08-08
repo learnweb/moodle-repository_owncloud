@@ -59,15 +59,11 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
             'visible' => 1,
             'enableuserinstances' => 0,
             'enablecourseinstances' => 0,
-            'issuerid' => $this->issuer->get('id'),
-            'pluginname' => 'ownCloud',
-            'timeintervalsharing' => 604800,
-            'controlledlinkfoldername' => 'Moodlefiles',
         ]);
 
         $instance = $generator->create_instance([
             'issuerid' => $this->issuer->get('id'),
-            'timeintervalsharing' => 604800,
+            'pluginname' => 'ownCloud',
             'controlledlinkfoldername' => 'Moodlefiles',
         ]);
 
