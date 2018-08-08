@@ -604,7 +604,6 @@ class repository_owncloud extends repository {
      * @throws dml_exception
      */
     public static function instance_config_form($mform) {
-        global $OUTPUT;
         if (!has_capability('moodle/site:config', context_system::instance())) {
             $mform->addElement('static', null, '',  get_string('nopermissions', 'error', get_string('configplugin',
                 'repository_owncloud')));
@@ -633,17 +632,17 @@ class repository_owncloud extends repository {
         $mform->addHelpButton('issuerid', 'chooseissuer', 'repository_owncloud');
         $mform->setType('issuerid', PARAM_INT);
 
+        // All issuers that are valid are displayed seperately (if any).
+        if (count($validissuers) === 0) {
+            $mform->addElement('static', null, '', get_string('no_right_issuers', 'repository_owncloud'));
+        } else {
+            $mform->addElement('static', null, '', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
+        }
+
         $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));
         $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
         $mform->setType('controlledlinkfoldername', PARAM_TEXT);
         $mform->setDefault('controlledlinkfoldername', 'Moodlefiles');
-
-        // All issuers that are valid are displayed seperately (if any).
-        if (count($validissuers) === 0) {
-            $mform->addElement('html', get_string('no_right_issuers', 'repository_owncloud'));
-        } else {
-            $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
-        }
     }
 
     /**

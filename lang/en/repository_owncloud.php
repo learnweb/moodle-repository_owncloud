@@ -41,8 +41,8 @@ For additional help with the OAuth 2 API please refer to the Moodle documentatio
 $string['timetoshare'] = 'Duration after which shares of a controlled link expire';
 $string['timetoshare_help'] = 'This repository enables access controlled links. They are available only for a limited duration. <br>
 The default time is one week.';
-$string['foldername'] = 'Name of folder created in ownCloud for access controlled links';
-$string['foldername_help'] = 'To assure users find files shared with them, shares saved into a specific folder. <br>
+$string['foldername'] = 'Name of folder created in ownCloud users\' private space that holds all access controlled links';
+$string['foldername_help'] = 'To assure users find files shared with them, shares are saved into a specific folder. <br>
 This setting determines the name of the folder. It is recommended to chose a name associated with your Moodle instance.';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
 $string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific access token (called confirmation token), provided by the oauthlib, saved in the session to access files.';
