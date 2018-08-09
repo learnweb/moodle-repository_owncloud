@@ -46,6 +46,12 @@ $string['foldername_help'] = 'To assure users find files shared with them, share
 This setting determines the name of the folder. It is recommended to chose a name associated with your Moodle instance.';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
 $string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific access token (called confirmation token), provided by the oauthlib, saved in the session to access files.';
+$string['internal'] = 'Internal (files stored in Moodle)';
+$string['external'] = 'External (only links stored in Moodle)';
+$string['both'] = 'Internal and external';
+$string['supportedreturntypes'] = 'Supported files';
+$string['defaultreturntype'] = 'Default return type';
+$string['fileoptions'] = 'The types and defaults for returned files is configurable here. Note that all files linked externally will be updated so that the owner is the Moodle system account.';
 
 // Exceptions.
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
