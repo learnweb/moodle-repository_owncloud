@@ -826,6 +826,7 @@ class repository_owncloud extends repository {
                 'path' => '',
             ]),
             'defaultreturntype' => $this->default_returntype(),
+            'manage' => $this->issuer->get('baseurl'), // Provide button to go into file management interface quickly.
             'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
         ];
 

@@ -733,6 +733,7 @@ XML;
                 'path' => '',
             ]
         ];
+        $ret['manage'] = '';
         $ret['defaultreturntype'] = FILE_INTERNAL;
         $ret['list'] = array();
 
