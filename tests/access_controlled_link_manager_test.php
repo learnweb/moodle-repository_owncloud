@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 class repository_owncloud_access_controlled_link_manager_testcase extends advanced_testcase {
 
-    /** @var null|\repository_owncloud\test\access_controlled_link_manager_test class for the access_controlled_link_manager. */
+    /** @var null|\repository_owncloud\test\testable_access_controlled_link_manager class for the access_controlled_link_manager. */
     public $linkmanager = null;
 
     /** @var null|\repository_owncloud\ocs_client The ocs_client used to send requests. */
@@ -59,7 +59,7 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
         $systemwebdavclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class
         )->disableOriginalConstructor()->disableOriginalClone()->getMock();
 
-        $this->linkmanager = new \repository_owncloud\test\access_controlled_link_manager_test($this->ocsmockclient,
+        $this->linkmanager = new \repository_owncloud\test\testable_access_controlled_link_manager($this->ocsmockclient,
             $this->issuer, 'owncloud', $systemwebdavclient);
 
     }
@@ -180,7 +180,8 @@ XML;
             'content', 0);
         $expected = array();
         $expected['success'] = true;
-        $expected['fullpath'] = '/somename/mod_resource/content/0';
+        // Empty ctx 'id' expected because using code will not be able to access $ctx->id.
+        $expected['fullpath'] = '/somename (ctx )/mod_resource/content/0';
         $this->assertEquals($expected, $result);
     }
     /**
@@ -196,7 +197,7 @@ XML;
             'content', 0);
         $expected = array();
         $expected['success'] = true;
-        $expected['fullpath'] = '/somename/more/mod_resource/content/0';
+        $expected['fullpath'] = '/somename/more (ctx )/mod_resource/content/0';
         $this->assertEquals($expected, $result);
     }
     /**
@@ -220,22 +221,20 @@ XML;
     protected function set_up_mocks_for_create_folder_path($returnisdir, $returnestedcontext, $callmkcol = false,
                                                            $returnmkcol = 201) {
         $mockcontext = $this->createMock(context_module::class);
-        $mocknestedcontext = $this->createMock(context_module::class);
-
         $mockclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class
         )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
-        $dirstring = $webdavprefix . '/' . $returnestedcontext;
+        // Empty ctx 'id' expected because using code will not be able to access $ctx->id.
+        $dirstring = $webdavprefix . '/' . $returnestedcontext . ' (ctx )';
         $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
-            $this->logicalOr($dirstring . '/mod_resource', $dirstring),
-            $this->logicalOr($dirstring . '/mod_resource/content/0', $dirstring . '/mod_resource/content')
-        ))->willReturn($returnisdir);
+            $dirstring, $dirstring . '/mod_resource', $dirstring . '/mod_resource/content',
+            $dirstring . '/mod_resource/content/0'))->willReturn($returnisdir);
         if ($callmkcol == true) {
             $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn($returnmkcol);
         }
-        $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mocknestedcontext));
-        $mocknestedcontext->method('get_context_name')->willReturn($returnestedcontext);
+        $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mockcontext));
+        $mockcontext->method('get_context_name')->willReturn($returnestedcontext);
 
         return array('mockcontext' => $mockcontext, 'mockclient' => $mockclient);
     }

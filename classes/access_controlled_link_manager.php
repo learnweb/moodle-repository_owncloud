@@ -23,6 +23,7 @@
  */
 namespace repository_owncloud;
 
+use context;
 use \core\oauth2\api;
 use \core\notification;
 
@@ -190,10 +191,10 @@ class access_controlled_link_manager{
     }
 
     /** Creates a unique folder path for the access controlled link.
-     * @param $context
-     * @param $component
-     * @param $filearea
-     * @param int $itemid
+     * @param context $context
+     * @param string $component
+     * @param string $filearea
+     * @param string $itemid
      * @return array $result success for the http status code and fullpath for the generated path.
      * @throws configuration_exception
      * @throws \coding_exception
@@ -201,19 +202,33 @@ class access_controlled_link_manager{
      * @throws \repository_owncloud\request_exception
      */
     public function create_folder_path_access_controlled_links($context, $component, $filearea, $itemid) {
+        global $CFG, $SITE;
         // Initialize the return array.
         $result = array();
         $result['success'] = true;
 
         // The fullpath to store the file is generated from the context.
+        $contextlist = array_reverse($context->get_parent_contexts(true));
         $fullpath = '';
         $allfolders = [];
+        foreach ($contextlist as $ctx) {
+            // Prepare human readable context folders names, making sure they are still unique within the site.
+            $prevlang = force_current_language($CFG->lang);
+            $foldername = $ctx->get_context_name();
+            force_current_language($prevlang);
 
-        $contextlist = array_reverse($context->get_parent_contexts(true));
+            if ($ctx->contextlevel === CONTEXT_SYSTEM) {
+                // Append the site short name to the root folder.
+                $foldername .= ' ('.$SITE->shortname.')';
+                // Append the relevant object id.
+            } else if ($ctx->instanceid) {
+                $foldername .= ' (id '.$ctx->instanceid.')';
+            } else {
+                // This does not really happen but just in case.
+                $foldername .= ' (ctx '.$ctx->id.')';
+            }
 
-        foreach ($contextlist as $context) {
-            // Make sure a folder exists here.
-            $foldername = clean_param($context->get_context_name(), PARAM_PATH);
+            $foldername = clean_param($foldername, PARAM_PATH);
             $allfolders[] = $foldername;
         }
 
