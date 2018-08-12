@@ -699,15 +699,15 @@ class repository_owncloud extends repository {
         if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
             $setting = $this->get_option('supportedreturntypes');
             if ($setting === 'internal') {
-                return FILE_INTERNAL | FILE_EXTERNAL;
+                return FILE_INTERNAL;
             }
             if ($setting === 'external') {
-                return FILE_CONTROLLED_LINK | FILE_EXTERNAL;
+                return FILE_CONTROLLED_LINK | FILE_REFERENCE | FILE_EXTERNAL;
             }
             // Otherwise all of them are supported.
-            return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_EXTERNAL;
+            return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
         } else {
-            return FILE_INTERNAL | FILE_EXTERNAL;
+            return FILE_INTERNAL;
         }
     }
 

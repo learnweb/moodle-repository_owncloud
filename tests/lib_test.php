@@ -682,11 +682,11 @@ XML;
     /**
      * Test supported_returntypes.
      * FILE_INTERNAL when no system account is connected.
-     * FILE_INTERNAL | FILE_CONTROLLED_LINK when a system account is connected.
+     * FILE_INTERNAL | FILE_CONTROLLED_LINK | FILE_EXTERNAL | FILE_REFERENCE when a system account is connected.
      */
     public function test_supported_returntypes() {
         global $DB;
-        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL, $this->repo->supported_returntypes());
+        $this->assertEquals(FILE_INTERNAL, $this->repo->supported_returntypes());
         $dataobject = new stdClass();
         $dataobject->timecreated = time();
         $dataobject->timemodified = time();
@@ -699,7 +699,7 @@ XML;
 
         $DB->insert_record('oauth2_system_account', $dataobject);
         // When a system account is registered the file_type FILE_CONTROLLED_LINK is supported.
-        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_CONTROLLED_LINK, $this->repo->supported_returntypes());
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_CONTROLLED_LINK | FILE_REFERENCE, $this->repo->supported_returntypes());
     }
 
     /**
