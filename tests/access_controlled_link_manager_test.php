@@ -137,9 +137,9 @@ XML;
         $result = $this->linkmanager->create_share_user_sysaccount("/ambient.txt");
         $xml = simplexml_load_string($expectedresponse);
         $expected = array();
-        $expected['statuscode'] = $xml->meta->statuscode;
-        $expected['shareid'] = $xml->data->id;
-        $expected['filetarget'] = ((string)$xml->data[0]->file_target);
+        $expected['statuscode'] = (int)$xml->meta->statuscode;
+        $expected['shareid'] = (int)$xml->data->id;
+        $expected['filetarget'] = (string)$xml->data[0]->file_target;
         $this->assertEquals($expected, $result);
     }
     /**
@@ -351,11 +351,10 @@ XML;
             'path' => '/Kernsystem/Kursbereich Miscellaneous/Kurs Example Course/Datei zet/mod_resource/content/0/picture.png',
             'reshares' => true
         ];
-        $jsonobject = <<<JSON
-{"link":"\/Kernsystem\/Kursbereich Miscellaneous\/Kurs Example Course\/Datei zet\/mod_resource\/content\/0\/picture.png","name":"\/f\u00fcrdennis.png","usesystem":false}
-JSON;
-        $storedfile = $this->createMock(stored_file::class);
-        $storedfile->expects($this->exactly(3))->method('get_reference')->willReturn($jsonobject);
+        $reference = new stdClass();
+        $reference->link = "/Kernsystem/Kursbereich Miscellaneous/Kurs Example Course/Datei zet/mod_resource/content/0/picture.png";
+        $reference->name = "f\u00fcrdennis.png";
+        $reference->usesystem = true;
         $expectedresponse = <<<XML
 <?xml version="1.0"?>
 <ocs>
@@ -422,8 +421,8 @@ XML;
 
         $this->ocsmockclient->expects($this->exactly(3))->method('call')->with('get_shares', $params)->will(
             $this->returnValue($expectedresponse));
-        $xmlobjuser1 = (int) $this->linkmanager->get_shares_from_path($storedfile, 'user2');
-        $xmlobjuser2 = (int) $this->linkmanager->get_shares_from_path($storedfile, 'user1');
+        $xmlobjuser1 = (int) $this->linkmanager->get_shares_from_path($reference->link, 'user2');
+        $xmlobjuser2 = (int) $this->linkmanager->get_shares_from_path($reference->link, 'user1');
 
         $this->assertEquals(293, $xmlobjuser1);
         $this->assertEquals(292, $xmlobjuser2);
@@ -433,7 +432,7 @@ XML;
         $this->expectExceptionMessage(
         'A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
 are authenticated with the right account.');
-        $this->linkmanager->get_shares_from_path($storedfile, 'user3');
+        $this->linkmanager->get_shares_from_path($reference->link, 'user3');
 
     }
     /** Test whether the systemwebdav client is constructed correctly. Port is set to 443 in case of https, to 80 in

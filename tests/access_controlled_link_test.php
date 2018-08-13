@@ -172,16 +172,30 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
      * Test the send_file function.
      */
     public function test_send_file_errors() {
+        $fs = get_file_storage();
+        $storedfile = $fs->create_file_from_reference([
+            'contextid' => context_system::instance()->id,
+            'component' => 'core',
+            'filearea'  => 'unittest',
+            'itemid'    => 0,
+            'filepath'  => '/',
+            'filename'  => 'testfile.txt',
+        ], $this->repo->id, json_encode([
+            'type' => 'FILE_CONTROLLED_LINK',
+            'link' => 'https://test.local/fakelink/',
+            'usesystem' => true,
+        ]));
         $this->set_private_property('', 'client');
         $this->expectException(repository_owncloud\request_exception::class);
         $this->expectExceptionMessage(get_string('contactadminwith', 'repository_owncloud',
             'The OAuth client could not be connected.'));
-        $this->repo->send_file('', '', '', '');
+
+        $this->repo->send_file($storedfile, '', '', '');
 
         // Testing whether the mock up appears is topic to behat.
         $mock = $this->createMock(\core\oauth2\client::class);
         $mock->expects($this->once())->method('is_logged_in')->willReturn(true);
-        $this->repo->send_file('', '', '', '');
+        $this->repo->send_file($storedfile, '', '', '');
 
         // Checks that setting for foldername are used.
         $mock->expects($this->once())->method('is_dir')->with('Moodlefiles')->willReturn(false);
@@ -192,7 +206,7 @@ class repository_owncloud_access_controlled_link_testcase extends advanced_testc
             $webdavprefix . 'Moodlefiles')->willReturn(400);
         $this->expectException(\repository_owncloud\request_exception::class);
         $this->expectExceptionMessage(get_string('requestnotexecuted', 'repository_owncloud'));
-        $this->repo->send_file('', '', '', '');
+        $this->repo->send_file($storedfile, '', '', '');
 
         $expectedresponse = <<<XML
 <?xml version="1.0"?>

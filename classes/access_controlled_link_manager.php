@@ -107,7 +107,7 @@ class access_controlled_link_manager{
 
     /** Creates a share between a user and the systemaccount. If the variable username is set the file is shared with the
      * corresponding user otherwise with the systemaccount.
-     * @param $source
+     * @param $path
      * @param string $username optional when set the file is shared with the corresponding user otherwise with
      * the systemaccount.
      * @return array statuscode, shareid, and filetarget
@@ -115,14 +115,10 @@ class access_controlled_link_manager{
      * @throws \moodle_exception
      * @throws \repository_owncloud\request_exception
      */
-    public function create_share_user_sysaccount($source, $username = null) {
+    public function create_share_user_sysaccount($path, $username = null) {
         $result = array();
-        $path = $source;
 
         if ($username != null) {
-            $source = $source->get_reference();
-            $jsondecode = json_decode($source);
-            $path = $jsondecode->link;
             $shareusername = $username;
         } else {
             $systemuserinfo = $this->systemoauthclient->get_userinfo();
@@ -143,15 +139,15 @@ class access_controlled_link_manager{
         }
         $xml = simplexml_load_string($createshareresponse);
 
-        $statuscode = $xml->meta->statuscode;
+        $statuscode = (int)$xml->meta->statuscode;
         if ($statuscode != 100 && $statuscode != 403) {
             $details = get_string('filenotaccessed', 'repository_owncloud');
             throw new request_exception(get_string('request_exception',
                 'repository_owncloud', array('instance' => $this->repositoryname, 'errormessage' => $details)));
         }
-        $result['shareid'] = $xml->data->id;
+        $result['shareid'] = (int)$xml->data->id;
         $result['statuscode'] = $statuscode;
-        $result['filetarget'] = ((string)$xml->data[0]->file_target);
+        $result['filetarget'] = (string)$xml->data[0]->file_target;
 
         return $result;
     }
@@ -344,15 +340,12 @@ class access_controlled_link_manager{
     /** Gets all shares from a path (the path is file specific) and extracts the share of a specific user. In case
      * multiple shares exist the first one is taken. Multiple shares can only appear when shares are created outside
      * of this plugin, therefore this case is not handled.
-     * @param stored_file $storedfile
+     * @param string $path
      * @param string $username
      * @return \SimpleXMLElement
      * @throws \moodle_exception
      */
-    public function get_shares_from_path($storedfile, $username) {
-        $source = $storedfile->get_reference();
-        $jsondecode = json_decode($source);
-        $path = $jsondecode->link;
+    public function get_shares_from_path($path, $username) {
         $ocsparams = [
             'path' => $path,
             'reshares' => true

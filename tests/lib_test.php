@@ -541,8 +541,11 @@ XML;
         $mock->expects($this->once())->method('call')->with('create_share', $ocsquery)->will($this->returnValue($expectedresponse));
         $this->set_private_property($mock, 'ocsclient');
 
+        $expected = new \stdClass();
+        $expected->type = 'FILE_REFERENCE';
+        $expected->link = 'https://www.default.test' . $filename . '/download';
         // Method redirects to get_link() and return the suitable value.
-        $this->assertEquals('https://www.default.test' . $filename . '/download', $this->repo->get_file_reference($filename));
+        $this->assertEquals(json_encode($expected), $this->repo->get_file_reference($filename));
     }
 
     /**
