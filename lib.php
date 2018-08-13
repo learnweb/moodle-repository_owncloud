@@ -402,7 +402,7 @@ class repository_owncloud extends repository {
         $filereturn = new stdClass();
         $filereturn->type = 'FILE_CONTROLLED_LINK';
         $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
-        $filereturn->name = $source;
+        $filereturn->name = $reference;
         $filereturn->usesystem = true;
         $filereturn = json_encode($filereturn);
 
