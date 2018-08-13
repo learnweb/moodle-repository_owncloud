@@ -123,7 +123,7 @@ class ocs_client extends rest {
                 'method' => 'get',
                 'args' => [
                     'path' => PARAM_TEXT,
-                    'reshares' => PARAM_RAW, // Returns not only the shares from the current user but all shares from the given file.
+                    'reshares' => PARAM_RAW, // Returns not only the shares from the current user but all of the given file.
                     'subfiles' => PARAM_RAW, // Returns all shares within a folder, given that path defines a folder.
                 ],
                 'response' => 'text/xml'

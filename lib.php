@@ -659,7 +659,8 @@ class repository_owncloud extends repository {
         if (count($validissuers) === 0) {
             $mform->addElement('static', null, '', get_string('no_right_issuers', 'repository_owncloud'));
         } else {
-            $mform->addElement('static', null, '', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
+            $mform->addElement('static', null, '', get_string('right_issuers', 'repository_owncloud',
+                implode(', ', $validissuers)));
         }
 
         $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));

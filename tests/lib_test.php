@@ -557,7 +557,8 @@ XML;
         $mock->expects($this->exactly(2))->method('log_out');
         $this->set_private_property($mock, 'client');
         $this->repo->options['ajax'] = false;
-        $this->expectOutputString('<a target="_blank" rel="noopener noreferrer">Log in to your account</a><a target="_blank" rel="noopener noreferrer">Log in to your account</a>');
+        $this->expectOutputString('<a target="_blank" rel="noopener noreferrer">Log in to your account</a>' .
+            '<a target="_blank" rel="noopener noreferrer">Log in to your account</a>');
 
         $this->assertEquals($this->repo->print_login(), $this->repo->logout());
 
@@ -702,7 +703,8 @@ XML;
 
         $DB->insert_record('oauth2_system_account', $dataobject);
         // When a system account is registered the file_type FILE_CONTROLLED_LINK is supported.
-        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_CONTROLLED_LINK | FILE_REFERENCE, $this->repo->supported_returntypes());
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_CONTROLLED_LINK | FILE_REFERENCE,
+            $this->repo->supported_returntypes());
     }
 
     /**

@@ -55,8 +55,8 @@ Options:
 -b, --baseurl=https://host...    Specify issuer base URL
 
 Example:
-\$sudo -u www-data /usr/bin/php mod/collaborativefolders/cli/create_issuer.php
-\$sudo -u www-data /usr/bin/php mod/collaborativefolders/cli/create_issuer.php --issuer=example --baseurl=https://owncloud.example.com:8000/oc/
+\$sudo -u www-data /usr/bin/php create_issuer.php
+\$sudo -u www-data /usr/bin/php create_issuer.php --issuer=example --baseurl=https://owncloud.example.com:8000/oc/
 ";
 
     echo $help;

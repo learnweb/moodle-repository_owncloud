@@ -429,9 +429,8 @@ XML;
 
         $this->expectException(\repository_owncloud\request_exception::class);
 
-        $this->expectExceptionMessage(
-        'A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
-are authenticated with the right account.');
+        $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please ' .
+            'check whether you have chosen a valid file and you are authenticated with the right account.');
         $this->linkmanager->get_shares_from_path($reference->link, 'user3');
 
     }
@@ -583,8 +582,8 @@ XML;
 
         // Expect exception in case no suitable elemtn exist in the response.
         $this->expectException(\repository_owncloud\request_exception::class);
-        $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please check whether you have chosen a valid file and you
-are authenticated with the right account.');
+        $this->expectExceptionMessage('A request to owncloud has failed. The requested file could not be accessed. Please ' .
+            'check whether you have chosen a valid file and you are authenticated with the right account.');
         $this->linkmanager->get_share_information_from_shareid(302, 'user3');
     }
     /**

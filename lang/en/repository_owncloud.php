@@ -61,6 +61,5 @@ $string['downloadpopup'] = 'The requested file is additionally stored in your {$
 $string['notauthorized'] = 'You are not authorized to execute the demanded request. Please ensure you are authenticated with the right account.';
 $string['contactadminwith'] = 'The requested action could not be executed. In case this happens frequently please contact the side administrator with the following additional information:<br>"<i>{$a}</i>"';
 $string['cannotconnect'] = 'The user could not be authenticated, please log in and then upload the file.';
-$string['filenotaccessed'] = 'The requested file could not be accessed. Please check whether you have chosen a valid file and you
-are authenticated with the right account.';
+$string['filenotaccessed'] = 'The requested file could not be accessed. Please check whether you have chosen a valid file and you are authenticated with the right account.';
 $string['couldnotmove'] = 'The requested file could not be moved in the {$a} folder.';
