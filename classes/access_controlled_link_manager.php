@@ -110,12 +110,13 @@ class access_controlled_link_manager{
      * @param $path
      * @param string $username optional when set the file is shared with the corresponding user otherwise with
      * the systemaccount.
+     * @param bool $maywrite if false, only(!) read access is granted.
      * @return array statuscode, shareid, and filetarget
      * @throws \coding_exception
-     * @throws \moodle_exception
-     * @throws \repository_owncloud\request_exception
+     * @throws \core\oauth2\rest_exception
+     * @throws request_exception
      */
-    public function create_share_user_sysaccount($path, $username = null) {
+    public function create_share_user_sysaccount($path, $username = null, $maywrite = false) {
         $result = array();
 
         if ($username != null) {
@@ -124,11 +125,17 @@ class access_controlled_link_manager{
             $systemuserinfo = $this->systemoauthclient->get_userinfo();
             $shareusername = $systemuserinfo['username'];
         }
+        $permissions = ocs_client::SHARE_PERMISSION_READ;
+        if ($maywrite) {
+            // Add more privileges (write, reshare) if allowed for the given user.
+            $permissions |= ocs_client::SHARE_PERMISSION_ALL;
+        }
         $createshareparams = [
             'path' => $path,
             'shareType' => ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
             'shareWith' => $shareusername,
+            'permissions' => $permissions,
         ];
 
         // File is now shared with the system account.

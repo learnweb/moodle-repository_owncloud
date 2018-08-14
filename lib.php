@@ -443,6 +443,19 @@ class repository_owncloud extends repository {
             return;
 
         }
+
+        // Determining writeability of file from the using context.
+        // Variable $info is null|\file_info. file_info::is_writable is only true if user may write for any reason.
+        $fb = get_file_browser();
+        $context = context::instance_by_id($storedfile->get_contextid(), MUST_EXIST);
+        $info = $fb->get_file_info($context,
+            $storedfile->get_component(),
+            $storedfile->get_filearea(),
+            $storedfile->get_itemid(),
+            $storedfile->get_filepath(),
+            $storedfile->get_filename());
+        $maywrite = !empty($info) && $info->is_writable();
+
         $this->initiate_webdavclient();
 
         // Create the a manager to handle steps.
@@ -455,7 +468,7 @@ class repository_owncloud extends repository {
         $username = $userinfo['username'];
 
         // Creates a share between the systemaccount and the user.
-        $responsecreateshare = $linkmanager->create_share_user_sysaccount($reference->link, $username);
+        $responsecreateshare = $linkmanager->create_share_user_sysaccount($reference->link, $username, $maywrite);
 
         $statuscode = $responsecreateshare['statuscode'];
 

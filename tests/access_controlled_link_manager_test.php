@@ -91,6 +91,7 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
             'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
             'shareWith' => $username,
+            'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ,
         ];
         $expectedresponse = <<<XML
 <?xml version="1.0"?>
