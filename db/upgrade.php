@@ -51,7 +51,9 @@ function xmldb_repository_owncloud_upgrade($oldversion) {
                 // We can safely assume that type should be FILE_CONTROLLED_LINK, because JSON references were never
                 // used for FILE_REFERENCE.
                 $decoded->type = 'FILE_CONTROLLED_LINK';
-                $DB->set_field('files_reference', 'reference', json_encode($decoded), ['id' => $file->id]);
+                $encoded = json_encode($decoded);
+                $DB->set_field('files_reference', 'reference', $encoded, ['id' => $file->id]);
+                $DB->set_field('files_reference', 'referencehash', sha1($encoded), ['id' => $file->id]);
                 continue;
             }
 
@@ -59,7 +61,9 @@ function xmldb_repository_owncloud_upgrade($oldversion) {
             $newreference = new stdClass();
             $newreference->type = 'FILE_REFERENCE';
             $newreference->link = $file->reference;
-            $DB->set_field('files_reference', 'reference', json_encode($newreference), ['id' => $file->id]);
+            $encoded = json_encode($newreference);
+            $DB->set_field('files_reference', 'reference', $encoded, ['id' => $file->id]);
+            $DB->set_field('files_reference', 'referencehash', sha1($encoded), ['id' => $file->id]);
 
         }
         // Plugin savepoint reached.
