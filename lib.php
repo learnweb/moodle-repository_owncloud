@@ -670,9 +670,9 @@ class repository_owncloud extends repository {
 
         $mform->addElement('static', null, '', get_string('fileoptions', 'repository_owncloud'));
         $choices = [
+            'both' => get_string('both', 'repository_owncloud'),
             'internal' => get_string('internal', 'repository_owncloud'),
             'external' => get_string('external', 'repository_owncloud'),
-            'both' => get_string('both', 'repository_owncloud')
         ];
         $mform->addElement('select', 'supportedreturntypes', get_string('supportedreturntypes', 'repository_owncloud'), $choices);
 
