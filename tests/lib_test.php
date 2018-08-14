@@ -690,7 +690,7 @@ XML;
      */
     public function test_supported_returntypes() {
         global $DB;
-        $this->assertEquals(FILE_INTERNAL, $this->repo->supported_returntypes());
+        $this->assertEquals(FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE, $this->repo->supported_returntypes());
         $dataobject = new stdClass();
         $dataobject->timecreated = time();
         $dataobject->timemodified = time();

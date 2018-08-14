@@ -717,20 +717,24 @@ class repository_owncloud extends repository {
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        // We can only support references if the system account is connected.
-        if (!empty($this->issuer) && $this->issuer->is_system_account_connected()) {
-            $setting = $this->get_option('supportedreturntypes');
-            if ($setting === 'internal') {
-                return FILE_INTERNAL;
-            }
-            if ($setting === 'external') {
-                return FILE_CONTROLLED_LINK | FILE_REFERENCE | FILE_EXTERNAL;
-            }
-            // Otherwise all of them are supported.
-            return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
-        } else {
+        // We can only support access controlled links if the system account is connected.
+        $setting = $this->get_option('supportedreturntypes');
+        $sysisconnected = !empty($this->issuer) && $this->issuer->is_system_account_connected();
+        if ($setting === 'internal') {
             return FILE_INTERNAL;
         }
+        if ($setting === 'external') {
+            if ($sysisconnected) {
+                return FILE_CONTROLLED_LINK | FILE_REFERENCE | FILE_EXTERNAL;
+            }
+            return FILE_REFERENCE | FILE_EXTERNAL;
+        }
+        // Otherwise all of them are supported (controlled link only with system account).
+        if ($sysisconnected) {
+            return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
+        }
+        return FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
+
     }
 
     /**
