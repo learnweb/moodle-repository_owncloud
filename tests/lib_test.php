@@ -94,7 +94,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
     }
 
     /**
-     * Test weather the repo is disabled.
+     * Test whether the repo is disabled.
      */
     public function test_repo_creation() {
         $issuerid = $this->repo->get_option('issuerid');
@@ -109,6 +109,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
         $this->assertEquals(true, $constructissuer->get('enabled'));
         $this->assertFalse($this->repo->disabled);
     }
+
     /**
      * Returns an array of endpoints or null.
      * @param string $endpointname
@@ -138,9 +139,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
-            array('issuer' => $this->issuer), 'repository_owncloud');
-        $this->assertFalse($boolean);
+        $this->assertFalse(\repository_owncloud\issuer_management::is_valid_issuer($this->issuer));
     }
     /**
      * Test if repository is disabled when ocs_endpoint is deleted.
@@ -152,10 +151,22 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
-            array('issuer' => $this->issuer), 'repository_owncloud');
-        $this->assertFalse($boolean);
+        $this->assertFalse(\repository_owncloud\issuer_management::is_valid_issuer($this->issuer));
     }
+
+    /**
+     * Test if repository is disabled when userinfo_endpoint is deleted.
+     */
+    public function test_issuer_userinfo() {
+        $idtoken = $this->get_endpoint_id('userinfo_endpoint');
+        if (!empty($idtoken)) {
+            foreach ($idtoken as $id) {
+                \core\oauth2\api::delete_endpoint($id);
+            }
+        }
+        $this->assertFalse(\repository_owncloud\issuer_management::is_valid_issuer($this->issuer));
+    }
+
     /**
      * Test if repository is disabled when token_endpoint is deleted.
      */
@@ -166,9 +177,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
-            array('issuer' => $this->issuer), 'repository_owncloud');
-        $this->assertFalse($boolean);
+        $this->assertFalse(\repository_owncloud\issuer_management::is_valid_issuer($this->issuer));
     }
 
     /**
@@ -181,9 +190,7 @@ class repository_owncloud_lib_testcase extends advanced_testcase {
                 \core\oauth2\api::delete_endpoint($id);
             }
         }
-        $boolean = phpunit_util::call_internal_method($this->repo, "is_valid_issuer",
-            array('issuer' => $this->issuer), 'repository_owncloud');
-        $this->assertFalse($boolean);
+        $this->assertFalse(\repository_owncloud\issuer_management::is_valid_issuer($this->issuer));
     }
     /**
      * Test if repository throws an error when endpoint does not exist.

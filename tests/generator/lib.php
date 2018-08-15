@@ -53,7 +53,7 @@ class repository_owncloud_generator extends testing_repository_generator {
     }
 
     /**
-     * Creates four endpoints.
+     * Creates the required endpoints.
      * @param int $issuerid
      * @return \core\oauth2\issuer
      */
@@ -62,6 +62,7 @@ class repository_owncloud_generator extends testing_repository_generator {
         $this->test_create_single_endpoint($issuerid, "authorization_endpoint");
         $this->test_create_single_endpoint($issuerid, "webdav_endpoint", "https://www.default.test/webdav/index.php");
         $this->test_create_single_endpoint($issuerid, "token_endpoint");
+        $this->test_create_single_endpoint($issuerid, "userinfo_endpoint");
     }
 
     /**
