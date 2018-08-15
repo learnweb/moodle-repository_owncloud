@@ -15,17 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version.php for ownCloud repository.
+ * Manages the creation and usage of access controlled links.
  *
  * @package    repository_owncloud
- * @copyright  2017 Project seminar (Learnweb, University of Münster)
+ * @copyright  2018 Nina Herrmann (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace repository_owncloud\test;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018081400;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2017051502;        // Requires Moodle 3.3.2 version.
-$plugin->component = 'repository_owncloud'; // Full name of the plugin (used for diagnostics).
-$plugin->release = 'v3.5-r2';
-$plugin->maturity = MATURITY_STABLE;
+use repository_owncloud\access_controlled_link_manager;
+use repository_owncloud\ocs_client;
+
+class testable_access_controlled_link_manager extends access_controlled_link_manager {
+
+    /**
+     * Access_controlled_link_manager constructor.
+     * @param ocs_client $ocsclient
+     * @param \core\oauth2\issuer $issuer
+     * @param string $repositoryname
+     */
+
+    public function __construct($ocsclient, \core\oauth2\issuer $issuer, $repositoryname, $systemdav) {
+        $this->ocsclient = $ocsclient;
+        $this->repositoryname = $repositoryname;
+        $this->issuer = $issuer;
+        $this->systemwebdavclient = $systemdav;
+    }
+}

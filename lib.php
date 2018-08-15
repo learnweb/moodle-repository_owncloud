@@ -74,6 +74,18 @@ class repository_owncloud extends repository {
     private $ocsclient;
 
     /**
+     * OCS systemocsclient that uses the Open Collaboration Services REST API.
+     * @var ocs_client
+     */
+    private $systemocsclient;
+
+    /**
+     * Name of the folder for controlled links.
+     * @var controlledlinkfoldername
+     */
+    private $controlledlinkfoldername;
+
+    /**
      * repository_owncloud constructor.
      * @param int $repositoryid
      * @param bool|int|stdClass $context
@@ -107,6 +119,7 @@ class repository_owncloud extends repository {
             $this->disabled = true;
             return;
         }
+        $this->controlledlinkfoldername = $this->get_option('controlledlinkfoldername');
 
         if (!$this->issuer) {
             $this->disabled = true;
@@ -119,6 +132,14 @@ class repository_owncloud extends repository {
             // Check if necessary endpoints are present.
             $this->disabled = true;
             return;
+        }
+
+        if ($this->issuer->is_system_account_connected()) {
+            try {
+                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+            } catch (\moodle_exception $e) {
+                $this->systemocsclient = null;
+            }
         }
 
         $this->ocsclient = new ocs_client($this->get_user_oauth_client());
@@ -194,19 +215,21 @@ class repository_owncloud extends repository {
      * This function does exactly the same as in the WebDAV repository. The only difference is, that
      * the ownCloud OAuth2 client uses OAuth2 instead of Basic Authentication.
      *
-     * @param string $url relative path to the file.
+     * @param string $reference relative path to the file.
      * @param string $title title of the file.
      * @return array|bool returns either the moodle path to the file or false.
      */
-    public function get_file($url, $title = '') {
-        $url = urldecode($url);
+    public function get_file($reference, $title = '') {
+        // Normal file.
+        $reference = urldecode($reference);
+
         // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
         $path = $this->prepare_file(uniqid());
         $this->initiate_webdavclient();
         if (!$this->dav->open()) {
             return false;
         }
-        $this->dav->get_file($this->davbasepath . $url, $path);
+        $this->dav->get_file($this->davbasepath . $reference, $path);
         $this->dav->close();
 
         return array('path' => $path);
@@ -271,14 +294,16 @@ class repository_owncloud extends repository {
 
         $response = $this->ocsclient->call('create_share', $ocsparams);
         $xml = simplexml_load_string($response);
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
 
         if ($xml === false ) {
-            throw new \repository_owncloud\request_exception('Invalid response');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
+                'errormessage' => 'Invalid response'));
         }
 
         if ((string)$xml->meta->status !== 'ok') {
-            throw new \repository_owncloud\request_exception(
-                sprintf('(%s) %s', $xml->meta->statuscode, $xml->meta->message));
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => sprintf(
+                '(%s) %s', $xml->meta->statuscode, $xml->meta->message)));
         }
 
         // Take the share link and convert it into a download link.
@@ -296,30 +321,206 @@ class repository_owncloud extends repository {
     public function get_file_reference($source) {
         $usefilereference = optional_param('usefilereference', false, PARAM_BOOL);
 
-        $reference = $source;
-
-        // If a filereference was requested, a public link to the file has to be generated and returned.
+        // A filereference is requested if an alias/shortcut shall be created, i.e. a FILE_REFERENCE option is selected.
+        // Therefore, generate and return a public link to the file.
         if ($usefilereference) {
             $reference = $this->get_link($source);
+            $filereturn = new stdClass();
+            $filereturn->type = 'FILE_REFERENCE';
+            $filereturn->link = $reference;
+            return json_encode($filereturn);
         }
 
         // Otherwise, the simple relative path to the file is enough.
-        return $reference;
+        return $source;
+    }
+
+    /** Called when a file is selected as a "access control link".
+     * Invoked at MOODLE/repository/repository_ajax.php
+     *
+     * This is called at the point the reference files are being copied from the draft area to the real area.
+     * What is done here is transfer ownership to the system user (by copying) then delete the intermediate share
+     * used for that. Finally update the reference to point to new file name.
+     *
+     * @param string $reference this reference is generated by repository::get_file_reference()
+     * @param context $context the target context for this new file.
+     * @param string $component the target component for this new file.
+     * @param string $filearea the target filearea for this new file.
+     * @param string $itemid the target itemid for this new file.
+     * @return string updated reference (final one before it's saved to db).
+     * @throws \repository_owncloud\configuration_exception
+     * @throws \repository_owncloud\request_exception
+     * @throws coding_exception
+     * @throws moodle_exception
+     * @throws repository_exception
+     */
+    public function reference_file_selected($reference, $context, $component, $filearea, $itemid) {
+        $source = json_decode($reference);
+
+        if (is_object($source)) {
+            if ($source->type != 'FILE_CONTROLLED_LINK') {
+                // Only access controlled links need special handling; we are done.
+                return $reference;
+            }
+            if (!empty($source->usesystem)) {
+                // If we already copied this file to the system account - we are done.
+                return $reference;
+            }
+        }
+
+        // Check this issuer is enabled.
+        if ($this->disabled) {
+            throw new repository_exception('cannotdownload', 'repository');
+        }
+
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->issuer, $this->get_name());
+
+        // Get the current user.
+        $userauth = $this->get_user_oauth_client();
+        if ($userauth === false) {
+            $details = get_string('cannotconnect', 'repository_owncloud');
+            throw new \repository_owncloud\request_exception(array('instance' => $this->get_name(), 'errormessage' => $details));
+        }
+        // 1. Share the File with the system account.
+        $responsecreateshare = $linkmanager->create_share_user_sysaccount($reference);
+        if ($responsecreateshare['statuscode'] == 403) {
+            $details = get_string('filenotaccessed', 'repository_owncloud');
+            throw new \repository_owncloud\request_exception(array('instance' => $this->get_name(), 'errormessage' => $details));
+        }
+
+        // 2. Create a unique path in the system account.
+        $foldercreate = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea,
+            $itemid);
+
+        // 3. Copy File to the new folder path.
+        $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], 'copy');
+
+        // 4. Delete the share.
+        $linkmanager->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
+
+        // Update the returned reference so that the stored_file in moodle points to the newly copied file.
+        $filereturn = new stdClass();
+        $filereturn->type = 'FILE_CONTROLLED_LINK';
+        $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
+        $filereturn->name = $reference;
+        $filereturn->usesystem = true;
+        $filereturn = json_encode($filereturn);
+
+        return $filereturn;
     }
 
     /**
      * Repository method that serves the referenced file (created e.g. via get_link).
      * All parameters are there for compatibility with superclass, but they are ignored.
      *
-     * @param stored_file $storedfile (ignored)
+     * @param stored_file $storedfile
      * @param int $lifetime (ignored)
      * @param int $filter (ignored)
      * @param bool $forcedownload (ignored)
      * @param array $options (ignored)
+     * @throws \repository_owncloud\configuration_exception
+     * @throws \repository_owncloud\request_exception
+     * @throws coding_exception
+     * @throws moodle_exception
      */
-    public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
-        // Delivers a download link to the concerning file.
-        redirect($storedfile->get_reference());
+    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
+        $repositoryname = $this->get_name();
+        $reference = json_decode($storedfile->get_reference());
+
+        if ($reference->type == 'FILE_REFERENCE') {
+            redirect($reference->link);
+        }
+
+        // 1. assure the client and user is logged in.
+        if (empty($this->client)) {
+            $details = get_string('contactadminwith', 'repository_owncloud',
+                'The OAuth client could not be connected.');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
+        }
+
+        if (!$this->client->is_logged_in()) {
+            $this->print_login_popup(['style' => 'margin-top: 250px']);
+            return;
+
+        }
+
+        // Determining writeability of file from the using context.
+        // Variable $info is null|\file_info. file_info::is_writable is only true if user may write for any reason.
+        $fb = get_file_browser();
+        $context = context::instance_by_id($storedfile->get_contextid(), MUST_EXIST);
+        $info = $fb->get_file_info($context,
+            $storedfile->get_component(),
+            $storedfile->get_filearea(),
+            $storedfile->get_itemid(),
+            $storedfile->get_filepath(),
+            $storedfile->get_filename());
+        $maywrite = !empty($info) && $info->is_writable();
+
+        $this->initiate_webdavclient();
+
+        // Create the a manager to handle steps.
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->issuer, $repositoryname);
+
+        // 2. Check whether user has folder for files otherwise create it.
+        $linkmanager->create_storage_folder($this->controlledlinkfoldername, $this->dav);
+
+        $userinfo = $this->client->get_userinfo();
+        $username = $userinfo['username'];
+
+        // Creates a share between the systemaccount and the user.
+        $responsecreateshare = $linkmanager->create_share_user_sysaccount($reference->link, $username, $maywrite);
+
+        $statuscode = $responsecreateshare['statuscode'];
+
+        if ($statuscode == 403) {
+            $shareid = $linkmanager->get_shares_from_path($reference->link, $username);
+        } else if ($statuscode == 100) {
+            $filetarget = $linkmanager->get_share_information_from_shareid($responsecreateshare['shareid'], $username);
+            $copyresult = $linkmanager->transfer_file_to_path($filetarget, $this->controlledlinkfoldername,
+                'move', $this->dav);
+            if (!($copyresult == 201 || $copyresult == 412)) {
+                throw new \repository_owncloud\request_exception(array('instance' => $this->repositoryname,
+                    'errormessage' => get_string('couldnotmove', 'repository_owncloud', $this->controlledlinkfoldername)));
+            }
+            $shareid = $responsecreateshare['shareid'];
+        } else if ($statuscode == 997) {
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname,
+                'errormessage' => get_string('notauthorized', 'repository_owncloud')));
+        } else {
+            $details = get_string('filenotaccessed', 'repository_owncloud');
+            throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
+        }
+        $filetarget = $linkmanager->get_share_information_from_shareid($shareid, $username);
+        $srcpath = ltrim($filetarget, '/');
+
+        $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
+        redirect($webdavurl, get_string('downloadpopup', 'repository_owncloud',
+            ['instancename' => $repositoryname, 'foldername' => $this->controlledlinkfoldername]), null,
+            \core\output\notification::NOTIFY_INFO);
+    }
+
+    /**
+     * Which return type should be selected by default.
+     *
+     * @return int
+     */
+    public function default_returntype() {
+        $setting = $this->get_option('defaultreturntype');
+        $supported = $this->get_option('supportedreturntypes');
+        if (($setting == FILE_INTERNAL && $supported !== 'external') || $supported === 'internal') {
+            return FILE_INTERNAL;
+        }
+        return FILE_CONTROLLED_LINK;
+    }
+
+    /**
+     * Return names of the general options.
+     * By default: no general option name.
+     *
+     * @return array
+     */
+    public static function get_type_option_names() {
+        return array();
     }
 
     /**
@@ -341,7 +542,6 @@ class repository_owncloud extends repository {
         if ($this->client) {
             return $this->client;
         }
-        // TODO $overrideurl is not used currently. GDocs uses it in send_file. Evaluate whether we need it.
         if ($overrideurl) {
             $returnurl = $overrideurl;
         } else {
@@ -354,10 +554,12 @@ class repository_owncloud extends repository {
         return $this->client;
     }
 
+
     /**
      * Prints a simple Login Button which redirects to an authorization window from ownCloud.
      *
      * @return mixed login window properties.
+     * @throws coding_exception
      */
     public function print_login() {
         $client = $this->get_user_oauth_client();
@@ -391,18 +593,25 @@ class repository_owncloud extends repository {
      * The Moodle OAuth 2 API transfers Client ID and secret as params in the request.
      * However, the ownCloud OAuth 2 App expects Client ID and secret to be in the request header.
      * Therefore, the header is set beforehand, and ClientID and Secret are passed twice.
+     * @link https://tracker.moodle.org/browse/MDL-59512
      */
     public function callback() {
         $client = $this->get_user_oauth_client();
         // If an Access Token is stored within the client, it has to be deleted to prevent the addition
         // of an Bearer authorization header in the request method.
         $client->log_out();
-        $client->setHeader(array(
-            'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
-        ));
+        // A patch for the support of basic authentication for the oauth2 client is proposed in MDL-59512.
+        // With the modifications the setHeader method is unnecessary. However, when using the plugin with the moodle
+        // core the lines are indispensable. Therefore, they are retained.
+        if (false) {
+            $client->setHeader(array(
+                'Authorization: Basic ' . base64_encode($client->get_clientid() . ':' . $client->get_clientsecret())
+            ));
+        }
         // This will upgrade to an access token if we have an authorization code and save the access token in the session.
         $client->is_logged_in();
     }
+
 
     /**
      * Create an instance for this plug-in
@@ -413,16 +622,22 @@ class repository_owncloud extends repository {
      * @param array $params the options for this instance
      * @param int $readonly whether to create it readonly or not (defaults to not)
      * @return mixed
+     * @throws dml_exception
+     * @throws required_capability_exception
      */
     public static function create($type, $userid, $context, $params, $readonly=0) {
         require_capability('moodle/site:config', context_system::instance());
         return parent::create($type, $userid, $context, $params, $readonly);
     }
 
+
     /**
      * This method adds a select form and additional information to the settings form..
      *
      * @param \moodleform $mform Moodle form (passed by reference)
+     * @return bool|void
+     * @throws coding_exception
+     * @throws dml_exception
      */
     public static function instance_config_form($mform) {
         if (!has_capability('moodle/site:config', context_system::instance())) {
@@ -455,10 +670,30 @@ class repository_owncloud extends repository {
 
         // All issuers that are valid are displayed seperately (if any).
         if (count($validissuers) === 0) {
-            $mform->addElement('html', get_string('no_right_issuers', 'repository_owncloud'));
+            $mform->addElement('static', null, '', get_string('no_right_issuers', 'repository_owncloud'));
         } else {
-            $mform->addElement('html', get_string('right_issuers', 'repository_owncloud', implode(', ', $validissuers)));
+            $mform->addElement('static', null, '', get_string('right_issuers', 'repository_owncloud',
+                implode(', ', $validissuers)));
         }
+
+        $mform->addElement('text', 'controlledlinkfoldername', get_string('foldername', 'repository_owncloud'));
+        $mform->addHelpButton('controlledlinkfoldername', 'foldername', 'repository_owncloud');
+        $mform->setType('controlledlinkfoldername', PARAM_TEXT);
+        $mform->setDefault('controlledlinkfoldername', 'Moodlefiles');
+
+        $mform->addElement('static', null, '', get_string('fileoptions', 'repository_owncloud'));
+        $choices = [
+            'both' => get_string('both', 'repository_owncloud'),
+            'internal' => get_string('internal', 'repository_owncloud'),
+            'external' => get_string('external', 'repository_owncloud'),
+        ];
+        $mform->addElement('select', 'supportedreturntypes', get_string('supportedreturntypes', 'repository_owncloud'), $choices);
+
+        $choices = [
+            FILE_INTERNAL => get_string('internal', 'repository_owncloud'),
+            FILE_CONTROLLED_LINK => get_string('external', 'repository_owncloud'),
+        ];
+        $mform->addElement('select', 'defaultreturntype', get_string('defaultreturntype', 'repository_owncloud'), $choices);
     }
 
     /**
@@ -469,6 +704,8 @@ class repository_owncloud extends repository {
      */
     public function set_option($options = array()) {
         $options['issuerid'] = clean_param($options['issuerid'], PARAM_INT);
+        $options['controlledlinkfoldername'] = clean_param($options['controlledlinkfoldername'], PARAM_TEXT);
+
         $ret = parent::set_option($options);
         return $ret;
     }
@@ -479,25 +716,42 @@ class repository_owncloud extends repository {
      * @return array
      */
     public static function get_instance_option_names() {
-        return ['issuerid'];
+        return ['issuerid', 'controlledlinkfoldername',
+            'defaultreturntype', 'supportedreturntypes'];
     }
 
     /**
-     * Method to define which Files are supported (hardcoded can not be changed in Admin Menu)
-     * Now only FILE_INTERNAL since get_link and get_file_reference is not implemented.
-     * Can choose FILE_REFERENCE|FILE_INTERNAL|FILE_EXTERNAL
-     * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system
-     * FILE_EXTERNAL - the file stays in the external repository and is accessed from there directly
-     * FILE_REFERENCE - the file may be cached locally, but is automatically synchronised, as required,
-     *                 with any changes to the external original
+     * Method to define which file-types are supported (hardcoded can not be changed in Admin Menu)
+     * By default FILE_INTERNAL is supported. In case a system account is connected and an issuer exist,
+     * FILE_CONTROLLED_LINK is supported.
+     * FILE_INTERNAL - the file is uploaded/downloaded and stored directly within the Moodle file system.
+     * FILE_CONTROLLED_LINK - creates a copy of the file in ownCloud from which private shares to permitted users will be
+     * created. The file itself can not be changed any longer by the owner.
      * @return int return type bitmask supported
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
+        // We can only support access controlled links if the system account is connected.
+        $setting = $this->get_option('supportedreturntypes');
+        $sysisconnected = !empty($this->issuer) && $this->issuer->is_system_account_connected();
+        if ($setting === 'internal') {
+            return FILE_INTERNAL;
+        }
+        if ($setting === 'external') {
+            if ($sysisconnected) {
+                return FILE_CONTROLLED_LINK | FILE_REFERENCE | FILE_EXTERNAL;
+            }
+            return FILE_REFERENCE | FILE_EXTERNAL;
+        }
+        // Otherwise all of them are supported (controlled link only with system account).
+        if ($sysisconnected) {
+            return FILE_CONTROLLED_LINK | FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
+        }
+        return FILE_INTERNAL | FILE_REFERENCE | FILE_EXTERNAL;
+
     }
 
     /**
-     * Returns the parsed url of the choosen endpoint.
+     * Returns the parsed url of the chosen endpoint.
      * @param string $endpointname
      * @return array parseurl [scheme => https/http, host=>'hostname', port=>443, path=>'path']
      * @throws \repository_owncloud\configuration_exception if an endpoint is undefined
@@ -567,7 +821,32 @@ class repository_owncloud extends repository {
         ksort($folders);
         return array_merge($folders, $files);
     }
+    /**
+     * Print the login in a popup.
+     *
+     * @param array|null $attr Custom attributes to be applied to popup div.
+     */
+    private function print_login_popup($attr = null) {
+        global $OUTPUT;
 
+        $this->client = $this->get_user_oauth_client();
+        $url = new moodle_url($this->client->get_login_url());
+        $state = $url->get_param('state') . '&reloadparent=true';
+        $url->param('state', $state);
+
+        echo $OUTPUT->header();
+
+        $repositoryname = get_string('pluginname', 'repository_owncloud');
+
+        $button = new single_button($url, get_string('logintoaccount', 'repository', $repositoryname),
+            'post', true);
+        $button->add_action(new popup_action('click', $url, 'Login'));
+        $button->class = 'mdl-align';
+        $button = $OUTPUT->render($button);
+        echo html_writer::div($button, '', $attr);
+
+        echo $OUTPUT->footer();
+    }
     /**
      * Prepare response of get_listing; namely
      * - defining setting elements,
@@ -585,6 +864,8 @@ class repository_owncloud extends repository {
                 'name' => $this->get_meta()->name,
                 'path' => '',
             ]),
+            'defaultreturntype' => $this->default_returntype(),
+            'manage' => $this->issuer->get('baseurl'), // Provide button to go into file management interface quickly.
             'list' => array(), // Contains all file/folder information and is required to build the file/folder tree.
         ];
 

@@ -38,10 +38,28 @@ $string['no_right_issuers'] = 'None of the existing issuers implement all requir
 $string['chooseissuer'] = 'Issuer';
 $string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 services page. <br>
 For additional help with the OAuth 2 API please refer to the Moodle documentation.';
-$string['chooseissuer_link'] = 'OAuth_2_services';
+$string['timetoshare'] = 'Duration after which shares of a controlled link expire';
+$string['timetoshare_help'] = 'This repository enables access controlled links. They are available only for a limited duration. <br>
+The default time is one week.';
+$string['foldername'] = 'Name of folder created in ownCloud users\' private space that holds all access controlled links';
+$string['foldername_help'] = 'To assure users find files shared with them, shares are saved into a specific folder. <br>
+This setting determines the name of the folder. It is recommended to chose a name associated with your Moodle instance.';
 $string['oauth2serviceslink'] = '<a href="{$a}" title="Link to OAuth 2 services configuration">OAuth 2 services configuration</a>';
-$string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific acesstoken (called confirmation token), provided by the oauthlib, saved in the session to access files.';
+$string['privacy:metadata:auth_oauth2'] = 'The repository uses a user specific access token (called confirmation token), provided by the oauthlib, saved in the session to access files.';
+$string['internal'] = 'Internal (files stored in Moodle)';
+$string['external'] = 'External (only links stored in Moodle)';
+$string['both'] = 'Internal and external';
+$string['supportedreturntypes'] = 'Supported files';
+$string['defaultreturntype'] = 'Default return type';
+$string['fileoptions'] = 'The types and defaults for returned files is configurable here. Note that all files linked externally will be updated so that the owner is the Moodle system account.';
 
 // Exceptions.
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
-$string['request_exception'] = 'A request to ownCloud has failed: {$a}';
+$string['request_exception'] = 'A request to {$a->instance} has failed. {$a->errormessage}';
+$string['requestnotexecuted'] = 'The request could not be executed. If this happens frequently please contact the course or site administrator.';
+$string['downloadpopup'] = 'The requested file is additionally stored in your {$a->instancename} instance in the {$a->foldername} folder.';
+$string['notauthorized'] = 'You are not authorized to execute the demanded request. Please ensure you are authenticated with the right account.';
+$string['contactadminwith'] = 'The requested action could not be executed. In case this happens frequently please contact the side administrator with the following additional information:<br>"<i>{$a}</i>"';
+$string['cannotconnect'] = 'The user could not be authenticated, please log in and then upload the file.';
+$string['filenotaccessed'] = 'The requested file could not be accessed. Please check whether you have chosen a valid file and you are authenticated with the right account.';
+$string['couldnotmove'] = 'The requested file could not be moved in the {$a} folder.';
