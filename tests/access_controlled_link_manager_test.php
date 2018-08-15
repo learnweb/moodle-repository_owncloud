@@ -212,12 +212,14 @@ XML;
         $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
     }
+
     /**
      * Helper function to generate mocks for testing create folder path.
-     * @param bool $returnisdir
-     * @param bool $callmkcol
-     * @param int $returnmkcol
-     * @return array
+     * @param bool $returnisdir Return value mocking the result of invoking is_dir
+     * @param bool $returnestedcontext Name of the folder that is simulated to be checked/created
+     * @param bool $callmkcol Also mock creation of the folder
+     * @param int $returnmkcol Return value mocking the result of invoking mkcol
+     * @return array ['mockcontext' context_module mock, 'mockclient' => webdav client mock]
      */
     protected function set_up_mocks_for_create_folder_path($returnisdir, $returnestedcontext, $callmkcol = false,
                                                            $returnmkcol = 201) {
@@ -587,11 +589,13 @@ XML;
             'check whether you have chosen a valid file and you are authenticated with the right account.');
         $this->linkmanager->get_share_information_from_shareid(302, 'user3');
     }
+
     /**
-     * Helper method, which inserts a given mock value into the repository_owncloud object.
+     * Helper method which inserts a value into a non-public field of an object.
      *
      * @param mixed $value mock value that will be inserted.
      * @param string $propertyname name of the private property.
+     * @param object $class Instance that is being modified.
      * @return ReflectionProperty the resulting reflection property.
      */
     protected function set_private_property($value, $propertyname, $class) {
@@ -602,11 +606,11 @@ XML;
         return $private;
     }
     /**
-     * Helper method, which gets a private property of a given class.
+     * Helper method which gets a value from a non-public field of an object.
      *
-     * @param mixed $value mock value that will be inserted.
      * @param string $propertyname name of the private property.
-     * @return ReflectionProperty the resulting reflection property.
+     * @param object $class Instance that is being modified.
+     * @return mixed the resulting value.
      */
     protected function get_private_property($propertyname, $class) {
         $refclient = new ReflectionClass($class);

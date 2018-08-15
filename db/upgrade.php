@@ -17,6 +17,8 @@
 /**
  * Upgrade script for repository_owncloud.
  *
+ * @package     repository_owncloud
+ * @category    upgrade
  * @copyright 2018 Jan Dageförde <jan.dagefoerde@ercis.uni-muenster.de>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

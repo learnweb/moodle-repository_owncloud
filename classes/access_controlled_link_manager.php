@@ -29,6 +29,13 @@ use \core\notification;
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Manages the creation and usage of access controlled links.
+ *
+ * @package    repository_owncloud
+ * @copyright  2017 Nina Herrmann (Learnweb, University of Münster)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class access_controlled_link_manager{
     /**
      * OCS client that uses the Open Collaboration Services REST API.
@@ -87,9 +94,11 @@ class access_controlled_link_manager{
         $this->issuer = $issuer;
         $this->systemwebdavclient = $this->create_system_dav();
     }
-    /** Deletes the share of the systemaccount and a user. In case the share could not be deleted a notification is
+
+    /**
+     * Deletes the share of the systemaccount and a user. In case the share could not be deleted a notification is
      * displayed.
-     * @param $shareid
+     * @param int $shareid Remote ID of the share to be deleted.
      */
     public function delete_share_dataowner_sysaccount($shareid) {
         $shareid = (int) $shareid;
@@ -105,15 +114,14 @@ class access_controlled_link_manager{
         }
     }
 
-    /** Creates a share between a user and the systemaccount. If the variable username is set the file is shared with the
-     * corresponding user otherwise with the systemaccount.
-     * @param $path
+    /**
+     * Creates a share between a user and the system account. If $username is set the sharing direction is system account -> user,
+     * otherwise user -> system account.
+     * @param string $path Remote path of the file that will be shared
      * @param string $username optional when set the file is shared with the corresponding user otherwise with
      * the systemaccount.
      * @param bool $maywrite if false, only(!) read access is granted.
      * @return array statuscode, shareid, and filetarget
-     * @throws \coding_exception
-     * @throws \core\oauth2\rest_exception
      * @throws request_exception
      */
     public function create_share_user_sysaccount($path, $username = null, $maywrite = false) {

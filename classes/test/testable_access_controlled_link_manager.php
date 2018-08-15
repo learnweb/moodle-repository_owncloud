@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Manages the creation and usage of access controlled links.
+ * Test support class for testing access_controlled_link_manager.
  *
  * @package    repository_owncloud
  * @copyright  2018 Nina Herrmann (Learnweb, University of Münster)
@@ -28,6 +28,13 @@ defined('MOODLE_INTERNAL') || die();
 use repository_owncloud\access_controlled_link_manager;
 use repository_owncloud\ocs_client;
 
+/**
+ * Test support class for testing access_controlled_link_manager.
+ *
+ * @package    repository_owncloud
+ * @copyright  2018 Nina Herrmann (Learnweb, University of Münster)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class testable_access_controlled_link_manager extends access_controlled_link_manager {
 
     /**
@@ -36,7 +43,6 @@ class testable_access_controlled_link_manager extends access_controlled_link_man
      * @param \core\oauth2\issuer $issuer
      * @param string $repositoryname
      */
-
     public function __construct($ocsclient, \core\oauth2\issuer $issuer, $repositoryname, $systemdav) {
         $this->ocsclient = $ocsclient;
         $this->repositoryname = $repositoryname;
