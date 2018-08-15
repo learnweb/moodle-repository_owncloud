@@ -128,7 +128,7 @@ class repository_owncloud extends repository {
             // In case the Issuer is not enabled, the repository is disabled.
             $this->disabled = true;
             return;
-        } else if (!self::is_valid_issuer($this->issuer)) {
+        } else if (!\repository_owncloud\issuer_management::is_valid_issuer($this->issuer)) {
             // Check if necessary endpoints are present.
             $this->disabled = true;
             return;
@@ -178,37 +178,6 @@ class repository_owncloud extends repository {
         $this->dav->port = $webdavport;
         $this->dav->debug = false;
         return $this->dav;
-    }
-
-    /**
-     * Check if an issuer provides all endpoints that we require.
-     * @param \core\oauth2\issuer $issuer An issuer.
-     * @return bool True, if all endpoints exist; false otherwise.
-     */
-    private static function is_valid_issuer($issuer) {
-        $endpointwebdav = false;
-        $endpointocs = false;
-        $endpointtoken = false;
-        $endpointauth = false;
-        $endpoints = \core\oauth2\api::get_endpoints($issuer);
-        foreach ($endpoints as $endpoint) {
-            $name = $endpoint->get('name');
-            switch ($name) {
-                case 'webdav_endpoint':
-                    $endpointwebdav = true;
-                    break;
-                case 'ocs_endpoint':
-                    $endpointocs = true;
-                    break;
-                case 'token_endpoint':
-                    $endpointtoken = true;
-                    break;
-                case 'authorization_endpoint':
-                    $endpointauth = true;
-                    break;
-            }
-        }
-        return $endpointwebdav && $endpointocs && $endpointtoken && $endpointauth;
     }
 
     /**
@@ -654,7 +623,7 @@ class repository_owncloud extends repository {
         $validissuers = [];
         foreach ($issuers as $issuer) {
             $types[$issuer->get('id')] = $issuer->get('name');
-            if (self::is_valid_issuer($issuer)) {
+            if (\repository_owncloud\issuer_management::is_valid_issuer($issuer)) {
                 $validissuers[] = $issuer->get('name');
             }
         }
