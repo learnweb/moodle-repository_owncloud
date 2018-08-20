@@ -38,9 +38,6 @@ $string['no_right_issuers'] = 'None of the existing issuers implement all requir
 $string['chooseissuer'] = 'Issuer';
 $string['chooseissuer_help'] = 'To add a new issuer visit the admin OAuth 2 services page. <br>
 For additional help with the OAuth 2 API please refer to the Moodle documentation.';
-$string['timetoshare'] = 'Duration after which shares of a controlled link expire';
-$string['timetoshare_help'] = 'This repository enables access controlled links. They are available only for a limited duration. <br>
-The default time is one week.';
 $string['foldername'] = 'Name of folder created in ownCloud users\' private space that holds all access controlled links';
 $string['foldername_help'] = 'To assure users find files shared with them, shares are saved into a specific folder. <br>
 This setting determines the name of the folder. It is recommended to chose a name associated with your Moodle instance.';
