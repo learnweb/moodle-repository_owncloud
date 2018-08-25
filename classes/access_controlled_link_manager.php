@@ -78,19 +78,12 @@ class access_controlled_link_manager{
      * @throws configuration_exception
      * @throws request_exception
      */
-    public function __construct($ocsclient, $issuer, $repositoryname) {
+    public function __construct($ocsclient, $systemoauthclient, $systemocsclient, $issuer, $repositoryname) {
         $this->ocsclient = $ocsclient;
-        $this->systemoauthclient = api::get_system_oauth_client($issuer);
+        $this->systemoauthclient = $systemoauthclient;
+        $this->systemocsclient = $systemocsclient;
 
         $this->repositoryname = $repositoryname;
-        if ($this->systemoauthclient === false || $this->systemoauthclient->is_logged_in() === false) {
-            $details = get_string('contactadminwith', 'repository_owncloud',
-                'The systemaccount could not be connected.');
-            throw new request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-
-        } else {
-            $this->systemocsclient = new ocs_client($this->systemoauthclient);
-        }
         $this->issuer = $issuer;
         $this->systemwebdavclient = $this->create_system_dav();
     }
