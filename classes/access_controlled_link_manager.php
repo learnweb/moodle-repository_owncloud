@@ -250,31 +250,26 @@ class access_controlled_link_manager{
         // Extracts the end of the webdavendpoint.
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
         $webdavprefix = $parsedwebdavurl['path'];
+        $this->systemwebdavclient->open();
         // Checks whether folder exist and creates non-existent folders.
         foreach ($allfolders as $foldername) {
-            $this->systemwebdavclient->open();
             $fullpath .= '/' . $foldername;
             $isdir = $this->systemwebdavclient->is_dir($webdavprefix . $fullpath);
             // Folder already exist, continue.
             if ($isdir === true) {
-                $this->systemwebdavclient->close();
                 continue;
             }
-            $this->systemwebdavclient->open();
             $response = $this->systemwebdavclient->mkcol($webdavprefix . $fullpath);
 
-            $this->systemwebdavclient->close();
             if ($response != 201) {
-                $result['success'] = false;
-                continue;
+                $this->systemwebdavclient->close();
+                $details = get_string('contactadminwith', 'repository_owncloud',
+                    "Folder path $fullpath could not be created in the system account.");
+                throw new request_exception(array('instance' => $this->repositoryname,
+                    'errormessage' => $details));
             }
         }
-        if ($result['success'] != true) {
-            $details = get_string('contactadminwith', 'repository_owncloud',
-                'Folder path in the systemaccount could not be created.');
-            throw new request_exception(array('instance' => $this->repositoryname,
-                'errormessage' => $details));
-        }
+        $this->systemwebdavclient->close();
         $result['fullpath'] = $fullpath;
 
         return $result;
