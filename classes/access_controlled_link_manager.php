@@ -232,13 +232,13 @@ class access_controlled_link_manager{
                 $foldername .= ' (ctx '.$ctx->id.')';
             }
 
-            $foldername = clean_param($foldername, PARAM_PATH);
+            $foldername = clean_param($foldername, PARAM_FILE);
             $allfolders[] = $foldername;
         }
 
-        $allfolders[] = clean_param($component, PARAM_PATH);
-        $allfolders[] = clean_param($filearea, PARAM_PATH);
-        $allfolders[] = clean_param($itemid, PARAM_PATH);
+        $allfolders[] = clean_param($component, PARAM_FILE);
+        $allfolders[] = clean_param($filearea, PARAM_FILE);
+        $allfolders[] = clean_param($itemid, PARAM_FILE);
 
         // Extracts the end of the webdavendpoint.
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
