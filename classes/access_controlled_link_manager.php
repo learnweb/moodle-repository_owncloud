@@ -123,8 +123,8 @@ class access_controlled_link_manager{
         if ($username != null) {
             $shareusername = $username;
         } else {
-            $systemuserinfo = $this->systemoauthclient->get_userinfo();
-            $shareusername = $systemuserinfo['username'];
+            $systemaccount = \core\oauth2\api::get_system_account($this->issuer);
+            $shareusername = $systemaccount->get('username');
         }
         $permissions = ocs_client::SHARE_PERMISSION_READ;
         if ($maywrite) {
