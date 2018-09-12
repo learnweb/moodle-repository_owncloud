@@ -22,6 +22,8 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core\oauth2\system_account;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -39,6 +41,9 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
     /** @var null|\repository_owncloud\ocs_client The ocs_client used to send requests. */
     public $ocsmockclient = null;
 
+    /** @var null|\core\oauth2\client Mock oauth client for the system account. */
+    private $oauthsystemmock = null;
+
     /** @var null|\core\oauth2\issuer which belongs to the repository_owncloud object. */
     public $issuer = null;
 
@@ -54,43 +59,43 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_owncloud');
         $this->issuer = $generator->test_create_issuer();
         $generator->test_create_endpoints($this->issuer->get('id'));
+
+        // Mock clients.
         $this->ocsmockclient = $this->getMockBuilder(repository_owncloud\ocs_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $this->oauthsystemmock = $this->getMockBuilder(\core\oauth2\client::class
         )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $systemwebdavclient = $this->getMockBuilder(repository_owncloud\owncloud_client::class
         )->disableOriginalConstructor()->disableOriginalClone()->getMock();
+        $systemocsclient = $systemocsclient = $this->getMockBuilder(repository_owncloud\ocs_client::class
+        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
+
+        // Pseudo system account user.
+        $this->systemaccountusername = 'pseudouser';
+        $record = new stdClass();
+        $record->issuerid = $this->issuer->get('id');
+        $record->refreshtoken = 'pseudotoken';
+        $record->grantedscopes = 'scopes';
+        $record->email = '';
+        $record->username = $this->systemaccountusername;
+        $systemaccount = new system_account(0, $record);
+        $systemaccount->create();
 
         $this->linkmanager = new \repository_owncloud\test\testable_access_controlled_link_manager($this->ocsmockclient,
+            $this->oauthsystemmock, $systemocsclient,
             $this->issuer, 'owncloud', $systemwebdavclient);
 
-    }
-
-    /**
-     * Tests whether class can be constructed.
-     */
-    public function test_construction() {
-        $mockclient = $this->getMockBuilder(\repository_owncloud\ocs_client::class
-        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
-        // ExpectedException is here needed since the contructor of the linkmanager request whether the systemaccount is
-        // Logged in. This is checked in \core\oauth2\api.php get_system_oauth_client(l.293)
-        // However, since the client is newly created in the method and the method is static phpunit is not able to mock it.
-        $this->expectException('repository_owncloud\request_exception');
-        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
-
-        $mock = $this->createMock(\core\oauth2\client::class);
-        $mock->expects($this->once())->method('get_system_oauth_client')->with($this->issuer)->willReturn(true);
-        $this->linkmanager = new \repository_owncloud\access_controlled_link_manager($mockclient, $this->issuer, 'owncloud');
     }
 
     /**
      * Function to test the private function create_share_user_sysaccount.
      */
     public function test_create_share_user_sysaccount_user_shares() {
-        $username = 'user1';
         $params = [
             'path' => "/ambient.txt",
             'shareType' => \repository_owncloud\ocs_client::SHARE_TYPE_USER,
             'publicUpload' => false,
-            'shareWith' => $username,
+            'shareWith' => $this->systemaccountusername,
             'permissions' => \repository_owncloud\ocs_client::SHARE_PERMISSION_READ,
         ];
         $expectedresponse = <<<XML
@@ -130,10 +135,6 @@ class repository_owncloud_access_controlled_link_manager_testcase extends advanc
 XML;
         $this->ocsmockclient->expects($this->once())->method('call')->with('create_share', $params)->will(
             $this->returnValue($expectedresponse));
-
-        $clientmock = $this->createMock(\core\oauth2\client::class);
-        $clientmock->expects($this->once())->method('get_userinfo')->willReturn(array('username' => 'user1'));
-        $this->set_private_property($clientmock, 'systemoauthclient', $this->linkmanager);
 
         $result = $this->linkmanager->create_share_user_sysaccount("/ambient.txt");
         $xml = simplexml_load_string($expectedresponse);
@@ -179,11 +180,7 @@ XML;
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
         $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
-        $expected = array();
-        $expected['success'] = true;
-        // Empty ctx 'id' expected because using code will not be able to access $ctx->id.
-        $expected['fullpath'] = '/somename (ctx )/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
+        $this->assertEquals('/somename (ctx )/mod_resource/content/0', $result);
     }
     /**
      * Function which test that create folder path does return the adequate results (path and success).
@@ -192,14 +189,11 @@ XML;
     public function test_create_folder_path_folders_are_created() {
 
         // In Context is okay, number of context counts for number of iterations.
-        $mocks = $this->set_up_mocks_for_create_folder_path(false, 'somename/more', true, 201);
+        $mocks = $this->set_up_mocks_for_create_folder_path(false, 'somename/withslash', true, 201);
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
         $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
-        $expected = array();
-        $expected['success'] = true;
-        $expected['fullpath'] = '/somename/more (ctx )/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
+        $this->assertEquals('/somenamewithslash (ctx )/mod_resource/content/0', $result);
     }
     /**
      * Test whether the create_folder_path methode throws exception.
@@ -229,12 +223,13 @@ XML;
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
         $webdavprefix = $parsedwebdavurl['path'];
         // Empty ctx 'id' expected because using code will not be able to access $ctx->id.
-        $dirstring = $webdavprefix . '/' . $returnestedcontext . ' (ctx )';
-        $mockclient->expects($this->exactly(4))->method('is_dir')->with($this->logicalOr(
+        $cleanedcontextname = clean_param($returnestedcontext, PARAM_FILE);
+        $dirstring = $webdavprefix . '/' . $cleanedcontextname . ' (ctx )';
+        $mockclient->expects($this->atMost(4))->method('is_dir')->with($this->logicalOr(
             $dirstring, $dirstring . '/mod_resource', $dirstring . '/mod_resource/content',
             $dirstring . '/mod_resource/content/0'))->willReturn($returnisdir);
         if ($callmkcol == true) {
-            $mockclient->expects($this->exactly(4))->method('mkcol')->willReturn($returnmkcol);
+            $mockclient->expects($this->atMost(4))->method('mkcol')->willReturn($returnmkcol);
         }
         $mockcontext->method('get_parent_contexts')->willReturn(array('1' => $mockcontext));
         $mockcontext->method('get_context_name')->willReturn($returnestedcontext);
@@ -444,13 +439,10 @@ XML;
      */
     public function test_create_system_dav() {
         // Initialize mock and params.
-        $oauthclientmock = $this->getMockBuilder(\core\oauth2\client::class
-        )->disableOriginalConstructor()->disableOriginalClone()->getMock();
         $fakeaccesstoken = new stdClass();
         $fakeaccesstoken->token = "fake access token";
         // Use `atLeastOnce` instead of `exactly(2)` because it is only called a second time on dev systems that allow http://.
-        $oauthclientmock->expects($this->atLeastOnce())->method('get_accesstoken')->willReturn($fakeaccesstoken);
-        $this->set_private_property($oauthclientmock, 'systemoauthclient', $this->linkmanager);
+        $this->oauthsystemmock->expects($this->atLeastOnce())->method('get_accesstoken')->willReturn($fakeaccesstoken);
         $parsedwebdavurl = parse_url($this->issuer->get_endpoint_url('webdav'));
 
         // Call function and create own client.

@@ -74,11 +74,15 @@ class repository_owncloud extends repository {
     private $ocsclient;
 
     /**
+     * @var oauth2_client System account client.
+     */
+    private $systemoauthclient;
+
+    /**
      * OCS systemocsclient that uses the Open Collaboration Services REST API.
      * @var ocs_client
      */
     private $systemocsclient;
-
     /**
      * Name of the folder for controlled links.
      * @var controlledlinkfoldername
@@ -136,8 +140,11 @@ class repository_owncloud extends repository {
 
         if ($this->issuer->is_system_account_connected()) {
             try {
-                $this->systemocsclient = new ocs_client(\core\oauth2\api::get_system_oauth_client($this->issuer));
+                $this->systemoauthclient = \core\oauth2\api::get_system_oauth_client($this->issuer);
+                $this->systemocsclient = new ocs_client($this->systemoauthclient);
             } catch (\moodle_exception $e) {
+                // Somehow it is not really connected.
+                $this->systemoauthclient = null;
                 $this->systemocsclient = null;
             }
         }
@@ -338,11 +345,12 @@ class repository_owncloud extends repository {
         }
 
         // Check this issuer is enabled.
-        if ($this->disabled) {
+        if ($this->disabled || $this->systemoauthclient === null || $this->systemocsclient === null) {
             throw new repository_exception('cannotdownload', 'repository');
         }
 
-        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->issuer, $this->get_name());
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient,
+            $this->systemocsclient, $this->issuer, $this->get_name());
 
         // Get the current user.
         $userauth = $this->get_user_oauth_client();
@@ -353,16 +361,16 @@ class repository_owncloud extends repository {
         // 1. Share the File with the system account.
         $responsecreateshare = $linkmanager->create_share_user_sysaccount($reference);
         if ($responsecreateshare['statuscode'] == 403) {
-            $details = get_string('filenotaccessed', 'repository_owncloud');
-            throw new \repository_owncloud\request_exception(array('instance' => $this->get_name(), 'errormessage' => $details));
+            // File has already been shared previously => find file in system account and use that.
+            $responsecreateshare = $linkmanager->find_share_in_sysaccount($reference);
         }
 
         // 2. Create a unique path in the system account.
-        $foldercreate = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea,
+        $createdfolder = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea,
             $itemid);
 
         // 3. Copy File to the new folder path.
-        $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], 'copy');
+        $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $createdfolder, 'copy');
 
         // 4. Delete the share.
         $linkmanager->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
@@ -370,7 +378,7 @@ class repository_owncloud extends repository {
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
         $filereturn = new stdClass();
         $filereturn->type = 'FILE_CONTROLLED_LINK';
-        $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
+        $filereturn->link = $createdfolder . $responsecreateshare['filetarget'];
         $filereturn->name = $reference;
         $filereturn->usesystem = true;
         $filereturn = json_encode($filereturn);
@@ -401,7 +409,7 @@ class repository_owncloud extends repository {
         }
 
         // 1. assure the client and user is logged in.
-        if (empty($this->client)) {
+        if (empty($this->client) || $this->systemoauthclient === null || $this->systemocsclient === null) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'The OAuth client could not be connected.');
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
@@ -410,7 +418,6 @@ class repository_owncloud extends repository {
         if (!$this->client->is_logged_in()) {
             $this->print_login_popup(['style' => 'margin-top: 250px']);
             return;
-
         }
 
         // Determining writeability of file from the using context.
@@ -428,7 +435,8 @@ class repository_owncloud extends repository {
         $this->initiate_webdavclient();
 
         // Create the a manager to handle steps.
-        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->issuer, $repositoryname);
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient,
+            $this->systemocsclient, $this->issuer, $repositoryname);
 
         // 2. Check whether user has folder for files otherwise create it.
         $linkmanager->create_storage_folder($this->controlledlinkfoldername, $this->dav);

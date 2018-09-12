@@ -71,26 +71,18 @@ class access_controlled_link_manager{
     /**
      * Access_controlled_link_manager constructor.
      * @param ocs_client $ocsclient
+     * @param \core\oauth2\client $systemoauthclient
+     * @param ocs_client $systemocsclient
      * @param \core\oauth2\issuer $issuer
      * @param string $repositoryname
-     * @throws \coding_exception
-     * @throws \moodle_exception
      * @throws configuration_exception
-     * @throws request_exception
      */
-    public function __construct($ocsclient, $issuer, $repositoryname) {
+    public function __construct($ocsclient, $systemoauthclient, $systemocsclient, $issuer, $repositoryname) {
         $this->ocsclient = $ocsclient;
-        $this->systemoauthclient = api::get_system_oauth_client($issuer);
+        $this->systemoauthclient = $systemoauthclient;
+        $this->systemocsclient = $systemocsclient;
 
         $this->repositoryname = $repositoryname;
-        if ($this->systemoauthclient === false || $this->systemoauthclient->is_logged_in() === false) {
-            $details = get_string('contactadminwith', 'repository_owncloud',
-                'The systemaccount could not be connected.');
-            throw new request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
-
-        } else {
-            $this->systemocsclient = new ocs_client($this->systemoauthclient);
-        }
         $this->issuer = $issuer;
         $this->systemwebdavclient = $this->create_system_dav();
     }
@@ -130,8 +122,8 @@ class access_controlled_link_manager{
         if ($username != null) {
             $shareusername = $username;
         } else {
-            $systemuserinfo = $this->systemoauthclient->get_userinfo();
-            $shareusername = $systemuserinfo['username'];
+            $systemaccount = \core\oauth2\api::get_system_account($this->issuer);
+            $shareusername = $systemaccount->get('username');
         }
         $permissions = ocs_client::SHARE_PERMISSION_READ;
         if ($maywrite) {
@@ -201,23 +193,17 @@ class access_controlled_link_manager{
         return $result;
     }
 
-    /** Creates a unique folder path for the access controlled link.
+    /**
+     * Creates a unique folder path for the access controlled link.
      * @param context $context
      * @param string $component
      * @param string $filearea
      * @param string $itemid
-     * @return array $result success for the http status code and fullpath for the generated path.
-     * @throws configuration_exception
-     * @throws \coding_exception
-     * @throws \moodle_exception
-     * @throws \repository_owncloud\request_exception
+     * @return string $result full generated path.
+     * @throws request_exception If the folder path cannot be created.
      */
     public function create_folder_path_access_controlled_links($context, $component, $filearea, $itemid) {
         global $CFG, $SITE;
-        // Initialize the return array.
-        $result = array();
-        $result['success'] = true;
-
         // The fullpath to store the file is generated from the context.
         $contextlist = array_reverse($context->get_parent_contexts(true));
         $fullpath = '';
@@ -239,45 +225,38 @@ class access_controlled_link_manager{
                 $foldername .= ' (ctx '.$ctx->id.')';
             }
 
-            $foldername = clean_param($foldername, PARAM_PATH);
+            $foldername = clean_param($foldername, PARAM_FILE);
             $allfolders[] = $foldername;
         }
 
-        $allfolders[] = clean_param($component, PARAM_PATH);
-        $allfolders[] = clean_param($filearea, PARAM_PATH);
-        $allfolders[] = clean_param($itemid, PARAM_PATH);
+        $allfolders[] = clean_param($component, PARAM_FILE);
+        $allfolders[] = clean_param($filearea, PARAM_FILE);
+        $allfolders[] = clean_param($itemid, PARAM_FILE);
 
         // Extracts the end of the webdavendpoint.
         $parsedwebdavurl = $this->parse_endpoint_url('webdav');
         $webdavprefix = $parsedwebdavurl['path'];
+        $this->systemwebdavclient->open();
         // Checks whether folder exist and creates non-existent folders.
         foreach ($allfolders as $foldername) {
-            $this->systemwebdavclient->open();
             $fullpath .= '/' . $foldername;
             $isdir = $this->systemwebdavclient->is_dir($webdavprefix . $fullpath);
             // Folder already exist, continue.
             if ($isdir === true) {
-                $this->systemwebdavclient->close();
                 continue;
             }
-            $this->systemwebdavclient->open();
             $response = $this->systemwebdavclient->mkcol($webdavprefix . $fullpath);
 
-            $this->systemwebdavclient->close();
             if ($response != 201) {
-                $result['success'] = false;
-                continue;
+                $this->systemwebdavclient->close();
+                $details = get_string('contactadminwith', 'repository_owncloud',
+                    "Folder path $fullpath could not be created in the system account.");
+                throw new request_exception(array('instance' => $this->repositoryname,
+                    'errormessage' => $details));
             }
         }
-        if ($result['success'] != true) {
-            $details = get_string('contactadminwith', 'repository_owncloud',
-                'Folder path in the systemaccount could not be created.');
-            throw new request_exception(array('instance' => $this->repositoryname,
-                'errormessage' => $details));
-        }
-        $result['fullpath'] = $fullpath;
-
-        return $result;
+        $this->systemwebdavclient->close();
+        return $fullpath;
     }
 
     /** Creates a new owncloud_client for the system account.
@@ -410,5 +389,60 @@ class access_controlled_link_manager{
 
         }
         return (string) $validelement->file_target;
+    }
+
+    /**
+     * Find a file that has previously been shared with the system account.
+     * @param string $path Path to file in user context.
+     * @return array shareid: ID of share, filetarget: path to file in sys account.
+     * @throws request_exception If the share cannot be resolved.
+     */
+    public function find_share_in_sysaccount($path) {
+        $systemaccount = \core\oauth2\api::get_system_account($this->issuer);
+        $systemaccountuser = $systemaccount->get('username');
+
+        // Find out share ID from user files.
+        $ocsparams = [
+            'path' => $path,
+            'reshares' => true
+        ];
+
+        $getsharesresponse = $this->ocsclient->call('get_shares', $ocsparams);
+        $xml = simplexml_load_string($getsharesresponse);
+        $validelement = array();
+        foreach ($fileid = $xml->data->element as $element) {
+            if ($element->share_with == $systemaccountuser) {
+                $validelement = $element;
+                break;
+            }
+        }
+        if (empty($validelement)) {
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
+        }
+        $shareid = (int) $validelement->id;
+
+        // Use share id to find file name in system account's context.
+        $ocsparams = [
+            'share_id' => $shareid
+        ];
+
+        $shareinformation = $this->systemocsclient->call('get_information_of_share', $ocsparams);
+        $xml = simplexml_load_string($shareinformation);
+        foreach ($fileid = $xml->data->element as $element) {
+            if ($element->share_with == $systemaccountuser) {
+                $validfile = $element;
+                break;
+            }
+        }
+        if (empty($validfile)) {
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
+
+        }
+        return [
+            'shareid' => $shareid,
+            'filetarget' => (string) $validfile->file_target
+            ];
     }
 }

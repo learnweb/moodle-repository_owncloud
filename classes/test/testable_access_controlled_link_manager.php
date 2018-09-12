@@ -25,6 +25,7 @@ namespace repository_owncloud\test;
 
 defined('MOODLE_INTERNAL') || die();
 
+use core\oauth2\client;
 use repository_owncloud\access_controlled_link_manager;
 use repository_owncloud\ocs_client;
 use repository_owncloud\owncloud_client;
@@ -41,12 +42,17 @@ class testable_access_controlled_link_manager extends access_controlled_link_man
     /**
      * Access_controlled_link_manager constructor.
      * @param ocs_client $ocsclient
+     * @param client $systemoauthclient
+     * @param ocs_client $systemocsclient
      * @param \core\oauth2\issuer $issuer
      * @param string $repositoryname
      * @param owncloud_client $systemdav
      */
-    public function __construct($ocsclient, \core\oauth2\issuer $issuer, $repositoryname, $systemdav) {
+    public function __construct($ocsclient, $systemoauthclient, $systemocsclient, \core\oauth2\issuer $issuer, $repositoryname,
+                                $systemdav) {
         $this->ocsclient = $ocsclient;
+        $this->systemoauthclient = $systemoauthclient;
+        $this->systemocsclient = $systemocsclient;
         $this->repositoryname = $repositoryname;
         $this->issuer = $issuer;
         $this->systemwebdavclient = $systemdav;
