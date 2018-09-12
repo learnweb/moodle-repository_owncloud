@@ -349,7 +349,8 @@ class repository_owncloud extends repository {
             throw new repository_exception('cannotdownload', 'repository');
         }
 
-        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient, $this->systemocsclient, $this->issuer, $this->get_name());
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient,
+            $this->systemocsclient, $this->issuer, $this->get_name());
 
         // Get the current user.
         $userauth = $this->get_user_oauth_client();
@@ -408,7 +409,7 @@ class repository_owncloud extends repository {
         }
 
         // 1. assure the client and user is logged in.
-        if (empty($this->client)) {
+        if (empty($this->client) || $this->systemoauthclient === null || $this->systemocsclient === null) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'The OAuth client could not be connected.');
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
@@ -417,7 +418,6 @@ class repository_owncloud extends repository {
         if (!$this->client->is_logged_in()) {
             $this->print_login_popup(['style' => 'margin-top: 250px']);
             return;
-
         }
 
         // Determining writeability of file from the using context.
@@ -435,7 +435,6 @@ class repository_owncloud extends repository {
         $this->initiate_webdavclient();
 
         // Create the a manager to handle steps.
-        // TODO check system account connections first; maybe abort.
         $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient, $this->systemocsclient, $this->issuer, $repositoryname);
 
         // 2. Check whether user has folder for files otherwise create it.
