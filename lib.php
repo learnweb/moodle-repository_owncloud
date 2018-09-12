@@ -361,8 +361,8 @@ class repository_owncloud extends repository {
         // 1. Share the File with the system account.
         $responsecreateshare = $linkmanager->create_share_user_sysaccount($reference);
         if ($responsecreateshare['statuscode'] == 403) {
-            $details = get_string('filenotaccessed', 'repository_owncloud');
-            throw new \repository_owncloud\request_exception(array('instance' => $this->get_name(), 'errormessage' => $details));
+            // File has already been shared previously => find file in system account and use that.
+            $responsecreateshare = $linkmanager->find_share_in_sysaccount($reference);
         }
 
         // 2. Create a unique path in the system account.
@@ -435,7 +435,8 @@ class repository_owncloud extends repository {
         $this->initiate_webdavclient();
 
         // Create the a manager to handle steps.
-        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient, $this->systemocsclient, $this->issuer, $repositoryname);
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient,
+            $this->systemocsclient, $this->issuer, $repositoryname);
 
         // 2. Check whether user has folder for files otherwise create it.
         $linkmanager->create_storage_folder($this->controlledlinkfoldername, $this->dav);

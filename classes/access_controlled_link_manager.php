@@ -390,4 +390,59 @@ class access_controlled_link_manager{
         }
         return (string) $validelement->file_target;
     }
+
+    /**
+     * Find a file that has previously been shared with the system account.
+     * @param string $path Path to file in user context.
+     * @return array shareid: ID of share, filetarget: path to file in sys account.
+     * @throws request_exception If the share cannot be resolved.
+     */
+    public function find_share_in_sysaccount($path) {
+        $systemaccount = \core\oauth2\api::get_system_account($this->issuer);
+        $systemaccountuser = $systemaccount->get('username');
+
+        // Find out share ID from user files.
+        $ocsparams = [
+            'path' => $path,
+            'reshares' => true
+        ];
+
+        $getsharesresponse = $this->ocsclient->call('get_shares', $ocsparams);
+        $xml = simplexml_load_string($getsharesresponse);
+        $validelement = array();
+        foreach ($fileid = $xml->data->element as $element) {
+            if ($element->share_with == $systemaccountuser) {
+                $validelement = $element;
+                break;
+            }
+        }
+        if (empty($validelement)) {
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
+        }
+        $shareid = (int) $validelement->id;
+
+        // Use share id to find file name in system account's context.
+        $ocsparams = [
+            'share_id' => $shareid
+        ];
+
+        $shareinformation = $this->systemocsclient->call('get_information_of_share', $ocsparams);
+        $xml = simplexml_load_string($shareinformation);
+        foreach ($fileid = $xml->data->element as $element) {
+            if ($element->share_with == $systemaccountuser) {
+                $validfile = $element;
+                break;
+            }
+        }
+        if (empty($validfile)) {
+            throw new request_exception(array('instance' => $this->repositoryname,
+                'errormessage' => get_string('filenotaccessed', 'repository_owncloud')));
+
+        }
+        return [
+            'shareid' => $shareid,
+            'filetarget' => (string) $validfile->file_target
+            ];
+    }
 }
