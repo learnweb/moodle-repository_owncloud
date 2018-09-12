@@ -71,12 +71,11 @@ class access_controlled_link_manager{
     /**
      * Access_controlled_link_manager constructor.
      * @param ocs_client $ocsclient
+     * @param \core\oauth2\client $systemoauthclient
+     * @param ocs_client $systemocsclient
      * @param \core\oauth2\issuer $issuer
      * @param string $repositoryname
-     * @throws \coding_exception
-     * @throws \moodle_exception
      * @throws configuration_exception
-     * @throws request_exception
      */
     public function __construct($ocsclient, $systemoauthclient, $systemocsclient, $issuer, $repositoryname) {
         $this->ocsclient = $ocsclient;
