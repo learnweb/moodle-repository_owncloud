@@ -193,23 +193,17 @@ class access_controlled_link_manager{
         return $result;
     }
 
-    /** Creates a unique folder path for the access controlled link.
+    /**
+     * Creates a unique folder path for the access controlled link.
      * @param context $context
      * @param string $component
      * @param string $filearea
      * @param string $itemid
-     * @return array $result success for the http status code and fullpath for the generated path.
-     * @throws configuration_exception
-     * @throws \coding_exception
-     * @throws \moodle_exception
-     * @throws \repository_owncloud\request_exception
+     * @return string $result full generated path.
+     * @throws request_exception If the folder path cannot be created.
      */
     public function create_folder_path_access_controlled_links($context, $component, $filearea, $itemid) {
         global $CFG, $SITE;
-        // Initialize the return array.
-        $result = array();
-        $result['success'] = true;
-
         // The fullpath to store the file is generated from the context.
         $contextlist = array_reverse($context->get_parent_contexts(true));
         $fullpath = '';
@@ -262,9 +256,7 @@ class access_controlled_link_manager{
             }
         }
         $this->systemwebdavclient->close();
-        $result['fullpath'] = $fullpath;
-
-        return $result;
+        return $fullpath;
     }
 
     /** Creates a new owncloud_client for the system account.

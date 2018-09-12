@@ -366,11 +366,11 @@ class repository_owncloud extends repository {
         }
 
         // 2. Create a unique path in the system account.
-        $foldercreate = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea,
+        $createdfolder = $linkmanager->create_folder_path_access_controlled_links($context, $component, $filearea,
             $itemid);
 
         // 3. Copy File to the new folder path.
-        $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $foldercreate['fullpath'], 'copy');
+        $linkmanager->transfer_file_to_path($responsecreateshare['filetarget'], $createdfolder, 'copy');
 
         // 4. Delete the share.
         $linkmanager->delete_share_dataowner_sysaccount($responsecreateshare['shareid']);
@@ -378,7 +378,7 @@ class repository_owncloud extends repository {
         // Update the returned reference so that the stored_file in moodle points to the newly copied file.
         $filereturn = new stdClass();
         $filereturn->type = 'FILE_CONTROLLED_LINK';
-        $filereturn->link = $foldercreate['fullpath'] . $responsecreateshare['filetarget'];
+        $filereturn->link = $createdfolder . $responsecreateshare['filetarget'];
         $filereturn->name = $reference;
         $filereturn->usesystem = true;
         $filereturn = json_encode($filereturn);

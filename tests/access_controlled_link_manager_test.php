@@ -180,11 +180,7 @@ XML;
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
         $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
-        $expected = array();
-        $expected['success'] = true;
-        // Empty ctx 'id' expected because using code will not be able to access $ctx->id.
-        $expected['fullpath'] = '/somename (ctx )/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
+        $this->assertEquals('/somename (ctx )/mod_resource/content/0', $result);
     }
     /**
      * Function which test that create folder path does return the adequate results (path and success).
@@ -197,10 +193,7 @@ XML;
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
         $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",
             'content', 0);
-        $expected = array();
-        $expected['success'] = true;
-        $expected['fullpath'] = '/somenamewithslash (ctx )/mod_resource/content/0';
-        $this->assertEquals($expected, $result);
+        $this->assertEquals('/somenamewithslash (ctx )/mod_resource/content/0', $result);
     }
     /**
      * Test whether the create_folder_path methode throws exception.
