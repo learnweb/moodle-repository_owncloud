@@ -76,16 +76,16 @@ class repository_owncloud extends repository {
     /**
      * @var oauth2_client System account client.
      */
-    private $systemoauthclient;
+    private $systemoauthclient = false;
 
     /**
      * OCS systemocsclient that uses the Open Collaboration Services REST API.
      * @var ocs_client
      */
-    private $systemocsclient;
+    private $systemocsclient = null;
     /**
      * Name of the folder for controlled links.
-     * @var controlledlinkfoldername
+     * @var string
      */
     private $controlledlinkfoldername;
 
@@ -138,18 +138,41 @@ class repository_owncloud extends repository {
             return;
         }
 
-        if ($this->issuer->is_system_account_connected()) {
+        $this->ocsclient = new ocs_client($this->get_user_oauth_client());
+    }
+
+    /**
+     * Get or initialise an oauth client for the system account.
+     * @return false|oauth2_client False if initialisation was unsuccessful, otherwise an initialised client.
+     */
+    private function get_system_oauth_client() {
+        if ($this->systemoauthclient === false) {
             try {
                 $this->systemoauthclient = \core\oauth2\api::get_system_oauth_client($this->issuer);
-                $this->systemocsclient = new ocs_client($this->systemoauthclient);
             } catch (\moodle_exception $e) {
-                // Somehow it is not really connected.
-                $this->systemoauthclient = null;
+                $this->systemoauthclient = false;
+            }
+        }
+        return $this->systemoauthclient;
+    }
+
+    /**
+     * Get or initialise an ocs client for the system account.
+     * @return null|ocs_client Null if initialisation was unsuccessful, otherwise an initialised client.
+     */
+    private function get_system_ocs_client() {
+        if ($this->systemocsclient === null) {
+            try {
+                $systemoauth = $this->get_system_oauth_client();
+                if (!$systemoauth) {
+                    return null;
+                }
+                $this->systemocsclient = new ocs_client($systemoauth);
+            } catch (\moodle_exception $e) {
                 $this->systemocsclient = null;
             }
         }
-
-        $this->ocsclient = new ocs_client($this->get_user_oauth_client());
+        return $this->systemocsclient;
     }
 
     /**
@@ -345,12 +368,12 @@ class repository_owncloud extends repository {
         }
 
         // Check this issuer is enabled.
-        if ($this->disabled || $this->systemoauthclient === null || $this->systemocsclient === null) {
+        if ($this->disabled || $this->get_system_oauth_client() === false || $this->get_system_ocs_client() === null) {
             throw new repository_exception('cannotdownload', 'repository');
         }
 
-        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient,
-            $this->systemocsclient, $this->issuer, $this->get_name());
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->get_system_oauth_client(),
+            $this->get_system_ocs_client(), $this->issuer, $this->get_name());
 
         // Get the current user.
         $userauth = $this->get_user_oauth_client();
@@ -409,7 +432,7 @@ class repository_owncloud extends repository {
         }
 
         // 1. assure the client and user is logged in.
-        if (empty($this->client) || $this->systemoauthclient === null || $this->systemocsclient === null) {
+        if (empty($this->client) || $this->get_system_oauth_client() === false || $this->get_system_ocs_client() === null) {
             $details = get_string('contactadminwith', 'repository_owncloud',
                 'The OAuth client could not be connected.');
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
@@ -435,8 +458,8 @@ class repository_owncloud extends repository {
         $this->initiate_webdavclient();
 
         // Create the a manager to handle steps.
-        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->systemoauthclient,
-            $this->systemocsclient, $this->issuer, $repositoryname);
+        $linkmanager = new \repository_owncloud\access_controlled_link_manager($this->ocsclient, $this->get_system_oauth_client(),
+            $this->get_system_ocs_client(), $this->issuer, $repositoryname);
 
         // 2. Check whether user has folder for files otherwise create it.
         $linkmanager->create_storage_folder($this->controlledlinkfoldername, $this->dav);
