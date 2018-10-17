@@ -54,7 +54,6 @@ $string['fileoptions'] = 'The types and defaults for returned files is configura
 $string['configuration_exception'] = 'An error in the configuration of the OAuth 2 client occurred: {$a}';
 $string['request_exception'] = 'A request to {$a->instance} has failed. {$a->errormessage}';
 $string['requestnotexecuted'] = 'The request could not be executed. If this happens frequently please contact the course or site administrator.';
-$string['downloadpopup'] = 'The requested file is additionally stored in your {$a->instancename} instance in the {$a->foldername} folder.';
 $string['notauthorized'] = 'You are not authorized to execute the demanded request. Please ensure you are authenticated with the right account.';
 $string['contactadminwith'] = 'The requested action could not be executed. In case this happens frequently please contact the side administrator with the following additional information:<br>"<i>{$a}</i>"';
 $string['cannotconnect'] = 'The user could not be authenticated, please log in and then upload the file.';
