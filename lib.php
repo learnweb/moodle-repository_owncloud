@@ -490,13 +490,29 @@ class repository_owncloud extends repository {
             $details = get_string('filenotaccessed', 'repository_owncloud');
             throw new \repository_owncloud\request_exception(array('instance' => $repositoryname, 'errormessage' => $details));
         }
-        $filetarget = $linkmanager->get_share_information_from_shareid($shareid, $username);
-        $srcpath = ltrim($filetarget, '/');
+        $filetarget = $linkmanager->get_share_information_from_shareid((int)$shareid, $username);
 
-        $webdavurl = $this->issuer->get_endpoint_url('webdav') . $srcpath;
-        redirect($webdavurl, get_string('downloadpopup', 'repository_owncloud',
-            ['instancename' => $repositoryname, 'foldername' => $this->controlledlinkfoldername]), null,
-            \core\output\notification::NOTIFY_INFO);
+        // Obtain the file from Nextcloud using a Bearer token authenticated connection because we cannot perform a redirect here.
+        // The reason is that Nextcloud uses samesite cookie validation, i.e. a redirected request would not be authenticated.
+        // (Also the browser might use the session of a Nextcloud user that is different from the one that is known to Moodle.)
+        $filename = basename($filetarget);
+        $tmppath = make_request_directory() . '/' . $filename;
+        $this->dav->open();
+
+        // Concat webdav path with file path.
+        $webdavendpoint = $this->parse_endpoint_url('webdav');
+        $filetarget = ltrim($filetarget, '/');
+        $filetarget = $webdavendpoint['path'] . $filetarget;
+
+        // Write file into temp location.
+        if (!$this->dav->get_file($filetarget, $tmppath)) {
+            $this->dav->close();
+            throw new repository_exception('cannotdownload', 'repository');
+        }
+        $this->dav->close();
+
+        // Output the obtained file to the user and remove it from disk.
+        send_temp_file($tmppath, $filename);
     }
 
     /**
