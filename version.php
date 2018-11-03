@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018101900;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2017051502;        // Requires Moodle 3.3.2 version.
+$plugin->version   = 2018110300;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires  = 2018110300;        // Requires Moodle 3.6 (dev) version -- this is the first with repository_nextcloud present.
 $plugin->component = 'repository_owncloud'; // Full name of the plugin (used for diagnostics).
-$plugin->release = 'v3.5-r4';
+$plugin->release = 'v3.6-r1';
 $plugin->maturity = MATURITY_STABLE;
