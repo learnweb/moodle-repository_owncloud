@@ -646,6 +646,20 @@ class repository_owncloud extends repository {
         return parent::create($type, $userid, $context, $params, $readonly);
     }
 
+    /**
+     * Edit/Create Admin Settings Moodle form
+     *
+     * @param moodleform $mform Moodle form (passed by reference)
+     * @param string $classname repository class name
+     */
+    public static function type_config_form($mform, $classname = 'repository') {
+        $url = new moodle_url('/repository/owncloud/migration.php');
+
+        $mform->addElement('static', null, '',
+            html_writer::link($url, get_string('migration', 'repository_owncloud')));
+
+        parent::type_config_form($mform);
+    }
 
     /**
      * This method adds a select form and additional information to the settings form..
