@@ -59,7 +59,7 @@ jobs:
     # Prechecks against latest Moodle stable only.
     - stage: static
       php: 7.2
-      env: DB=mysqli MOODLE_BRANCH=MOODLE_35_STABLE
+      env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
       install:
       - moodle-plugin-ci install --no-init
       script:
@@ -74,7 +74,7 @@ jobs:
     # Smaller build matrix for development builds
     - stage: develop
       php: 7.2
-      env: DB=mysqli MOODLE_BRANCH=MOODLE_35_STABLE
+      env: DB=mysqli MOODLE_BRANCH=master #MOODLE_36_STABLE
       install:
       - moodle-plugin-ci install
       script:
