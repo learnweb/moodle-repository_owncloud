@@ -44,7 +44,7 @@ class migration {
      *
      * @return bool A status indicating success or failure
      */
-    public function migrate_all_instances() : bool {
+    public static function migrate_all_instances() : bool {
         global $DB;
 
         // Sanity check -- this should really never be done by a non-admin.
@@ -63,7 +63,7 @@ class migration {
             return true;
         }
 
-        // Probably there is no repository_nextcloud type yet, but let's be sure.
+        // Whether or not there is a repository_nextcloud type yet, let's be sure that now there is.
         $nextcloud = $DB->get_record('repository', ['type' => 'nextcloud'], 'id', IGNORE_MISSING);
         if ($nextcloud) {
             $nextcloudtypeid = $nextcloud->id;
@@ -77,7 +77,7 @@ class migration {
         // Migrate each repository_owncloud instance.
         foreach ($owncloudinstances as $instance) {
             // Change type of repository instance to that of repository_nextcloud.
-            $DB->set_field('repository_instances', 'typeid', $nextcloudtypeid, ['repositoryid' => $instance->id]);
+            $DB->set_field('repository_instances', 'typeid', $nextcloudtypeid, ['id' => $instance->id]);
 
             // File references are migrated automatically as they reference instanceid only, which we didn't change.
             // Instance configuration is migrated automatically as settings reference instanceid only.

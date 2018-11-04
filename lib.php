@@ -653,10 +653,11 @@ class repository_owncloud extends repository {
      * @param string $classname repository class name
      */
     public static function type_config_form($mform, $classname = 'repository') {
-        $url = new moodle_url('/repository/owncloud/migration.php');
-
         $mform->addElement('static', null, '',
-            html_writer::link($url, get_string('migration', 'repository_owncloud')));
+            html_writer::div(get_string('migrationexplanation', 'repository_owncloud')) .
+            html_writer::div(html_writer::link(new moodle_url('/repository/owncloud/migrate.php'),
+                get_string('migrationlink', 'repository_owncloud'), ['class' => 'btn btn-primary'])
+            ));
 
         parent::type_config_form($mform);
     }

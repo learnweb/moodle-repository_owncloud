@@ -59,3 +59,11 @@ $string['contactadminwith'] = 'The requested action could not be executed. In ca
 $string['cannotconnect'] = 'The user could not be authenticated, please log in and then upload the file.';
 $string['filenotaccessed'] = 'The requested file could not be accessed. Please check whether you have chosen a valid file and you are authenticated with the right account.';
 $string['couldnotmove'] = 'The requested file could not be moved in the {$a} folder.';
+
+// Migrations.
+$string['migrationexplanation'] = 'Starting with Moodle 3.6, the ownCloud repository is integrated into Moodle and is now called Nextcloud repository. It caters for both ownCloud and Nextcloud. As a consequence, this plugin is not maintained anymore. Please migrate files and configuration to the newer repository plugin using the following option.';
+$string['migrationlink'] = 'Start migration';
+$string['migration'] = 'Migrate repository';
+$string['owncloudfilesmigrated'] = 'All configuration and files have been migrated to the Nextcloud repository.';
+$string['owncloudfilesnotmigrated'] = 'An error occurred when trying to migrate all configuration and files to the Nextcloud repository.';
+$string['confirmmigration'] = 'Are you sure you want to migrate all configuration and files to the Nextcloud repository? The Nextcloud repository must be installed for files to continue working as before. Warning: This action cannot be undone!';
