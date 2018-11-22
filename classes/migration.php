@@ -63,7 +63,7 @@ class migration {
 
         if (empty($owncloudinstances)) {
             // Nothing to do! No instances were configured.
-            return true;
+            return false;
         }
 
         // Whether or not there is a repository_nextcloud type yet, let's be sure that now there is.
@@ -73,6 +73,7 @@ class migration {
         } else {
             $nextcloudtype = new \repository_type('nextcloud', array(), $formertype->get_visible());
             if (!($nextcloudtypeid = $nextcloudtype->create(true))) {
+                // Needed to create the new type but couldn't.
                 return false;
             }
         }

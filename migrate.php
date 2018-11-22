@@ -49,7 +49,7 @@ if ($confirm) {
         redirect(new moodle_url('/admin/repository.php', ['action' => 'edit', 'repos' => 'nextcloud', 'sesskey' => sesskey()]),
             $mesg, null, \core\output\notification::NOTIFY_SUCCESS);
     } else {
-        $mesg = get_string('owncloudfilesnotmigrated', 'owncloud');
+        $mesg = get_string('owncloudfilesnotmigrated', 'repository_owncloud');
         redirect(new moodle_url('/admin/repository.php', ['action' => 'edit', 'repos' => 'owncloud', 'sesskey' => sesskey()]),
             $mesg, null, \core\output\notification::NOTIFY_ERROR);
     }
