@@ -45,10 +45,13 @@ class migration {
      * @return bool A status indicating success or failure
      */
     public static function migrate_all_instances() : bool {
-        global $DB;
+        global $DB, $CFG;
 
-        // Sanity check -- this should really never be done by a non-admin.
+        // Sanity checks -- this method should really never be called for a non-admin. M3.6 and above only.
         require_capability('moodle/site:config', \context_system::instance());
+        if ($CFG->branch < 36) {
+            die('This functionality is only available in Moodle 3.6 and above.');
+        }
 
         $formertype = \repository::get_type_by_typename('owncloud');
         if (!$formertype) {

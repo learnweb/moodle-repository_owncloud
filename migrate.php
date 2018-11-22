@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Trigger migration to repository_nextcloud.
+ * Perform migration to the core plugin repository_nextcloud (M3.6 and above only).
  *
  * @package    repository_owncloud
  * @copyright  2018 Jan Dageförde (Learnweb, University of Münster), based on code by
@@ -34,6 +34,10 @@ $PAGE->set_heading($strheading);
 require_login();
 
 require_capability('moodle/site:config', context_system::instance());
+
+if ($CFG->branch < 36) {
+    die('This functionality is only available in Moodle 3.6 and above.');
+}
 
 $confirm = optional_param('confirm', false, PARAM_BOOL);
 

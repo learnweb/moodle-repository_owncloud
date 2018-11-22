@@ -647,17 +647,20 @@ class repository_owncloud extends repository {
     }
 
     /**
-     * Edit/Create Admin Settings Moodle form
+     * Repository settings form - used to provide users of Moodle 3.6 and above with an option to migrate to the core plugin.
      *
      * @param moodleform $mform Moodle form (passed by reference)
      * @param string $classname repository class name
      */
     public static function type_config_form($mform, $classname = 'repository') {
-        $mform->addElement('static', null, '',
-            html_writer::div(get_string('migrationexplanation', 'repository_owncloud')) .
-            html_writer::div(html_writer::link(new moodle_url('/repository/owncloud/migrate.php'),
-                get_string('migrationlink', 'repository_owncloud'), ['class' => 'btn btn-primary'])
-            ));
+        global $CFG;
+        if ($CFG->branch >= 36) {
+            $mform->addElement('static', null, '',
+                html_writer::div(get_string('migrationexplanation', 'repository_owncloud')) .
+                html_writer::div(html_writer::link(new moodle_url('/repository/owncloud/migrate.php'),
+                    get_string('migrationlink', 'repository_owncloud'), ['class' => 'btn btn-primary'])
+                ));
+        }
 
         parent::type_config_form($mform);
     }
