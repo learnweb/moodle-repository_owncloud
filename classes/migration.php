@@ -59,7 +59,7 @@ class migration {
             return true;
         }
 
-        $owncloudinstances = \repository::get_instances(['type' => 'owncloud']);
+        $owncloudinstances = \repository::get_instances(['type' => 'owncloud', 'onlyvisible' => false]);
 
         if (empty($owncloudinstances)) {
             // Nothing to do! No instances were configured.
