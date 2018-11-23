@@ -219,7 +219,13 @@ class repository_owncloud extends repository {
      * @return array|bool returns either the moodle path to the file or false.
      */
     public function get_file($reference, $title = '') {
-        // Normal file.
+        // Special handling if we are downloading a former repository instance's contents.
+        $specialref = json_decode($reference);
+        if (is_object($specialref)) {
+            return parent::get_file($specialref->link);
+        }
+
+        // Was not JSON-encoded, so this is a normal file.
         $reference = urldecode($reference);
 
         // Prepare a file with an arbitrary name - cannot be $title because of special chars (cf. MDL-57002).
