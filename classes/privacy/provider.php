@@ -25,71 +25,24 @@ namespace repository_owncloud\privacy;
 
 defined('MOODLE_INTERNAL') || die();
 
-use core_privacy\local\metadata\collection;
-use core_privacy\local\request\approved_contextlist;
-use core_privacy\local\request\contextlist;
-
 /**
- * Provider Class to implement the Privacy API of Moodle35.
+ * Provider Class to implement the Privacy API.
  *
  * @package    repository_owncloud
  * @copyright  2018 Nina Herrmann (Learnweb, University of Münster)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements
-    \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider {
+class provider implements \core_privacy\local\metadata\null_provider {
+
     use \core_privacy\local\legacy_polyfill;
 
     /**
-     * Get the list of items.
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
      *
-     * @param collection $collection The initialised collection to add items to.
-     * @return collection A listing of user data stored through this system.
+     * @return  string
      */
-    public static function _get_metadata(collection $collection) {
-        // The repository uses a user specific access token (called confirmation token), provided by the oauthlib, ...
-        // Saved in the session to access files. However, the oauthlib Privacy API is outsourced to the oauth2 plugin.
-        // For this reason the collections includes the oauth2 subplugin.
-        $collection->add_subsystem_link(
-            'auth_oauth2',
-            [],
-            'privacy:metadata:auth_oauth2'
-        );
-        return $collection;
-    }
-
-    /**
-     * Get the list of contexts that contain user information for the specified user.
-     *
-     * @param int $userid The user to search.
-     * @return contextlist   $contextlist  The contextlist containing the list of contexts used in this plugin.
-     */
-    public static function _get_contexts_for_userid($userid) {
-        return new contextlist();
-    }
-
-    /**
-     * Export all user data for the specified user, in the specified contexts.
-     *
-     * @param approved_contextlist $contextlist The approved contexts to export information for.
-     */
-    public static function _export_user_data(approved_contextlist $contextlist) {
-    }
-
-    /**
-     * Delete all data for all users in the specified context.
-     *
-     * @param \context $context The specific context to delete data for.
-     */
-    public static function _delete_data_for_all_users_in_context(\context $context) {
-    }
-
-    /**
-     * Delete all user data for the specified user, in the specified contexts.
-     *
-     * @param approved_contextlist $contextlist The approved contexts and user information to delete information for.
-     */
-    public static function _delete_data_for_user(approved_contextlist $contextlist) {
+    public static function _get_reason() {
+        return 'privacy:metadata';
     }
 }
