@@ -72,6 +72,11 @@ class repository_owncloud_migration_testcase extends advanced_testcase {
      * @see repository_owncloud_lib_testcase::test_get_file
      */
     public function test_get_file_migration() {
+        global $CFG;
+        if ($CFG->branch < 36) {
+            // No functionality in Moodle 3.5 and lower.
+            return;
+        }
         $instance = $this->generator->create_instance([
             'issuerid' => $this->issuer->get('id'),
             'pluginname' => 'ownCloud',
@@ -115,6 +120,11 @@ class repository_owncloud_migration_testcase extends advanced_testcase {
      * If there is no instance, migration shall fail.
      */
     public function test_nothing_to_migrate() {
+        global $CFG;
+        if ($CFG->branch < 36) {
+            // No functionality in Moodle 3.5 and lower.
+            return;
+        }
         // Purge caches.
         \cache::make('core', 'repositories')->purge();
 
@@ -129,7 +139,13 @@ class repository_owncloud_migration_testcase extends advanced_testcase {
      * Test that, after migration, there is no ownCloud type. The one existing instance must be of the Nextcloud type afterwards.
      */
     public function test_migrate_one_instance() {
-        $instance = $this->generator->create_instance([
+        global $CFG;
+        if ($CFG->branch < 36) {
+            // No functionality in Moodle 3.5 and lower.
+            return;
+        }
+
+        $this->generator->create_instance([
             'issuerid' => $this->issuer->get('id'),
             'pluginname' => 'ownCloud',
             'controlledlinkfoldername' => 'Moodlefiles',
