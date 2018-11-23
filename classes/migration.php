@@ -80,11 +80,22 @@ class migration {
 
         // Migrate each repository_owncloud instance.
         foreach ($owncloudinstances as $instance) {
+            // Download file references that used the "alias/shortcut" link option (not supported anymore).
+            if (!self::download_legacy_alias_references($instance->id)) {
+                // Somehow failed; do not migrate this instance!
+                // Purge cache in case previous instances were migrated successfully.
+                \cache::make('core', 'repositories')->purge();
+
+                // Indicate failure.
+                return false;
+            }
+
+            // Other references are migrated automatically as they refer to instanceid only, which we will not change.
+            // Instance configuration is migrated automatically as settings refer to instanceid only.
+
             // Change type of repository instance to that of repository_nextcloud.
             $DB->set_field('repository_instances', 'typeid', $nextcloudtypeid, ['id' => $instance->id]);
 
-            // File references are migrated automatically as they reference instanceid only, which we didn't change.
-            // Instance configuration is migrated automatically as settings reference instanceid only.
         }
 
         // Reset repository cache to avoid deleting those instances that we just migrated.
@@ -99,5 +110,38 @@ class migration {
                  WHERE r.type=:plugin AND r.id=i.typeid";
         $params = array('plugin' => 'owncloud');
         return $DB->count_records_sql($sql, $params) === 0;
+    }
+
+    /**
+     * Download file references that used the "alias/shortcut" link option into local file storage.
+     * This kind of reference is not supported anymore.
+     *
+     * @param int $instanceid Repository instance
+     * @return bool true if everything succeeded, false if any download failed.
+     */
+    private static function download_legacy_alias_references($instanceid) {
+        $fs = get_file_storage();
+        $files = $fs->get_external_files($instanceid);
+        foreach ($files as $storedfile) {
+            // Check whether this is an alias or an access controlled link first.
+            $ref = json_decode($storedfile->get_reference());
+            if (!is_object($ref)) {
+                // Intermediate (draft) reference, do not alter.
+                continue;
+            }
+            if ($ref->type === "FILE_CONTROLLED_LINK") {
+                // ACL, do not alter.
+                continue;
+            }
+
+            // Import reference.
+            try {
+                $fs->import_external_file($storedfile);
+            } catch (\moodle_exception $e) {
+                debugging($e->getMessage(), DEBUG_NORMAL);
+                return false;
+            }
+        }
+        return true;
     }
 }
