@@ -44,7 +44,7 @@ class migration {
      *
      * @return bool A status indicating success or failure
      */
-    public static function migrate_all_instances() : bool {
+    public static function migrate_all_instances() {
         global $DB, $CFG;
 
         // Sanity checks -- this method should really never be called for a non-admin. M3.6 and above only.
